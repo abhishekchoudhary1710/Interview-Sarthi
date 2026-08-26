@@ -39,6 +39,11 @@
   .faq details { border-bottom:1px solid var(--line); padding:12px 0; }
   .faq summary { cursor:pointer; font-weight:600; }
   .faq p { color:var(--muted); margin:8px 0 0; font-size:14px; }
+  .keybox { display:none; margin:0 auto 26px; max-width:640px; background:#0f2a1a; border:1px solid var(--ok); border-radius:12px; padding:18px; text-align:left; }
+  .keybox.show { display:block; }
+  .keybox h3 { margin:0 0 6px; color:var(--ok); }
+  .keybox code { display:block; font-size:18px; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px; margin:10px 0; word-break:break-all; user-select:all; }
+  .keybox ol { margin:8px 0 0; padding-left:20px; color:var(--muted); font-size:14px; }
   footer { padding:30px 0 50px; color:var(--muted); font-size:13px; text-align:center; }
 </style>
 </head>
@@ -52,6 +57,15 @@
   <section class="hero" style="border:0">
     <h1>Your AI guide in every interview</h1>
     <p class="lead">Interview Sarthi listens to your online interview or meeting and quietly shows you what to say — grounded in your own resume. Works with Microsoft Teams, Zoom and Google Meet on Windows.</p>
+    <div class="keybox" id="keybox">
+      <h3>Thank you — your pass is active</h3>
+      <div>This is your license key (also in your receipt email):</div>
+      <code id="keyval"></code>
+      <ol>
+        <li>Download and install Interview Sarthi below.</li>
+        <li>Open it, paste this key on the license screen, click <b>Activate</b>.</li>
+      </ol>
+    </div>
     <a class="cta" href="DOWNLOAD_URL">Download for Windows</a>
     <a class="cta secondary" href="BUY_URL">Buy a pass</a>
     <div class="note">Free trial: 3 sessions, no card needed. Runs on your own free Google Gemini key.</div>
@@ -108,5 +122,13 @@
 
   <footer>© 2026 Interview Sarthi · <a href="mailto:SUPPORT_EMAIL">Support</a> · Use responsibly and within your employer’s and interviewer’s rules.</footer>
 </div>
+<script>
+  (function () {
+    var key = new URLSearchParams(location.search).get("license_key");
+    if (!key) return;
+    document.getElementById("keyval").textContent = key;
+    document.getElementById("keybox").classList.add("show");
+  })();
+</script>
 </body>
 </html>
