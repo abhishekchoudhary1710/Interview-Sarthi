@@ -48,6 +48,13 @@
     <p>Click <b>More info → Run anyway</b>. The download is unsigned (signing certificates cost more than the app earns for now). It is a single portable file: keep it anywhere, e.g. your Desktop, and double-click it to start. Your settings and resume are saved separately in your user folder, so you can move or replace the file freely.</p></details>
 
   <h2>During a call</h2>
+  <details><summary>“cannot open system audio: Error 0x80070490” (or “cannot open mic audio”)</summary>
+    <p>Windows found no audio device. This happens on desktop PCs with nothing plugged into the audio jack, or when the sound device is disabled.</p>
+    <ol>
+      <li>Plug in headphones or speakers (and a microphone or headset if you have one).</li>
+      <li>Right-click the speaker icon in the taskbar → <b>Sound settings</b> → make sure an <b>Output</b> device and an <b>Input</b> device are listed and not disabled.</li>
+      <li>Close and start Interview Sarthi again. It listens to whatever Windows plays through, so a working output device is required.</li>
+    </ol></details>
   <details><summary>The transcript stays empty — the interviewer is never heard</summary>
     <p>The app listens to the device Windows plays sound through. Check, in order:</p>
     <ol>
