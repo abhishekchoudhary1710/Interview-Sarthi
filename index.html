@@ -185,6 +185,24 @@
   .keybox h3{margin:0 0 6px;color:#047857}
   .keybox code{display:block;font-size:18px;background:#fff;border:1px solid var(--line2);border-radius:8px;padding:10px;margin:10px 0;word-break:break-all;user-select:all;font-family:Consolas,monospace}
   .keybox ol{margin:8px 0 0;padding-left:20px;color:#3f5a4e;font-size:14px}
+  /* hero stats */
+  .stats{display:flex;justify-content:center;flex-wrap:wrap;gap:0;margin-top:34px}
+  .stat{padding:4px 28px;text-align:center;border-left:1px solid var(--line)}
+  .stat:first-child{border-left:0}
+  .stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.8px;color:var(--text)}
+  .stat span{font-size:12.5px;color:var(--muted)}
+  @media(max-width:720px){.stat{padding:4px 16px}.stat b{font-size:21px}}
+  /* comparison table */
+  .cmp{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  .cmp table{width:100%;border-collapse:collapse;min-width:660px;font-size:14px}
+  .cmp th,.cmp td{padding:13px 18px;border-bottom:1px solid var(--line);text-align:center}
+  .cmp tr:last-child th,.cmp tr:last-child td{border-bottom:0}
+  .cmp thead th{font-size:13px;letter-spacing:.3px;color:var(--muted);font-weight:600;background:var(--bg2)}
+  .cmp th[scope=row]{text-align:left;font-weight:500;color:var(--muted);white-space:nowrap}
+  .cmp td.us{background:rgba(37,99,235,.05);font-weight:600;color:var(--text)}
+  .cmp thead th.us{color:var(--accent);font-weight:800;font-size:14px}
+  .cmp .y{color:var(--ok);font-weight:700}
+  .cmp .n{color:#b3bccb}
   /* reveal */
   .rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
   .rv.in{opacity:1;transform:none}
@@ -194,7 +212,7 @@
 <body>
 <nav><div class="wrap">
   <a class="logo" href="./"><img src="assets/mark.svg" alt="Interview Sarthi logo">Interview <span>Sarthi</span></a>
-  <div class="links"><a href="#hidden">Stays hidden</a><a href="#how">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="help.html">Help</a><a class="cta sm" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download free</a></div>
+  <div class="links"><a href="#hidden">Stays hidden</a><a href="#how">How it works</a><a href="#features">Features</a><a href="#why">Why us</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="help.html">Help</a><a class="cta sm" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download free</a></div>
 </div></nav>
 
 <header class="hero"><div class="wrap">
@@ -212,10 +230,17 @@
     <a class="cta ghost" href="#pricing">See pricing</a>
   </div>
   <div class="trust"><b>3 free sessions</b> · no card · no signup · runs on your own free Google Gemini key</div>
+  <div class="stats rv">
+    <div class="stat"><b>~2s</b><span>answer starts streaming</span></div>
+    <div class="stat"><b>3</b><span>languages — English · Hindi · Hinglish</span></div>
+    <div class="stat"><b>₹0</b><span>monthly AI cost, on your free key</span></div>
+    <div class="stat"><b>0</b><span>subscriptions — nothing auto-renews</span></div>
+  </div>
   <div class="logos">
     <span><svg viewBox="0 0 24 24" fill="#6b7590"><rect x="3" y="6" width="18" height="12" rx="3"/></svg>Microsoft Teams</span>
     <span><svg viewBox="0 0 24 24" fill="#6b7590"><circle cx="12" cy="12" r="9"/></svg>Zoom</span>
     <span><svg viewBox="0 0 24 24" fill="#6b7590"><path d="M4 7h11v10H4z"/><path d="M15 10l5-3v10l-5-3z" fill="#6b7590"/></svg>Google Meet</span>
+    <span><svg viewBox="0 0 24 24" fill="#6b7590"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="#fff"/></svg>Webex</span>
     <span><svg viewBox="0 0 24 24" fill="#6b7590"><rect x="3" y="5" width="18" height="14" rx="4"/></svg>Any browser call</span>
   </div>
 
@@ -244,6 +269,7 @@
     <h2>Share your screen. They see your screen — not the overlay.</h2>
     <p class="sub" style="margin-bottom:22px">Windows lets an app exclude its own window from screen capture. Interview Sarthi turns that on from the first frame, permanently. Teams, Zoom, Google Meet, Webex and OBS all receive the capture without the overlay in it.</p>
     <ul class="checks">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b>No bot joins your call</b> — it listens to your computer's own audio. No extra participant, nothing in the guest list, nothing for the interviewer to notice.</span></li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b>Invisible in screen share</b> — full-screen or window share, the overlay is simply not there.</span></li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b>Invisible in recordings</b> — a recorded call, or one played back later, has no trace of it.</span></li>
       <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b>Silent</b> — it reads, never speaks. No audio goes into the call. Your mic never triggers an answer.</span></li>
@@ -284,26 +310,45 @@
   </div>
 </div></section>
 
-<section id="pricing"><div class="wrap">
+<section id="why"><div class="wrap">
+  <div class="rv"><p class="eyebrow">Why Interview Sarthi</p><h2>Same live help. A fraction of the price. None of the traps.</h2><p class="sub">Most AI interview copilots charge $25–90 every month, on their servers, on auto-renew. Interview Sarthi runs on your own free Gemini key — so a pass costs less than a single month elsewhere, and it can never charge you again.</p></div>
+  <div class="cmp rv">
+    <table>
+      <thead><tr><th></th><th class="us">Interview Sarthi</th><th>Subscription AI copilots</th><th>Interview coaching</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Price</th><td class="us">₹999–1,999 one-time</td><td>$25–90 / month, recurring</td><td>₹2,000+ per hour</td></tr>
+        <tr><th scope="row">Auto-renewal</th><td class="us"><span class="y">Never</span> — a pass just ends</td><td>Renews until you cancel</td><td>—</td></tr>
+        <tr><th scope="row">Helps during the real interview</th><td class="us"><span class="y">✓</span></td><td><span class="y">✓</span></td><td><span class="n">✗ practice only</span></td></tr>
+        <tr><th scope="row">Hindi &amp; Hinglish</th><td class="us"><span class="y">✓</span> native</td><td>English-first</td><td>Depends on coach</td></tr>
+        <tr><th scope="row">Where your audio &amp; resume go</th><td class="us">Your PC → your own AI key</td><td>Their servers</td><td>—</td></tr>
+        <tr><th scope="row">Account required</th><td class="us"><span class="y">None</span></td><td>Sign-up + login</td><td>Booking</td></tr>
+        <tr><th scope="row">Payment</th><td class="us">UPI &amp; cards</td><td>International card</td><td>Varies</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div></section>
+
+<section id="pricing" class="alt"><div class="wrap">
   <div class="rv"><p class="eyebrow">Pricing</p><h2>Pay for the length of your job hunt. Nothing renews.</h2><p class="sub">One payment, a fixed number of days, two devices. When the pass ends, the app tells you — it never charges you again.</p></div>
   <div class="plans">
     <div class="plan rv"><h3>Free trial</h3><div class="amt">₹0</div><div class="per">3 sessions · 15 minutes each</div>
       <ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Every feature included</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>No card, no signup</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Test it on a real mock call</li></ul>
       <a class="cta ghost" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download</a></div>
-    <div class="plan best rv"><span class="badge">Most popular</span><h3>3-Month Pass</h3><div class="amt">₹1,999 <small>one-time</small></div><div class="per">90 days · 2 devices · UPI, cards, international cards</div>
+    <div class="plan best rv"><span class="badge">Most popular</span><h3>3-Month Pass</h3><div class="amt">₹1,999 <small>one-time</small></div><div class="per">90 days · about ₹22 a day · 2 devices · UPI, cards</div>
       <ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Unlimited sessions</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Resume-grounded answers</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Screen reading &amp; summaries</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Hidden from screen share</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Key emailed instantly</li></ul>
       <a class="cta" href="https://checkout.dodopayments.com/buy/pdt_0NmHNZ2I6qiJg6CrzInBg?quantity=1&redirect_url=https://interviewsarthi.com%2F">Buy 3-Month Pass</a></div>
-    <div class="plan rv"><h3>1-Month Pass</h3><div class="amt">₹999 <small>one-time</small></div><div class="per">30 days · 2 devices</div>
+    <div class="plan rv"><h3>1-Month Pass</h3><div class="amt">₹999 <small>one-time</small></div><div class="per">30 days · about ₹33 a day · 2 devices</div>
       <ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Same features as 3-month</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>For a short, focused hunt</li></ul>
       <a class="cta ghost" href="https://checkout.dodopayments.com/buy/pdt_0NmHQqaKlKiZ57ISIRzdn?quantity=1&redirect_url=https://interviewsarthi.com%2F">Buy 1-Month Pass</a></div>
   </div>
   <p class="pay">Secure checkout by Dodo Payments · UPI · Cards · 7-day refund if it doesn't work on your PC · <a href="refunds.html">policy</a></p>
 </div></section>
 
-<section id="faq" class="faq alt"><div class="wrap">
+<section id="faq" class="faq"><div class="wrap">
   <div class="rv"><p class="eyebrow">FAQ</p><h2>Questions people ask before buying</h2></div>
   <details class="rv" open><summary>Can the interviewer see it?</summary><p>Not through the call. On Windows 10 (2004+) and 11 the overlay is excluded from screen capture, so it does not appear in a shared screen or a recording made through Teams, Zoom, Meet, Webex or OBS. It <em>is</em> visible to a phone camera pointed at your monitor and to some proctoring tools that detect capture-excluded windows.</p></details>
   <details class="rv"><summary>Do I need to pay for the AI separately?</summary><p>No. The app runs on Google's free Gemini tier with a key you create in two minutes. Optional OpenAI or Groq keys add extras, but nothing requires them.</p></details>
+  <details class="rv"><summary>Why is it so much cheaper than other AI interview tools?</summary><p>Two reasons. Other copilots run the AI on their servers and pass that cost to you as a $25–90 monthly subscription. Interview Sarthi runs on your own free Gemini key, so there is no server bill to pass on. And it is priced for India — a one-time pass in rupees, paid by UPI, that simply ends instead of renewing.</p></details>
   <details class="rv"><summary>Does it work for my field, or only for developers?</summary><p>Any field. It reads your resume, works out your field and its vocabulary, and tunes the listener to it — marketing, finance, nursing, sales, mechanical, teaching. Coding-round features are a bonus for developers.</p></details>
   <details class="rv"><summary>Hindi and Hinglish?</summary><p>Yes — it hears the mix and answers in the same register, in Latin-script Hinglish so you can read it fast.</p></details>
   <details class="rv"><summary>What happens when my pass ends?</summary><p>The app shows a renew screen. Buy a new pass, paste the new key, continue. Nothing auto-charges, ever.</p></details>
@@ -312,8 +357,8 @@
 </div></section>
 
 <section><div class="wrap"><div class="final rv">
-  <h2>Your next interview is closer than you think.</h2>
-  <p class="sub" style="margin:0 auto 26px">Install in a minute. Try three sessions free. Buy a pass only if it helped.</p>
+  <h2>Your next interview could be the one that changes everything.</h2>
+  <p class="sub" style="margin:0 auto 26px">Install in a minute. Try three full sessions free. Buy a pass only if it helped.</p>
   <div class="ctas"><a class="cta" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download for Windows — free</a><a class="cta ghost" href="https://checkout.dodopayments.com/buy/pdt_0NmHNZ2I6qiJg6CrzInBg?quantity=1&redirect_url=https://interviewsarthi.com%2F">Buy 3-Month Pass · ₹1,999</a></div>
 </div></div></section>
 
