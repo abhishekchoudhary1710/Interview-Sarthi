@@ -74,7 +74,7 @@
   .cta.ghost:hover{background:var(--bg2)}
   .cta.sm{padding:9px 16px;font-size:14px}
   /* hero */
-  .hero{padding:78px 0 30px;text-align:center;position:relative;isolation:isolate}
+  .hero{padding:78px 0 30px;text-align:center;position:relative;isolation:isolate;background-image:url(assets/background-hero-light-v1.svg);background-size:cover;background-position:center top;background-repeat:no-repeat}
   .hero::before{content:"";position:absolute;inset:0 0 auto 0;height:640px;z-index:-1;pointer-events:none;
     background-image:radial-gradient(rgba(15,23,42,.07) 1px,transparent 1.2px);background-size:24px 24px;
     -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 45%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,#000 45%,transparent 100%)}
@@ -175,7 +175,7 @@
   .faq details[open] summary::after{transform:rotate(45deg)}
   .faq p{color:var(--muted);margin:10px 0 0;font-size:14px}
   /* final cta */
-  .final{text-align:center;background:linear-gradient(180deg,#f6f8fb,#eef3fb);border:1px solid var(--line2);border-radius:12px;padding:56px 24px}
+  .final{text-align:center;background:linear-gradient(180deg,#f6f8fb,#eef3fb);background-image:url(assets/background-section-light-v1.svg);background-size:cover;background-position:center;border:1px solid var(--line2);border-radius:12px;padding:56px 24px}
   footer{padding:34px 0 50px;color:var(--muted);font-size:13px;text-align:center;border-top:1px solid var(--line);background:var(--bg2)}
   footer a{color:var(--muted);text-decoration:none;margin:0 8px}
   footer a:hover{color:var(--text)}
@@ -237,11 +237,11 @@
     <div class="stat"><b>0</b><span>subscriptions — nothing auto-renews</span></div>
   </div>
   <div class="logos">
-    <span><svg viewBox="0 0 24 24" fill="#6b7590"><rect x="3" y="6" width="18" height="12" rx="3"/></svg>Microsoft Teams</span>
-    <span><svg viewBox="0 0 24 24" fill="#6b7590"><circle cx="12" cy="12" r="9"/></svg>Zoom</span>
-    <span><svg viewBox="0 0 24 24" fill="#6b7590"><path d="M4 7h11v10H4z"/><path d="M15 10l5-3v10l-5-3z" fill="#6b7590"/></svg>Google Meet</span>
-    <span><svg viewBox="0 0 24 24" fill="#6b7590"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="#fff"/></svg>Webex</span>
-    <span><svg viewBox="0 0 24 24" fill="#6b7590"><rect x="3" y="5" width="18" height="14" rx="4"/></svg>Any browser call</span>
+    <span><svg viewBox="0 0 24 24"><rect x="2" y="4.5" width="14" height="14" rx="3" fill="#5059C9"/><rect x="5.6" y="8.2" width="6.8" height="2.1" rx="1" fill="#fff"/><rect x="7.9" y="8.2" width="2.2" height="7" rx="1" fill="#fff"/><circle cx="19.5" cy="9.5" r="2.6" fill="#7B83EB"/><path d="M16.5 13.5h6v3.4a3 3 0 01-3 3 3 3 0 01-3-3z" fill="#7B83EB"/></svg>Microsoft Teams</span>
+    <span><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14.5" height="12" rx="3.4" fill="#2D8CFF"/><path d="M17.5 10.8l4.5-2.9v8.2l-4.5-2.9z" fill="#2D8CFF"/></svg>Zoom</span>
+    <span><svg viewBox="0 0 24 24"><rect x="2" y="6" width="13.5" height="12" rx="2.4" fill="#00832D"/><path d="M15.5 10.4l6.5-4.2v11.6l-6.5-4.2z" fill="#00AC47"/></svg>Google Meet</span>
+    <span><svg viewBox="0 0 24 24"><defs><linearGradient id="wbx" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#00CF64"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs><circle cx="12" cy="12" r="9.5" fill="url(#wbx)"/><circle cx="12" cy="12" r="4.2" fill="#fff"/></svg>Webex</span>
+    <span><svg viewBox="0 0 24 24" fill="none" stroke="#6b7590" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3.5 12h17"/></svg>Any browser call</span>
   </div>
 
   <div class="demo rv">
@@ -326,6 +326,19 @@
       </tbody>
     </table>
   </div>
+  <div class="split" style="margin-top:64px;align-items:center">
+    <div class="rv">
+      <p class="eyebrow">Private by design</p>
+      <h2 style="font-size:clamp(24px,3.4vw,34px)">Your interview never touches our servers. We don't have any.</h2>
+      <ul class="checks">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b>Audio and resume go straight from your PC to Google</b> — under your own key. We never see or store them.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b>Transcripts stay on your computer</b> — delete one folder and they're gone for good.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg><span><b>No account, no analytics, no tracking</b> — the app doesn't even ask for your email.</span></li>
+      </ul>
+      <p class="fine">Full details in the <a href="privacy.html">privacy policy</a> — it's short, because there's little to explain.</p>
+    </div>
+    <div class="rv"><img src="assets/privacy-first-light-v1.svg" alt="Your resume and data stay under your control" style="width:100%;height:auto;display:block" loading="lazy"></div>
+  </div>
 </div></section>
 
 <section id="pricing" class="alt"><div class="wrap">
@@ -363,6 +376,7 @@
 </div></div></section>
 
 <footer><div class="wrap">
+  <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px;font-weight:700;font-size:15px;color:var(--text)"><img src="assets/mark.svg" alt="" style="width:24px;height:24px;border-radius:6px">Interview <span style="color:var(--accent)">Sarthi</span></div>
   © 2026 Interview Sarthi · <a href="help.html">Help</a> · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a> · <a href="refunds.html">Refunds</a> · <a href="mailto:abhishekchoudhary2417@gmail.com">Support</a>
   <div style="margin-top:8px">Use responsibly and within your interviewer's and employer's rules.</div>
 </div></footer>
