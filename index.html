@@ -189,6 +189,23 @@
   .keybox ol{margin:8px 0 0;padding-left:20px;color:#3f5a4e;font-size:14px}
   .hero>.wrap{position:relative;z-index:1}
   /* hero stats */
+  /* hero: the words on the left, the product on the right. Breaks out of the
+     1080px text column because the panel inside the shot needs the width. */
+  .hgrid{display:grid;grid-template-columns:1fr 1.12fr;gap:44px;align-items:center;text-align:left;
+         max-width:1300px;width:calc(100vw - 44px);margin-left:50%;transform:translateX(-50%)}
+  .hgrid h1{font-size:clamp(31px,3.5vw,49px);letter-spacing:-1.1px}
+  .hgrid .lead{max-width:none;margin:0 0 26px}
+  .hgrid .ctas{justify-content:flex-start}
+  .shot{margin:0}
+  .shot img{width:100%;height:auto;display:block;border:1px solid var(--line2);border-radius:14px;
+            box-shadow:0 26px 64px rgba(15,23,42,.22)}
+  .shot figcaption{margin-top:12px;font-size:14px;color:var(--muted);line-height:1.5}
+  @media(max-width:940px){
+    .hgrid{grid-template-columns:1fr;gap:30px;text-align:center;width:auto;max-width:none;
+           margin-left:0;transform:none}
+    .hgrid .lead{margin:0 auto 26px;max-width:680px}
+    .hgrid .ctas{justify-content:center}
+  }
   .stats{display:flex;justify-content:center;flex-wrap:wrap;gap:0;margin-top:34px}
   .stat{padding:4px 28px;text-align:center;border-left:1px solid var(--line)}
   .stat:first-child{border-left:0}
@@ -221,8 +238,6 @@
 </style>
 <style>
   .tg{max-width:1120px;margin:0 auto}
-  /* the panel is only 39% of the screenshot, so the hero figure breaks out of the text column */
-  .hero .tg{max-width:1280px;width:calc(100vw - 44px);margin-left:50%;transform:translateX(-50%)}
   .tgbar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
   .tgb{appearance:none;cursor:pointer;font:inherit;font-size:14px;font-weight:600;color:var(--muted);
        background:#fff;border:1px solid var(--line2);border-radius:999px;padding:9px 20px;transition:all .15s}
@@ -258,8 +273,10 @@
 
 <header class="hero">
 <div class="wrap">
+  <div class="hgrid">
+  <div class="hcol">
   <div class="pill"><i></i>AI interview assistant · invisible in Teams, Zoom &amp; Meet</div>
-  <h1>The interviewer asks.<br>Your answer is <span class="grad">already on screen</span>.</h1>
+  <h1>The interviewer asks. Your answer is already on screen. <span class="grad">Invisible to everyone else.</span></h1>
   <p class="lead"><b>Interview Sarthi listens to your Teams, Zoom or Meet call and drafts what to say</b> — in your own words, from your own resume, in English or Hinglish. It never appears in a shared screen or a recording.</p>
   <div class="keybox" id="keybox">
     <h3>Thank you — your pass is active</h3>
@@ -272,18 +289,16 @@
     <a class="cta ghost" href="#pricing">See pricing</a>
   </div>
   <div class="trust"><b>3 free sessions</b> · no card · no signup · runs on your own free Google Gemini key</div>
-  
-  <div class="tg rv" style="margin-top:38px">
-    <div class="tgbar" role="tablist" aria-label="Whose screen">
-      <button class="tgb on" id="tgYou" role="tab" aria-selected="true" aria-controls="tgImg">Your screen</button>
-      <button class="tgb" id="tgThem" role="tab" aria-selected="false" aria-controls="tgImg">What the interviewer sees</button>
-    </div>
-    <figure class="tgfig">
-      <img id="tgImg" src="assets/shot-you-see.png" width="1920" height="1080"
-           alt="A Google Meet interview with the Interview Sarthi panel over it, drafting a Hinglish answer from the candidate's own project.">
-      <figcaption id="tgCap"><b>Your screen.</b> The interviewer asked in Hinglish; the answer came back in Hinglish, built from your resume.</figcaption>
+  </div>
+  <div class="hvis rv">
+    <figure class="shot">
+      <img src="assets/shot-hero.png" width="980" height="745"
+           alt="The Interview Sarthi panel over a Google Meet interview, drafting a Hinglish answer from the candidate's own project.">
+      <figcaption>The interviewer asked in Hinglish. The answer came back in Hinglish, built from your resume — and none of it reaches the shared screen.</figcaption>
     </figure>
   </div>
+  </div>
+  
   <div class="stats rv">
     <div class="stat"><b>~1.5s</b><span>answer starts appearing</span></div>
     <div class="stat"><b>3</b><span>languages — English · Hindi · Hinglish</span></div>
@@ -330,25 +345,19 @@
 <section class="alt" id="proof" style="padding-top:0">
 <div class="wrap">
   <div class="rv" style="text-align:center;max-width:760px;margin:0 auto 22px">
-    <h2 style="margin-bottom:8px">Watch an answer arrive.</h2>
-    <p class="sub" style="margin:0">A recreation of the panel at work: the question lands, and your answer writes itself while the interviewer is still talking.</p>
+    <h2 style="margin-bottom:8px">The same moment, from both sides.</h2>
+    <p class="sub" style="margin:0">One frame of a real session. Switch between what you see and what the interviewer's stream actually carries.</p>
   </div>
-  <div class="demo rv">
-    <div class="win" aria-label="Interview Sarthi overlay demo">
-      <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>&nbsp;Interview Sarthi<span class="tag"><i></i>listening · hidden from share</span></div>
-      <div class="body" id="feed"></div>
+  <div class="tg rv">
+    <div class="tgbar" role="tablist" aria-label="Whose screen">
+      <button class="tgb on" id="tgYou" role="tab" aria-selected="true" aria-controls="tgImg">Your screen</button>
+      <button class="tgb" id="tgThem" role="tab" aria-selected="false" aria-controls="tgImg">What the interviewer sees</button>
     </div>
-    <div class="call" id="call" aria-label="What the interviewer sees">
-      <div class="bar">Microsoft Teams — Technical Round<span class="rec"><i></i>REC</span></div>
-      <div class="stage">
-        <div class="tile"><div class="av">RK</div>Rohit · Interviewer</div>
-        <div class="tile you"><div class="av">You</div>You · sharing screen
-          <div class="ovl" id="ovl"><div class="who">SAY THIS</div><div class="card">At Acme I owned the payments service… we cut p95 latency <b>40%</b> by…</div></div>
-        </div>
-      </div>
-      <div class="toggle"><button class="on" data-v="you">Your screen</button><button data-v="them">What they see (share / recording)</button></div>
-      <div class="callnote" id="callnote">The overlay sits on top of the call — only on your monitor.</div>
-    </div>
+    <figure class="tgfig">
+      <img id="tgImg" src="assets/shot-you-see.png" width="1920" height="1080"
+           alt="A Google Meet interview with the Interview Sarthi panel over it, drafting a Hinglish answer from the candidate's own project.">
+      <figcaption id="tgCap"><b>Your screen.</b> The interviewer asked in Hinglish; the answer came back in Hinglish, built from your resume.</figcaption>
+    </figure>
   </div>
 </div>
 </section>
@@ -524,6 +533,7 @@
   });});
   // live demo: interviewer asks, answer streams
   var feed=document.getElementById("feed");
+  if(!feed)return;   // the typing demo is not on every page
   var script=[
     {q:"Tell me about a time you handled a production incident.",
      a:"At my last role our payment service started timing out at peak. I pulled the on-call, traced it to a <b>connection-pool leak</b> from a recent deploy, rolled it back within <b>20 minutes</b>, and then added a pool-size alert so it couldn't recur silently."},
