@@ -229,7 +229,7 @@
 <body>
 <nav><div class="wrap">
   <a class="logo" href="./"><img src="assets/mark.svg" alt="Interview Sarthi logo">Interview <span>Sarthi</span></a>
-  <div class="links"><a href="#hidden">Stays hidden</a><a href="#how">How it works</a><a href="#features">Features</a><a href="#why">Why us</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="guides/">Guides</a><a href="help.html">Help</a><a class="cta sm" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download free</a></div>
+  <div class="links"><a href="#hidden">Stays hidden</a><a href="#how">How it works</a><a href="#install">Installing</a><a href="#features">Features</a><a href="#why">Why us</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="guides/">Guides</a><a href="help.html">Help</a><a class="cta sm" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download free</a></div>
 </div></nav>
 
 <header class="hero">
@@ -256,7 +256,7 @@
     <a class="cta" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Download for Windows — free</a>
     <a class="cta ghost" href="#pricing">See pricing</a>
   </div>
-  <div class="trust"><b>3 free sessions</b> · no card · no signup · runs on your own free Google Gemini key</div>
+  <div class="trust"><b>3 free sessions</b> · no card · no signup · runs on your own free Google Gemini key<br><a href="#install" style="color:var(--muted);text-decoration:underline">Windows will show a warning &mdash; here is what it means and what to click</a></div>
   <div class="stats rv">
     <div class="stat"><b>~2s</b><span>answer starts streaming</span></div>
     <div class="stat"><b>3</b><span>languages — English · Hindi · Hinglish</span></div>
@@ -325,6 +325,47 @@
   </div>
 </div></section>
 
+<style>
+  .ssx{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:34px}
+  @media(max-width:760px){.ssx{grid-template-columns:1fr}}
+  .ssc{position:relative;padding-top:6px}
+  .ssn{position:absolute;top:-6px;left:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .ssd{margin-left:38px;background:#2f2a24;color:#f4f1ec;border-radius:8px;padding:18px 20px 16px;box-shadow:0 6px 20px rgba(15,23,42,.16);font-size:13.5px;line-height:1.5}
+  .ssd h4{margin:0 0 10px;font-size:17px;font-weight:600;color:#fff}
+  .ssd p{margin:0 0 10px;color:#ded8cf;font-size:13.5px}
+  .ssd .ssmeta{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#cfc7bb}
+  .ssd a.sslink{color:#9ec5ff;text-decoration:underline;font-size:13.5px}
+  .ssb{display:flex;gap:9px;justify-content:flex-end;margin-top:14px}
+  .ssb span{border:1px solid #6f665a;padding:6px 14px;font-size:12.5px;border-radius:3px;color:#e8e3db;background:#3a342c}
+  .ssb span.on{background:#e8e3db;color:#22201c;border-color:#e8e3db;font-weight:600}
+  .sscap{margin:12px 0 0 38px;font-size:14px;color:var(--muted)}
+  .sscap b{color:var(--text)}
+</style>
+<section id="install"><div class="wrap">
+  <div class="rv"><p class="eyebrow">Installing</p><h2>Windows will warn you. Here is exactly what to click.</h2><p class="sub">Interview Sarthi is not code-signed yet &mdash; a certificate costs more per year than most of our passes. Windows shows this warning for any app it has not seen before, so we would rather you meet it here than cold.</p></div>
+  <div class="ssx">
+    <div class="ssc rv">
+      <div class="ssn">1</div>
+      <div class="ssd">
+        <h4>Windows protected your PC</h4>
+        <p>Microsoft Defender SmartScreen prevented an unrecognized app from starting. Running this app might put your PC at risk.</p>
+        <a class="sslink">More info</a>
+        <div class="ssb"><span>Don't run</span></div>
+      </div>
+      <p class="sscap"><b>Click &ldquo;More info&rdquo;.</b> This screen offers only <i>Don't run</i> &mdash; the button you actually need is hidden behind that link. This is where most people give up.</p>
+    </div>
+    <div class="ssc rv">
+      <div class="ssn">2</div>
+      <div class="ssd">
+        <h4>Windows protected your PC</h4>
+        <p class="ssmeta">App: Interview-Sarthi-Setup.exe<br>Publisher: Unknown publisher</p>
+        <div class="ssb"><span class="on">Run anyway</span><span>Don't run</span></div>
+      </div>
+      <p class="sscap"><b>Click &ldquo;Run anyway&rdquo;.</b> The installer opens. Choose <i>Install for me only</i> &mdash; no administrator password needed &mdash; and it is done in about a minute.</p>
+    </div>
+  </div>
+  <p class="fine" style="margin-top:30px"><b>&ldquo;Unknown publisher&rdquo; means nothing was detected.</b> It means we have not bought a code-signing certificate, which is a paperwork-and-money problem rather than a safety one. If you would rather check first, upload the installer to <a href="https://www.virustotal.com/" target="_blank" rel="noopener">VirusTotal</a> and scan it with 70+ engines before you run it. The install is per-user and never asks for admin rights.</p>
+</div></section>
 <section id="features" class="alt"><div class="wrap">
   <div class="rv"><p class="eyebrow">What you get</p><h2>Built for real interviews, not demos.</h2><p class="sub">Tuned on hour-long Hinglish technical rounds. Made in India for Indian interviews — and it works anywhere.</p></div>
   <div class="grid">
@@ -390,6 +431,7 @@
 <section id="faq" class="faq"><div class="wrap">
   <div class="rv"><p class="eyebrow">FAQ</p><h2>Questions people ask before buying</h2></div>
   <details class="rv" open><summary>Can the interviewer see it?</summary><p>Not through the call. On Windows 10 (2004+) and 11 the overlay is excluded from screen capture, so it does not appear in a shared screen or a recording made through Teams, Zoom, Meet, Webex or OBS. It <em>is</em> visible to a phone camera pointed at your monitor and to some proctoring tools that detect capture-excluded windows.</p></details>
+  <details class="rv"><summary>Why does Windows say &ldquo;unknown publisher&rdquo;?</summary><p>Because the installer is not code-signed &mdash; a certificate costs more per year than most of our passes do. It is not a detection of anything. Click <b>More info</b> then <b>Run anyway</b>; the full walkthrough with screenshots is <a href="#install">further up this page</a>. You can scan the file on VirusTotal first if you prefer.</p></details>
   <details class="rv"><summary>Do I need to pay for the AI separately?</summary><p>No. The app runs on Google's free Gemini tier with a key you create in two minutes. Optional OpenAI or Groq keys add extras, but nothing requires them.</p></details>
   <details class="rv"><summary>Why is it so much cheaper than other AI interview tools?</summary><p>Two reasons. Other copilots run the AI on their servers and pass that cost to you as a $25–90 monthly subscription. Interview Sarthi runs on your own free Gemini key, so there is no server bill to pass on. And it is priced for India — a one-time pass in rupees, paid by UPI, that simply ends instead of renewing.</p></details>
   <details class="rv"><summary>Does it work for my field, or only for developers?</summary><p>Any field. It reads your resume, works out your field and its vocabulary, and tunes the listener to it — marketing, finance, nursing, sales, mechanical, teaching. Coding-round features are a bonus for developers.</p></details>
