@@ -1,27 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Interview Sarthi logo mark</title>
-  <desc id="desc">A guided conversation symbol: speech bubble, confidence path, and spark.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t d">
+  <title id="t">Interview Sarthi mark — chariot wheel</title>
+  <desc id="d">A chariot wheel in motion: the sarthi's rath, reduced to the one shape that survives at favicon size.</desc>
   <defs>
-    <linearGradient id="background" x1="72" y1="50" x2="444" y2="462" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#6366F1"/>
-      <stop offset=".52" stop-color="#2563EB"/>
-      <stop offset="1" stop-color="#0F2A62"/>
+    <linearGradient id="ck" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/><stop offset="1" stop-color="#4F46E5"/>
     </linearGradient>
-    <linearGradient id="route" x1="184" y1="336" x2="342" y2="166" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#93C5FD"/>
-      <stop offset="1" stop-color="#FFFFFF"/>
-    </linearGradient>
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="10" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
   </defs>
-  <rect width="512" height="512" rx="122" fill="url(#background)"/>
-  <path d="M120 139c0-28.17 22.83-51 51-51h170c28.17 0 51 22.83 51 51v117c0 28.17-22.83 51-51 51H253l-66 55.23c-11.76 9.84-29.7 1.47-29.7-13.87V307h-6.3c-17.12 0-31-13.88-31-31V139Z" fill="#0A1C41" fill-opacity=".4"/>
-  <path d="M119 132c0-28.17 22.83-51 51-51h170c28.17 0 51 22.83 51 51v117c0 28.17-22.83 51-51 51h-88l-66 55.23c-11.76 9.84-29.7 1.47-29.7-13.87V300H150c-17.12 0-31-13.88-31-31V132Z" fill="#112B5B" stroke="#BBD7FF" stroke-opacity=".54" stroke-width="8"/>
-  <path d="M183 251c25 0 43-11 56-29 13-18 22-45 43-45 16 0 29 10 42 25" fill="none" stroke="url(#route)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="183" cy="251" r="13" fill="#94E9FF"/>
-  <path d="m325 173 8.2 19.8 20.8 8.2-20.8 8.2-8.2 19.8-8.2-19.8-19.8-8.2 19.8-8.2 8.2-19.8Z" fill="#FDE68A" filter="url(#glow)"/>
-  <path d="M189 398h134" stroke="#C7D2FE" stroke-opacity=".42" stroke-width="12" stroke-linecap="round"/>
-  <path d="M218 426h76" stroke="#C7D2FE" stroke-opacity=".24" stroke-width="12" stroke-linecap="round"/>
+  <rect width="64" height="64" rx="15" fill="url(#ck)"/>
+  <!-- motion, drawn to the left so the wheel reads as travelling forward -->
+  <g stroke="#fff" stroke-linecap="round" opacity=".72">
+    <path d="M8 24h7" stroke-width="3"/>
+    <path d="M5 32h8" stroke-width="3"/>
+    <path d="M8 40h7" stroke-width="3"/>
+  </g>
+  <!-- the wheel -->
+  <g transform="translate(38 32)">
+    <circle r="15.5" fill="none" stroke="#fff" stroke-width="3.6"/>
+    <g stroke="#fff" stroke-width="2.4" stroke-linecap="round">
+      <path d="M0-13.2V13.2M-13.2 0H13.2M-9.3-9.3l18.6 18.6M-9.3 9.3l18.6-18.6"/>
+    </g>
+    <circle r="4.4" fill="#fff"/>
+  </g>
 </svg>
