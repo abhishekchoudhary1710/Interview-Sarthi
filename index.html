@@ -194,15 +194,24 @@
   .bub svg{width:27px;height:27px}
   /* Anchored to the edge of the 1300px hero grid, not to the viewport: at a
      percentage inset they slid under the copy and the call frame as the window
-     narrowed. They now sit in true outer margin, and hide when there is none. */
-  .bub:nth-child(1){right:calc(50% + 672px);top:14%;animation-duration:5.6s}
-  .bub:nth-child(2){right:calc(50% + 712px);top:34%;width:48px;height:48px;animation-duration:7.2s;animation-delay:.8s}
-  .bub:nth-child(3){right:calc(50% + 660px);top:52%;width:62px;height:62px;animation-duration:6.4s;animation-delay:1.6s}
-  .bub:nth-child(4){left:calc(50% + 672px);top:13%;animation-duration:6.8s;animation-delay:.4s}
-  .bub:nth-child(5){left:calc(50% + 712px);top:34%;width:48px;height:48px;animation-duration:5.9s;animation-delay:1.2s}
-  .bub:nth-child(6){left:calc(50% + 660px);top:52%;width:62px;height:62px;animation-duration:7.6s;animation-delay:2s}
-  .bub:nth-child(7){right:calc(50% + 700px);top:4%;width:46px;height:46px;animation-duration:6.1s;animation-delay:2.6s}
+     narrowed. Offsets are staggered so they scatter across the margin instead
+     of lining up in a column, and the widest screens push the outer ones
+     further out again -- that is where the room actually is. */
+  .bub:nth-child(1){right:calc(50% + 656px);top:12%;animation-duration:5.6s}
+  .bub:nth-child(2){right:calc(50% + 712px);top:31%;width:48px;height:48px;animation-duration:7.2s;animation-delay:.8s}
+  .bub:nth-child(3){right:calc(50% + 668px);top:53%;width:62px;height:62px;animation-duration:6.4s;animation-delay:1.6s}
+  .bub:nth-child(4){left:calc(50% + 660px);top:9%;animation-duration:6.8s;animation-delay:.4s}
+  .bub:nth-child(5){left:calc(50% + 716px);top:30%;width:48px;height:48px;animation-duration:5.9s;animation-delay:1.2s}
+  .bub:nth-child(6){left:calc(50% + 664px);top:52%;width:62px;height:62px;animation-duration:7.6s;animation-delay:2s}
+  .bub:nth-child(7){right:calc(50% + 726px);top:5%;width:46px;height:46px;animation-duration:6.1s;animation-delay:2.6s}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-16px) rotate(2deg)}}
+  @media(min-width:1820px){
+    .bub:nth-child(2){right:calc(50% + 826px)}
+    .bub:nth-child(3){right:calc(50% + 700px)}
+    .bub:nth-child(7){right:calc(50% + 770px)}
+    .bub:nth-child(5){left:calc(50% + 832px)}
+    .bub:nth-child(6){left:calc(50% + 696px)}
+  }
   @media(max-width:1600px){.bubbles{display:none}}
   /* hero stats */
   /* hero: the words on the left, the product on the right. Breaks out of the
