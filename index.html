@@ -221,6 +221,8 @@
 </style>
 <style>
   .tg{max-width:1120px;margin:0 auto}
+  /* the panel is only 39% of the screenshot, so the hero figure breaks out of the text column */
+  .hero .tg{max-width:1280px;width:calc(100vw - 44px);margin-left:50%;transform:translateX(-50%)}
   .tgbar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
   .tgb{appearance:none;cursor:pointer;font:inherit;font-size:14px;font-weight:600;color:var(--muted);
        background:#fff;border:1px solid var(--line2);border-radius:999px;padding:9px 20px;transition:all .15s}
@@ -277,7 +279,7 @@
       <button class="tgb" id="tgThem" role="tab" aria-selected="false" aria-controls="tgImg">What the interviewer sees</button>
     </div>
     <figure class="tgfig">
-      <img id="tgImg" src="assets/shot-you-see.png" width="1920" height="1080"
+      <img id="tgImg" src="assets/shot-you-see.png" width="1848" height="1080"
            alt="A Google Meet interview with the Interview Sarthi panel over it, drafting a Hinglish answer from the candidate's own project.">
       <figcaption id="tgCap"><b>Your screen.</b> The interviewer asked in Hinglish; the answer came back in Hinglish, built from your resume.</figcaption>
     </figure>
