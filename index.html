@@ -225,6 +225,13 @@
   @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}.line{transition:none}.pill i{animation:none}}
 </style>
 <script defer src="assets/analytics.js"></script>
+<style>
+  .shots{margin-top:14px}
+  .shot{margin:0 0 28px}
+  .shot img{width:100%;height:auto;display:block;border:1px solid var(--line2);border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.10)}
+  .shot figcaption{margin-top:10px;font-size:14px;color:var(--muted);text-align:center}
+  .shot figcaption b{color:var(--text)}
+</style>
 </head>
 <body>
 <nav><div class="wrap">
@@ -314,6 +321,14 @@
       <div class="callnote"><b>No overlay in the capture.</b> This is the frame Teams, Zoom or Meet actually sends.</div>
     </div>
   </div>
+
+<div class="wrap shots" style="max-width:1080px">
+  <figure class="shot rv">
+    <img src="assets/shot-what-they-see.png" width="1920" height="653" loading="lazy"
+         alt="Side by side: the candidate's screen with the Interview Sarthi panel over a Google Meet call, and the same call as the interviewer receives it with no panel in the frame.">
+    <figcaption><b>The same moment, both sides.</b> Your screen on the left. What the interviewer's stream carries on the right.</figcaption>
+  </figure>
+</div>
 </div></section>
 
 <section id="how"><div class="wrap">
@@ -376,6 +391,12 @@
     <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h3>Grounded, never invented</h3><p>Personal claims come only from your resume. If it isn't there, you get an honest general answer instead of a made-up employer.</p></div>
     <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><h3>Private by design</h3><p>Runs on your PC with your own key. No servers of ours, no account, nothing stored. We never see your audio or resume.</p></div>
   </div>
+
+  <figure class="shot rv" style="margin-top:34px">
+    <img src="assets/shot-overlay-hinglish.png" width="1920" height="1080" loading="lazy"
+         alt="Interview Sarthi over a Google Meet call: the interviewer asks a question in Hinglish and the overlay drafts a Hinglish answer built from the candidate's own project.">
+    <figcaption><b>A real Hinglish round.</b> The interviewer switches language mid-interview; the answer switches with them.</figcaption>
+  </figure>
 </div></section>
 
 <section id="why"><div class="wrap">
