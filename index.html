@@ -232,6 +232,20 @@
   .shot figcaption{margin-top:10px;font-size:14px;color:var(--muted);text-align:center}
   .shot figcaption b{color:var(--text)}
 </style>
+<style>
+  .tg{max-width:1120px;margin:0 auto}
+  .tgbar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+  .tgb{appearance:none;cursor:pointer;font:inherit;font-size:14px;font-weight:600;color:var(--muted);
+       background:#fff;border:1px solid var(--line2);border-radius:999px;padding:9px 20px;transition:all .15s}
+  .tgb:hover{color:var(--text)}
+  .tgb.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .tgfig{margin:0}
+  .tgfig img{width:100%;height:auto;display:block;border:1px solid var(--line2);border-radius:12px;
+             box-shadow:0 14px 40px rgba(15,23,42,.14);background:#0d1016}
+  .tgfig figcaption{margin-top:14px;font-size:15px;color:var(--muted);text-align:center;min-height:44px}
+  .tgfig figcaption b{color:var(--text)}
+  @media(max-width:600px){.tgb{padding:8px 14px;font-size:13px}}
+</style>
 </head>
 <body>
 <nav><div class="wrap">
@@ -322,14 +336,27 @@
     </div>
   </div>
 
-<div class="wrap shots" style="max-width:1080px">
-  <figure class="shot rv">
-    <img src="assets/shot-what-they-see.png" width="1920" height="653" loading="lazy"
-         alt="Side by side: the candidate's screen with the Interview Sarthi panel over a Google Meet call, and the same call as the interviewer receives it with no panel in the frame.">
-    <figcaption><b>The same moment, both sides.</b> Your screen on the left. What the interviewer's stream carries on the right.</figcaption>
-  </figure>
-</div>
 </div></section>
+
+<section id="proof" class="alt" style="padding-top:0">
+<div class="wrap">
+  <div class="rv" style="text-align:center;max-width:760px;margin:0 auto 22px">
+    <h2 style="margin-bottom:8px">The same moment, from both sides.</h2>
+    <p class="sub" style="margin:0">One frame of a real session. Switch between what you see and what the interviewer's stream actually carries.</p>
+  </div>
+  <div class="tg rv">
+    <div class="tgbar" role="tablist" aria-label="Whose screen">
+      <button class="tgb on" id="tgYou" role="tab" aria-selected="true" aria-controls="tgImg">Your screen</button>
+      <button class="tgb" id="tgThem" role="tab" aria-selected="false" aria-controls="tgImg">What the interviewer sees</button>
+    </div>
+    <figure class="tgfig">
+      <img id="tgImg" src="assets/shot-you-see.png" width="1920" height="1080"
+           alt="A Google Meet interview with the Interview Sarthi panel over it, drafting a Hinglish answer from the candidate's own project.">
+      <figcaption id="tgCap"><b>Your screen.</b> The interviewer asked in Hinglish; the answer came back in Hinglish, built from your resume.</figcaption>
+    </figure>
+  </div>
+</div>
+</section>
 
 <section id="how"><div class="wrap">
   <div class="rv"><p class="eyebrow">How it works</p><h2>Two minutes of setup. Then just join the call.</h2><p class="sub">No account with us, no card, no credit system. Your own free Google key powers the AI.</p></div>
@@ -528,6 +555,32 @@
     }
   }
   run();
+})();
+</script>
+
+<script>
+(function(){
+  var img=document.getElementById("tgImg"),cap=document.getElementById("tgCap"),
+      a=document.getElementById("tgYou"),b=document.getElementById("tgThem");
+  if(!img||!a||!b)return;
+  var views={
+    you:{src:"assets/shot-you-see.png",
+         alt:"A Google Meet interview with the Interview Sarthi panel over it, drafting a Hinglish answer.",
+         cap:"<b>Your screen.</b> The interviewer asked in Hinglish; the answer came back in Hinglish, built from your resume."},
+    them:{src:"assets/shot-they-see.png",
+          alt:"The same Google Meet call as the interviewer receives it, with no overlay anywhere in the frame.",
+          cap:"<b>What the interviewer sees.</b> Same call, same second — the panel is simply not in the stream."}
+  };
+  // preload so the swap is instant rather than a flash of empty frame
+  var pre=new Image(); pre.src=views.them.src;
+  function show(k,btn,other){
+    var v=views[k];
+    img.src=v.src; img.alt=v.alt; cap.innerHTML=v.cap;
+    btn.classList.add("on"); other.classList.remove("on");
+    btn.setAttribute("aria-selected","true"); other.setAttribute("aria-selected","false");
+  }
+  a.addEventListener("click",function(){show("you",a,b)});
+  b.addEventListener("click",function(){show("them",b,a)});
 })();
 </script>
 </body>
