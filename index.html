@@ -95,22 +95,10 @@
   .logos span{display:flex;align-items:center;gap:7px}
   .logos svg{width:18px;height:18px}
   /* demo window */
-  .demo{margin:44px auto 0;max-width:900px;display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:stretch}
-  @media(max-width:820px){.demo{grid-template-columns:1fr}}
-  .win{background:#0f1420;color:#eef2f9;border:1px solid #232c3d;border-radius:10px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.22);text-align:left}
-  .win .bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.09);font-size:12px;color:#8d97ad;background:rgba(255,255,255,.02)}
-  .win .bar .dot{width:9px;height:9px;border-radius:50%;background:#2a3245}
-  .win .bar .dot.r{background:#f87171}.win .bar .dot.y{background:#fbbf24}.win .bar .dot.g{background:#34d399}
-  .win .bar .tag{margin-left:auto;display:flex;align-items:center;gap:6px}
-  .win .bar .tag i{width:7px;height:7px;border-radius:50%;background:#34d399}
-  .win .body{padding:16px;min-height:290px;font-size:14px}
-  .line{margin:0 0 12px;opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s}
-  .line.on{opacity:1;transform:none}
   .who{font-size:11px;font-weight:700;letter-spacing:.6px;color:var(--them);margin-bottom:3px}
   .card{background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.2);border-radius:10px;padding:11px 13px}
   .card .who{color:#34d399}
   .card b{color:#fff}
-  .caret::after{content:"▍";color:#34d399;animation:blink 1s steps(1) infinite;margin-left:1px}
   @keyframes blink{50%{opacity:0}}
   /* call mock */
   .call{background:#171b25;color:#eef2f9;border:1px solid #232c3d;border-radius:10px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.22);display:flex;flex-direction:column;text-align:left}
@@ -125,10 +113,6 @@
   .ovl .who{font-size:8px}
   .ovl .card{padding:6px 7px;border-radius:6px;font-size:9px}
   .call.shared .ovl{opacity:0;transform:scale(.96)}
-  .toggle{display:flex;border-top:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.02)}
-  .toggle button{flex:1;background:none;border:0;color:#8d97ad;padding:11px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent}
-  .toggle button.on{color:#fff;border-bottom-color:#60a5fa}
-  .toggle button:hover{color:#fff}
   .callnote{font-size:12px;color:#8d97ad;padding:10px 14px;border-top:1px solid rgba(255,255,255,.09);min-height:40px}
   .callnote b{color:#34d399}
   /* sections */
@@ -196,10 +180,55 @@
   .hgrid h1{font-size:clamp(31px,3.4vw,46px);letter-spacing:-1.1px;text-wrap:balance}
   .hgrid .lead{max-width:none;margin:0 0 26px}
   .hgrid .ctas{justify-content:flex-start}
-  .shot{margin:0}
-  .shot img{width:100%;height:auto;display:block;border:1px solid var(--line2);border-radius:14px;
-            box-shadow:0 26px 64px rgba(15,23,42,.22)}
-  .shot figcaption{margin-top:12px;font-size:14px;color:var(--muted);line-height:1.5}
+  /* the meeting, and the panel floating on top of it. Drawn here rather than
+     cropped out of a screenshot: the panel text stays crisp at any column
+     width, and the answer can type itself in. */
+  .hmock{background:#12151d;border:1px solid #232c3d;border-radius:14px;overflow:hidden;
+         box-shadow:0 26px 64px rgba(15,23,42,.28);text-align:left;color:#e8edf7}
+  .hmbar{display:flex;align-items:center;gap:8px;padding:9px 13px;font-size:11.5px;color:#8d97ad;
+         border-bottom:1px solid rgba(255,255,255,.07)}
+  .hmrec{margin-left:auto;display:flex;align-items:center;gap:5px;color:#fca5a5;font-weight:700;font-size:10.5px}
+  .hmrec i{width:7px;height:7px;border-radius:50%;background:#f87171;animation:blink 1.2s steps(1) infinite}
+  .hmstage{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:11px;min-height:392px}
+  .hmtile{border-radius:9px;position:relative;display:flex;align-items:center;justify-content:center}
+  .hmtile.them{background:#2b3550}
+  .hmtile.you{background:#2c4038}
+  .hmav{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+        font-weight:700;font-size:15px;letter-spacing:.5px;margin-bottom:34px}
+  .hmtile.them .hmav{background:#59688f;color:#eaf0ff}
+  .hmtile.you .hmav{background:#4d7d65;color:#eafff3}
+  .hmname{position:absolute;left:8px;bottom:8px;background:rgba(9,12,18,.72);border-radius:5px;
+          padding:2px 7px;font-size:10px;color:#c7d0e0}
+  .hmctrl{display:flex;gap:9px;justify-content:center;padding:9px 0 11px;border-top:1px solid rgba(255,255,255,.07)}
+  .hmctrl span{width:19px;height:19px;border-radius:50%;background:#2a3140}
+  .hmctrl .end{background:#e5484d;width:30px;border-radius:10px}
+  /* the panel */
+  .hmpanel{position:absolute;left:50%;top:20px;transform:translateX(-50%);width:88%;
+           background:rgba(13,17,30,.955);border:1px solid rgba(96,165,250,.28);border-radius:10px;
+           box-shadow:0 22px 54px rgba(0,0,0,.55);padding:9px 10px 10px;backdrop-filter:blur(3px)}
+  .hmpbar{display:flex;align-items:center;gap:7px;font-size:10.5px;color:#8d97ad;margin-bottom:9px}
+  .hmpbar i{width:6px;height:6px;border-radius:50%;background:#fbbf24;flex:none}
+  .hmpbar b{color:#e8edf7;font-size:11.5px}
+  .hmpbar em{margin-left:auto;font-style:normal;color:#6ee7b7;font-size:9.5px}
+  .hmpsec{font-size:9px;letter-spacing:1.3px;text-transform:uppercase;color:#6b7590;margin:0 0 5px}
+  .hmpconv{border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:8px 9px;margin-bottom:10px}
+  .hmpconv p{margin:0 0 7px;font-size:11.5px;line-height:1.5;color:#cfd8e8}
+  .hmpconv p:last-child{margin-bottom:0}
+  .hmpconv b{color:#7fb0ff;font-size:10.5px}
+  .hmpconv time{color:#6b7590;font-size:9px}
+  .hmpsay{border:1px solid rgba(52,211,153,.3);border-left:3px solid #34d399;border-radius:7px;
+          background:rgba(16,64,50,.42);padding:8px 10px}
+  .hmpq{color:#fca5a5;font-weight:700;font-size:11px;margin-bottom:5px}
+  .hmpa{margin:0;font-size:11.5px;line-height:1.62;color:#dbe4f2;min-height:74px}
+  .hmpa .cur{display:inline-block;width:6px;height:12px;background:#34d399;vertical-align:-2px;
+             margin-left:2px;animation:blink 1s steps(1) infinite}
+  .hmpfoot{display:flex;align-items:center;margin-top:7px;font-size:9.5px;color:#6ee7b7}
+  .hmpfoot .cp{margin-left:auto;color:#8d97ad;border:1px solid rgba(255,255,255,.12);
+               border-radius:5px;padding:1px 7px}
+  .hmpask{margin-top:9px;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:7px 9px;
+          font-size:10.5px;color:#5c6680}
+  .shotcap{margin:13px 2px 0;font-size:13.5px;color:var(--muted);line-height:1.5}
+  @media(max-width:620px){.hmstage{min-height:340px}.hmpanel{width:93%;top:12px}}
   @media(max-width:940px){
     .hgrid{grid-template-columns:1fr;gap:30px;text-align:center;width:auto;max-width:none;
            margin-left:0;transform:none}
@@ -291,11 +320,30 @@
   <div class="trust"><b>3 free sessions</b> · no card · no signup · runs on your own free Google Gemini key</div>
   </div>
   <div class="hvis rv">
-    <figure class="shot">
-      <img src="assets/shot-hero.png" width="790" height="745"
-           alt="The Interview Sarthi panel over a Google Meet interview, drafting a Hinglish answer from the candidate's own project.">
-      <figcaption>The interviewer asked in Hinglish. The answer came back in Hinglish, built from your resume — and none of it reaches the shared screen.</figcaption>
-    </figure>
+    <div class="hmock" aria-label="A video interview with the Interview Sarthi panel on top of it">
+      <div class="hmbar"><span>Google Meet — Product Analyst, Round 2</span><span class="hmrec"><i></i>REC</span></div>
+      <div class="hmstage">
+        <div class="hmtile them"><span class="hmav">RK</span><span class="hmname">Rohit · Interviewer</span></div>
+        <div class="hmtile you"><span class="hmav">AC</span><span class="hmname">You · sharing screen</span></div>
+        <div class="hmpanel">
+          <div class="hmpbar"><i></i><b>Interview Sarthi</b><span>listening · Google Meet</span><em>hidden from share</em></div>
+          <div class="hmpsec">Conversation</div>
+          <div class="hmpconv">
+            <p><b>Them</b> <time>09:21</time><br>Your resume mein e-commerce ka project dikh raha hai.</p>
+            <p><b>Them</b> <time>09:22</time><br>Accha, ye batao — is project mein sabse bada challenge kya tha?</p>
+          </div>
+          <div class="hmpsec">Say this</div>
+          <div class="hmpsay">
+            <div class="hmpq">Is project mein sabse bada challenge kya tha?</div>
+            <p class="hmpa" id="hmAns"></p>
+            <div class="hmpfoot"><span class="conf">high confidence</span><span class="cp">copy</span></div>
+          </div>
+          <div class="hmpask">Ask the AI about this meeting…</div>
+        </div>
+      </div>
+      <div class="hmctrl"><span></span><span></span><span></span><span></span><span class="end"></span></div>
+    </div>
+    <p class="shotcap">Your screen while they talk — the panel sits on top of the call and never enters the share. <a href="#proof">See the real capture →</a></p>
   </div>
   </div>
   
@@ -524,51 +572,6 @@
   // scroll reveal
   var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}});},{threshold:.12});
   document.querySelectorAll(".rv").forEach(function(el){io.observe(el);});
-  // your screen / their screen toggle
-  var call=document.getElementById("call"),note=document.getElementById("callnote");
-  document.querySelectorAll("#call .toggle button").forEach(function(b){b.addEventListener("click",function(){
-    document.querySelectorAll("#call .toggle button").forEach(function(x){x.classList.remove("on")});b.classList.add("on");
-    if(b.dataset.v==="them"){call.classList.add("shared");note.innerHTML="<b>Gone.</b> The capture Teams/Zoom/Meet sends has no overlay in it.";}
-    else{call.classList.remove("shared");note.textContent="The overlay sits on top of the call — only on your monitor.";}
-  });});
-  // live demo: interviewer asks, answer streams
-  var feed=document.getElementById("feed");
-  if(!feed)return;   // the typing demo is not on every page
-  var script=[
-    {q:"Tell me about a time you handled a production incident.",
-     a:"At my last role our payment service started timing out at peak. I pulled the on-call, traced it to a <b>connection-pool leak</b> from a recent deploy, rolled it back within <b>20 minutes</b>, and then added a pool-size alert so it couldn't recur silently."},
-    {q:"Aapne Redis kyun use kiya us project mein?",
-     a:"Honestly, latency ki wajah se. Session lookups har request pe ho rahe the, Postgres pe <b>~40 ms</b> lag raha tha. Redis pe <b>1 ms</b> ke andar — aur TTL se expiry free mein mil gayi."},
-    {q:"What's the difference between a process and a thread?",
-     a:"A process has its own memory space; threads share the memory of the process they live in. So threads are cheaper to create and can talk through shared data, but one bad thread can <b>corrupt the whole process</b>."}
-  ];
-  var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function el(h){var d=document.createElement("div");d.innerHTML=h;return d.firstElementChild;}
-  function wait(ms){return new Promise(function(r){setTimeout(r,ms)});}
-  function typeInto(node,html,speed){
-    return new Promise(function(res){
-      if(reduce){node.innerHTML=html;return res();}
-      var tmp=document.createElement("div");tmp.innerHTML=html;var text=tmp.textContent,i=0;node.classList.add("caret");
-      (function step(){i+=1;node.textContent=text.slice(0,i);if(i<text.length){setTimeout(step,speed);}else{node.innerHTML=html;node.classList.remove("caret");res();}})();
-    });
-  }
-  async function run(){
-    while(true){
-      feed.innerHTML="";
-      for(var k=0;k<script.length;k++){
-        var s=script[k];
-        var q=el('<div class="line"><div class="who">INTERVIEWER</div><div class="qt"></div></div>');feed.appendChild(q);await wait(50);q.classList.add("on");
-        await typeInto(q.querySelector(".qt"),s.q,28);
-        await wait(500);
-        var a=el('<div class="line card"><div class="who">SAY THIS</div><div class="at"></div></div>');feed.appendChild(a);await wait(50);a.classList.add("on");
-        await typeInto(a.querySelector(".at"),s.a,14);
-        await wait(2600);
-        if(feed.children.length>4){feed.removeChild(feed.firstElementChild);feed.removeChild(feed.firstElementChild);}
-      }
-      await wait(1200);
-    }
-  }
-  run();
 })();
 </script>
 
@@ -595,6 +598,30 @@
   }
   a.addEventListener("click",function(){show("you",a,b)});
   b.addEventListener("click",function(){show("them",b,a)});
+})();
+</script>
+<script>
+(function(){
+  var out=document.getElementById("hmAns");
+  if(!out)return;
+  var text="Sabse bada challenge scale ka tha. Launch ke time hum roughly 500 orders a day handle kar rahe the, "+
+           "aur festive season mein wo 8,000 tak chala gaya. Purana sync flow wahan tut raha tha, toh maine order "+
+           "processing ko queue-based kar diya \u2014 Redis pe, retries ke saath. Uske baad peak day bhi bina downtime nikal gaya.";
+  var words=text.split(" ");
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){out.textContent=text;return;}
+  var i=0,timer;
+  function step(){
+    i++;
+    out.innerHTML=words.slice(0,i).join(" ")+(i<words.length?'<span class="cur"></span>':"");
+    if(i<words.length){timer=setTimeout(step,52);}
+    else{timer=setTimeout(function(){i=0;out.textContent="";timer=setTimeout(step,700);},4200);}
+  }
+  // only run while it is on screen, so a background tab is not animating
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){if(!timer){i=0;step();}}
+    else{clearTimeout(timer);timer=null;}
+  })},{threshold:.15});
+  io.observe(out);
 })();
 </script>
 </body>
