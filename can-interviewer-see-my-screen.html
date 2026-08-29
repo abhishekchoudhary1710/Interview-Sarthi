@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>if(location.protocol==="http:"&&/interviewsarthi\.com$/.test(location.hostname)){location.replace("https://"+location.host+location.pathname+location.search+location.hash);}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can the interviewer see my screen? What Teams, Zoom and Meet really share</title>
+<meta name="description" content="What the interviewer actually sees when you share your screen on Teams, Zoom or Google Meet — window vs full screen, notifications, second monitors, and how capture-excluded overlays work. Plain answers, no myths.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://interviewsarthi.com/can-interviewer-see-my-screen.html">
+<meta property="og:title" content="Can the interviewer see my screen? What screen share really shows">
+<meta property="og:description" content="Window vs full screen, notifications, second monitors, capture-excluded overlays — what's actually visible in Teams, Zoom and Meet.">
+<meta property="og:url" content="https://interviewsarthi.com/can-interviewer-see-my-screen.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Interview Sarthi">
+<meta property="og:image" content="https://interviewsarthi.com/assets/og.png">
+<link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Can the interviewer see my other windows when I share one window?","acceptedAnswer":{"@type":"Answer","text":"No. When you share a single window on Teams, Zoom or Meet, only that window's contents are transmitted. Other windows, your taskbar and your desktop are not visible — even when another window covers the shared one on your own monitor, the interviewer keeps seeing just the shared window."}},
+{"@type":"Question","name":"Can the interviewer see my second monitor?","acceptedAnswer":{"@type":"Answer","text":"Only if you share that monitor. Screen share transmits the specific screen or window you selected. But be careful in proctored settings: some proctoring software detects the presence of multiple monitors, and an interviewer can notice your eyes and face angled towards a second screen on camera."}},
+{"@type":"Question","name":"Do my notifications show in a screen share?","acceptedAnswer":{"@type":"Answer","text":"If you share your entire screen, yes — WhatsApp Web pop-ups, email toasts and any overlay appear for everyone. If you share a single window, notifications outside that window are not transmitted. Turning on Focus Assist / Do Not Disturb before an interview is the safe habit either way."}},
+{"@type":"Question","name":"How can an app be invisible in screen share?","acceptedAnswer":{"@type":"Answer","text":"Windows has a display-affinity API that lets a window exclude itself from screen capture. The compositor draws the window on your physical monitor but leaves it out of the capture stream that Teams, Zoom, Meet or OBS receives. That is how capture-excluded overlays like Interview Sarthi work. It does not defeat a phone camera pointed at the screen, and some proctoring tools can detect that a capture-excluded window exists."}}]}
+</script>
+<style>
+  :root { --bg:#ffffff; --bg2:#f6f8fb; --line:#e6eaf1; --text:#0f172a; --muted:#5b6b81; --accent:#2563eb; --ok:#059669; --warn:#b45309; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif; line-height:1.65; }
+  a { color:var(--accent); }
+  .wrap { max-width:820px; margin:0 auto; padding:0 20px 60px; }
+  header { padding:20px 0; display:flex; justify-content:space-between; align-items:center; }
+  .logo { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; text-decoration:none; color:var(--text); }
+  .logo img { width:24px; height:24px; border-radius:6px; }
+  .logo span { color:var(--accent); }
+  nav a { color:var(--muted); text-decoration:none; margin-left:14px; font-size:14px; }
+  h1 { font-size:30px; line-height:1.25; margin:26px 0 10px; letter-spacing:-.5px; }
+  .lead { color:var(--muted); margin:0 0 26px; font-size:16px; }
+  h2 { font-size:21px; margin:34px 0 10px; letter-spacing:-.3px; }
+  p, li { color:#334155; font-size:15.5px; }
+  .box { background:var(--bg2); border:1px solid var(--line); border-radius:12px; padding:16px 20px; margin:20px 0; }
+  .warn { background:#fffbeb; border:1px solid #f2ddb0; border-radius:12px; padding:16px 20px; margin:20px 0; }
+  .warn p { color:#7c5a1d; margin:0; }
+  .tblwrap { overflow-x:auto; margin:20px 0; border:1px solid var(--line); border-radius:12px; }
+  table { border-collapse:collapse; width:100%; min-width:560px; font-size:14.5px; }
+  th, td { text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); }
+  thead th { background:var(--bg2); font-size:13px; color:var(--muted); }
+  tbody tr:last-child td { border-bottom:none; }
+  .cta { display:inline-flex; align-items:center; gap:8px; background:var(--accent); color:#fff; text-decoration:none; padding:12px 22px; border-radius:10px; font-weight:600; font-size:15px; }
+  .ctarow { margin:26px 0; }
+  footer { margin-top:40px; padding-top:22px; border-top:1px solid var(--line); text-align:center; color:var(--muted); font-size:13px; }
+  footer a { color:var(--muted); text-decoration:none; margin:0 7px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="logo" href="./"><img src="assets/mark.svg" alt="">Interview <span>Sarthi</span></a>
+    <nav><a href="./#pricing">Pricing</a><a href="guides/">Guides</a><a href="help.html">Help</a></nav>
+  </header>
+
+  <h1>Can the interviewer see my screen? What Teams, Zoom and Meet actually transmit</h1>
+  <p class="lead">Half the anxiety of an online interview is not knowing what the other side can see. The rules are mechanical and knowable — here they are, plainly, including the myths.</p>
+
+  <h2>The one rule that answers most questions</h2>
+  <div class="box"><p style="margin:0"><b>The interviewer sees exactly what you selected in the share dialog — nothing else.</b> Share a window → they see that window only. Share a screen → they see that entire screen, including everything that appears on it. They never see your camera roll, your other monitor, your taskbar behind a shared window, or anything you didn't select. Screen share is a transmission, not access to your computer.</p></div>
+
+  <h2>Window share vs full-screen share</h2>
+  <div class="tblwrap"><table>
+    <thead><tr><th>What happens</th><th>Sharing one window</th><th>Sharing the entire screen</th></tr></thead>
+    <tbody>
+      <tr><td>Your other windows</td><td>Not visible, even if they overlap it on your monitor</td><td>Visible the moment they're on that screen</td></tr>
+      <tr><td>Notifications (WhatsApp, email toasts)</td><td>Not transmitted</td><td>Transmitted, in full, to everyone</td></tr>
+      <tr><td>Taskbar and desktop</td><td>Not visible</td><td>Visible</td></tr>
+      <tr><td>You switch to another app</td><td>Share keeps showing the old window (or goes blank)</td><td>Everyone watches you switch</td></tr>
+    </tbody>
+  </table></div>
+  <p>Practical rule: <b>when an interviewer asks you to share "your screen" for a coding task, share the browser or editor window, not the display</b> — it's normal, nobody objects, and it removes the whole category of notification accidents. And turn on Do Not Disturb (Windows: Win+N → Focus) regardless.</p>
+
+  <h2>The second-monitor question</h2>
+  <p>A second monitor is invisible to screen share unless you explicitly share it. What <i>can</i> give it away: your eyes. On camera, repeatedly looking off-axis at another screen is the classic tell interviewers actually notice — far more than anything technical. In separately <b>proctored assessments</b> (HackerRank-style tests with a proctoring agent), the software may also flag multiple displays at the OS level. An interview call and a proctored test are different situations; know which one you're in.</p>
+
+  <h2>Can the platform see apps I'm not sharing? Can it see my browser tabs?</h2>
+  <p>No. Teams, Zoom and Meet transmit pixels of what you share plus your camera and mic. They do not report your running apps, open tabs, clipboard or files to the interviewer. (A company-managed laptop with monitoring software is a different machine-level matter — another reason to interview from your personal computer.)</p>
+
+  <h2>How can an app be on your screen but not in the share?</h2>
+  <p>Windows has a compositor feature (a display-affinity flag) that lets a window <b>exclude itself from screen capture</b>: your physical monitor renders it, but the capture stream handed to Teams, Zoom, Meet or OBS doesn't contain it. It's the same mechanism DRM-protected video players use — share Netflix and the frame goes black for viewers. Capture-excluded overlays, including our own <a href="./">Interview Sarthi</a>, sit in that gap: you see the transcript and suggested answer; the transmitted share shows the area behind the window.</p>
+  <div class="warn"><p><b>What it does not do:</b> a capture-excluded window is still physically on your monitor — a phone camera pointed at the screen sees it, a person behind you sees it, and some proctoring tools can detect that a capture-excluded window exists even without seeing its contents. Anyone who markets "undetectable in every situation" is overselling — we say the same thing on our own <a href="terms.html">terms page</a>. Whether using an overlay is appropriate for a given interview is a separate question — <a href="guides/ai-in-interviews-rules.html">our honest take on the rules</a>.</p></div>
+
+  <h2>Quick pre-interview checklist</h2>
+  <p>① Do Not Disturb on. ② Close WhatsApp Web and email tabs. ③ Share a window, not the screen, when given the choice. ④ Clean desktop if a full-screen share is likely. ⑤ One rehearsal share with a friend on the same platform — you'll see exactly what they'd see, and the anxiety drops to zero.</p>
+
+  <div class="ctarow"><a class="cta" href="./">See how Interview Sarthi stays out of the share →</a></div>
+
+  <footer>
+    © 2026 Interview Sarthi · <a href="./">Home</a> · <a href="online-interview-tips.html">Stop blanking out</a> · <a href="guides/ai-in-interviews-rules.html">Is AI in interviews OK?</a> · <a href="guides/">All guides</a> · <a href="help.html">Help</a>
+  </footer>
+</div>
+</body>
+</html>
