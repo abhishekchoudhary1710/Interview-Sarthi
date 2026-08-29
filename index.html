@@ -63,7 +63,7 @@
   nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
   .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:var(--text);text-decoration:none;letter-spacing:-.2px}
   .logo img{width:28px;height:28px;border-radius:7px}
-  .logo span{color:var(--accent)}
+  .logo .wm{color:var(--text)}.logo .wm i{color:var(--accent);font-style:normal}
   .links a{color:var(--muted);text-decoration:none;margin-left:22px;font-size:14px;font-weight:500}
   .links a:hover{color:var(--text)}
   .links .cta{margin-left:22px}
@@ -249,8 +249,8 @@
 </head>
 <body>
 <nav><div class="wrap">
-  <a class="logo" href="./"><img src="assets/mark.svg" alt="Interview Sarthi logo">Interview <span>Sarthi</span></a>
-  <div class="links"><a href="#hidden">Stays hidden</a><a href="#how">How it works</a><a href="#install">Installing</a><a href="#features">Features</a><a href="#why">Why us</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a><a href="guides/">Guides</a><a href="help.html">Help</a><a class="cta sm" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download free</a></div>
+  <a class="logo" href="./"><img src="assets/mark.svg" alt="Interview Sarthi logo"><span class="wm">Interview <i>Sarthi</i></span></a>
+  <div class="links"><a href="#hidden">Stays hidden</a><a href="#features">Features</a><a href="#how">How it works</a><a href="#why">Why us</a><a href="#pricing">Pricing</a><a href="#install">Installing</a><a href="#faq">FAQ</a><a href="guides/">Guides</a><a href="help.html">Help</a><a class="cta sm" href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download free</a></div>
 </div></nav>
 
 <header class="hero">
@@ -311,7 +311,7 @@
   </div>
 </div></header>
 
-<section id="hidden" class="alt"><div class="wrap split">
+<section class="alt" id="hidden"><div class="wrap split">
   <div class="rv">
     <p class="eyebrow">Stays hidden</p>
     <h2>Share your screen. They see your screen — not the overlay.</h2>
@@ -338,7 +338,7 @@
 
 </div></section>
 
-<section id="proof" class="alt" style="padding-top:0">
+<section class="alt" id="proof" style="padding-top:0">
 <div class="wrap">
   <div class="rv" style="text-align:center;max-width:760px;margin:0 auto 22px">
     <h2 style="margin-bottom:8px">The same moment, from both sides.</h2>
@@ -358,57 +358,7 @@
 </div>
 </section>
 
-<section id="how"><div class="wrap">
-  <div class="rv"><p class="eyebrow">How it works</p><h2>Two minutes of setup. Then just join the call.</h2><p class="sub">No account with us, no card, no credit system. Your own free Google key powers the AI.</p></div>
-  <div class="grid steps">
-    <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div><h3>Add your free key</h3><p>One button opens Google AI Studio. Create a key, paste it, press Test, see the green tick. No credit card anywhere.</p></div>
-    <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></div><h3>Upload your resume</h3><p>PDF, Word or a scan. It fills in your name and field, and every answer about “your experience” uses your real projects.</p></div>
-    <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg></div><h3>Join the call</h3><p>The overlay hears the interviewer, shows what was asked, and drafts what to say — in seconds, in the language they used.</p></div>
-  </div>
-</div></section>
-
-<style>
-  .ssx{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:34px}
-  @media(max-width:760px){.ssx{grid-template-columns:1fr}}
-  .ssc{position:relative;padding-top:6px}
-  .ssn{position:absolute;top:-6px;left:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
-  .ssd{margin-left:38px;background:#2f2a24;color:#f4f1ec;border-radius:8px;padding:18px 20px 16px;box-shadow:0 6px 20px rgba(15,23,42,.16);font-size:13.5px;line-height:1.5}
-  .ssd h4{margin:0 0 10px;font-size:17px;font-weight:600;color:#fff}
-  .ssd p{margin:0 0 10px;color:#ded8cf;font-size:13.5px}
-  .ssd .ssmeta{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;color:#cfc7bb}
-  .ssd a.sslink{color:#9ec5ff;text-decoration:underline;font-size:13.5px}
-  .ssb{display:flex;gap:9px;justify-content:flex-end;margin-top:14px}
-  .ssb span{border:1px solid #6f665a;padding:6px 14px;font-size:12.5px;border-radius:3px;color:#e8e3db;background:#3a342c}
-  .ssb span.on{background:#e8e3db;color:#22201c;border-color:#e8e3db;font-weight:600}
-  .sscap{margin:12px 0 0 38px;font-size:14px;color:var(--muted)}
-  .sscap b{color:var(--text)}
-</style>
-<section id="install"><div class="wrap">
-  <div class="rv"><p class="eyebrow">Installing</p><h2>Windows will warn you. Here is exactly what to click.</h2><p class="sub">Interview Sarthi is not code-signed yet &mdash; a certificate costs more per year than most of our passes. Windows shows this warning for any app it has not seen before, so we would rather you meet it here than cold.</p></div>
-  <div class="ssx">
-    <div class="ssc rv">
-      <div class="ssn">1</div>
-      <div class="ssd">
-        <h4>Windows protected your PC</h4>
-        <p>Microsoft Defender SmartScreen prevented an unrecognized app from starting. Running this app might put your PC at risk.</p>
-        <a class="sslink">More info</a>
-        <div class="ssb"><span>Don't run</span></div>
-      </div>
-      <p class="sscap"><b>Click &ldquo;More info&rdquo;.</b> This screen offers only <i>Don't run</i> &mdash; the button you actually need is hidden behind that link. This is where most people give up.</p>
-    </div>
-    <div class="ssc rv">
-      <div class="ssn">2</div>
-      <div class="ssd">
-        <h4>Windows protected your PC</h4>
-        <p class="ssmeta">App: Interview-Sarthi-Setup.exe<br>Publisher: Unknown publisher</p>
-        <div class="ssb"><span class="on">Run anyway</span><span>Don't run</span></div>
-      </div>
-      <p class="sscap"><b>Click &ldquo;Run anyway&rdquo;.</b> The installer opens. Choose <i>Install for me only</i> &mdash; no administrator password needed &mdash; and it is done in about a minute.</p>
-    </div>
-  </div>
-  <p class="fine" style="margin-top:30px"><b>&ldquo;Unknown publisher&rdquo; means nothing was detected.</b> It means we have not bought a code-signing certificate, which is a paperwork-and-money problem rather than a safety one. If you would rather check first, upload the installer to <a href="https://www.virustotal.com/" target="_blank" rel="noopener">VirusTotal</a> and scan it with 70+ engines before you run it. The install is per-user and never asks for admin rights.</p>
-</div></section>
-<section id="features" class="alt"><div class="wrap">
+<section id="features"><div class="wrap">
   <div class="rv"><p class="eyebrow">What you get</p><h2>Built for real interviews, not demos.</h2><p class="sub">Tuned on hour-long Hinglish technical rounds. Made in India for Indian interviews — and it works anywhere.</p></div>
   <div class="grid">
     <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><h3>Live transcript</h3><p>Who said what, as it happens. A three-part question never gets lost.</p></div>
@@ -424,6 +374,15 @@
          alt="Interview Sarthi over a Google Meet call: the interviewer asks a question in Hinglish and the overlay drafts a Hinglish answer built from the candidate's own project.">
     <figcaption><b>A real Hinglish round.</b> The interviewer switches language mid-interview; the answer switches with them.</figcaption>
   </figure>
+</div></section>
+
+<section class="alt" id="how"><div class="wrap">
+  <div class="rv"><p class="eyebrow">How it works</p><h2>Two minutes of setup. Then just join the call.</h2><p class="sub">No account with us, no card, no credit system. Your own free Google key powers the AI.</p></div>
+  <div class="grid steps">
+    <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></div><h3>Add your free key</h3><p>One button opens Google AI Studio. Create a key, paste it, press Test, see the green tick. No credit card anywhere.</p></div>
+    <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></div><h3>Upload your resume</h3><p>PDF, Word or a scan. It fills in your name and field, and every answer about “your experience” uses your real projects.</p></div>
+    <div class="f rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg></div><h3>Join the call</h3><p>The overlay hears the interviewer, shows what was asked, and drafts what to say — in seconds, in the language they used.</p></div>
+  </div>
 </div></section>
 
 <section id="why"><div class="wrap">
@@ -457,7 +416,7 @@
   </div>
 </div></section>
 
-<section id="pricing" class="alt"><div class="wrap">
+<section class="alt" id="pricing"><div class="wrap">
   <div class="rv"><p class="eyebrow">Pricing</p><h2>Pay for the length of your job hunt. Nothing renews.</h2><p class="sub">One payment, a fixed number of days. When the pass ends, the app tells you — it never charges you again.</p></div>
   <div class="plans">
     <div class="plan rv"><h3>Free trial</h3><div class="amt">₹0</div><div class="per">3 sessions · 15 minutes each</div>
@@ -474,6 +433,32 @@
       <a class="cta" href="https://checkout.dodopayments.com/buy/pdt_0NmHNZ2I6qiJg6CrzInBg?quantity=1&redirect_url=https://interviewsarthi.com%2Fthanks.html">Buy 3-Month Pass</a></div>
   </div>
   <p class="pay">Secure checkout by Dodo Payments · UPI · Cards · 7-day refund if it doesn't work on your PC · <a href="refunds.html">policy</a></p>
+</div></section>
+
+<section id="install"><div class="wrap">
+  <div class="rv"><p class="eyebrow">Installing</p><h2>Windows will warn you. Here is exactly what to click.</h2><p class="sub">Interview Sarthi is not code-signed yet &mdash; a certificate costs more per year than most of our passes. Windows shows this warning for any app it has not seen before, so we would rather you meet it here than cold.</p></div>
+  <div class="ssx">
+    <div class="ssc rv">
+      <div class="ssn">1</div>
+      <div class="ssd">
+        <h4>Windows protected your PC</h4>
+        <p>Microsoft Defender SmartScreen prevented an unrecognized app from starting. Running this app might put your PC at risk.</p>
+        <a class="sslink">More info</a>
+        <div class="ssb"><span>Don't run</span></div>
+      </div>
+      <p class="sscap"><b>Click &ldquo;More info&rdquo;.</b> This screen offers only <i>Don't run</i> &mdash; the button you actually need is hidden behind that link. This is where most people give up.</p>
+    </div>
+    <div class="ssc rv">
+      <div class="ssn">2</div>
+      <div class="ssd">
+        <h4>Windows protected your PC</h4>
+        <p class="ssmeta">App: Interview-Sarthi-Setup.exe<br>Publisher: Unknown publisher</p>
+        <div class="ssb"><span class="on">Run anyway</span><span>Don't run</span></div>
+      </div>
+      <p class="sscap"><b>Click &ldquo;Run anyway&rdquo;.</b> The installer opens. Choose <i>Install for me only</i> &mdash; no administrator password needed &mdash; and it is done in about a minute.</p>
+    </div>
+  </div>
+  <p class="fine" style="margin-top:30px"><b>&ldquo;Unknown publisher&rdquo; means nothing was detected.</b> It means we have not bought a code-signing certificate, which is a paperwork-and-money problem rather than a safety one. If you would rather check first, upload the installer to <a href="https://www.virustotal.com/" target="_blank" rel="noopener">VirusTotal</a> and scan it with 70+ engines before you run it. The install is per-user and never asks for admin rights.</p>
 </div></section>
 
 <section id="faq" class="faq"><div class="wrap">
@@ -497,7 +482,7 @@
 </div></div></section>
 
 <footer><div class="wrap">
-  <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px;font-weight:700;font-size:15px;color:var(--text)"><img src="assets/mark.svg" alt="" style="width:24px;height:24px;border-radius:6px">Interview <span style="color:var(--accent)">Sarthi</span></div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:12px;font-weight:700;font-size:15px;color:var(--text)"><img src="assets/mark.svg" alt="" style="width:24px;height:24px;border-radius:6px"><span>Interview <span style="color:var(--accent)">Sarthi</span></span></div>
   © 2026 Interview Sarthi · <a href="guides/">Guides</a> · <a href="help.html">Help</a> · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a> · <a href="refunds.html">Refunds</a> · <a href="mailto:support@interviewsarthi.com">Support</a>
   <div style="margin-top:8px">Guides: <a href="guides/">All guides</a> · <a href="best-ai-interview-assistant-india.html">Best AI interview assistant</a> · <a href="vs-cluely.html">Vs Cluely</a> · <a href="ai-interview-assistant-india.html">AI interview assistant in India</a> · <a href="hinglish-interview-help.html">Hinglish interview help</a> · <a href="online-interview-tips.html">Stop blanking out</a></div>
   <div style="margin-top:8px">Use responsibly and within your interviewer's and employer's rules.</div>

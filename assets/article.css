@@ -6,7 +6,8 @@ a{color:var(--accent)}
 header.top{padding:20px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);margin-bottom:8px;flex-wrap:wrap;gap:10px}
 .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;text-decoration:none;color:var(--text)}
 .logo img{width:26px;height:26px;border-radius:7px}
-.logo span{color:var(--accent)}
+.logo .wm{color:var(--text)}
+.logo .wm i{color:var(--accent);font-style:normal}
 header.top nav a{color:var(--muted);text-decoration:none;margin-left:16px;font-size:14px}
 header.top nav a:hover{color:var(--text)}
 .crumb{font-size:13px;color:var(--muted);margin:22px 0 0}
