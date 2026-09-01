@@ -17,7 +17,7 @@
   "use strict";
 
   var GA4_ID = "G-CCFHWPJD9K";
-  var CLARITY_ID = "XXXXXXXXXX";
+  var CLARITY_ID = "yb9mq7tzkq";
 
   var gaOn = GA4_ID.indexOf("XXXX") === -1;
   var clarityOn = CLARITY_ID.indexOf("XXXX") === -1;
