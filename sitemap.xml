@@ -139,6 +139,18 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://interviewsarthi.com/vs-lockedin-ai.html</loc>
+    <lastmod>2026-09-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://interviewsarthi.com/about.html</loc>
+    <lastmod>2026-09-02</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://interviewsarthi.com/best-ai-interview-assistant-india.html</loc>
     <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
