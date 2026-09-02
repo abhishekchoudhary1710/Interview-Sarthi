@@ -68,6 +68,11 @@
     var href = a.getAttribute("href") || "";
 
     if (href.indexOf("releases/latest/download") !== -1) {
+      /* platform.js gates this anchor on non-Windows devices: the tap opens a
+       * "send me the link" sheet instead of downloading, so it is not a
+       * download. The sheet's own "Download anyway" link is ungated and still
+       * lands here. */
+      if (a.hasAttribute("data-gated")) return;
       track("download_click", {
         /* where on the page the click came from, so you can tell whether the
          * hero, the pricing table or the closing CTA is doing the work */
