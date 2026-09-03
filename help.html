@@ -5,11 +5,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96.png"><link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png"><link rel="apple-touch-icon" href="assets/icon-512.png">
-<title>Interview Sarthi — Help</title>
+<title>Interview Sarthi: Help</title>
 <meta name="description" content="Setup and troubleshooting for Interview Sarthi: installation, Gemini API key, audio devices, screen-share invisibility, and license activation.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://interviewsarthi.com/help.html">
-<meta property="og:title" content="Interview Sarthi — Help">
+<meta property="og:title" content="Interview Sarthi: Help">
 <meta property="og:description" content="Setup and troubleshooting: installation, Gemini API key, audio devices, screen-share invisibility, license activation.">
 <meta property="og:url" content="https://interviewsarthi.com/help.html">
 <meta property="og:type" content="website">
@@ -53,13 +53,13 @@
     <p>The key was copied incompletely or from the wrong place.</p>
     <ol>
       <li>Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (step-by-step: <a href="free-gemini-api-key-guide.html">free Gemini key guide</a>), click <b>Create API key</b>, then <b>Copy</b>.</li>
-      <li>Paste the whole key (a long string — older keys start with <code>AIza</code>, newer ones with <code>AQ.</code>) and press <b>Test</b>.</li>
+      <li>Paste the whole key (a long string: older keys start with <code>AIza</code>, newer ones with <code>AQ.</code>) and press <b>Test</b>.</li>
       <li>If Google says the key is “not allowed to use Gemini”, create a new key in a <em>new project</em> from the same page.</li>
     </ol></details>
   <details><summary>My resume PDF says “no readable text”</summary>
-    <p>It is a scan or a photo. With a Gemini key entered, the app reads it for you automatically — press Save again. Otherwise export the resume from Word as PDF, or upload the <code>.docx</code> directly.</p></details>
+    <p>It is a scan or a photo. With a Gemini key entered, the app reads it for you automatically. Press Save again. Otherwise export the resume from Word as PDF, or upload the <code>.docx</code> directly.</p></details>
   <details><summary>How do I change my name, resume, key or audio devices later?</summary>
-    <p>Click <b>setup</b> in the overlay's header (next to <b>pause</b>). The same setup screen opens with everything pre-filled — change what you need, press <b>Save</b>, and choose <b>Restart now</b> so the new settings apply. Your license and trial are untouched.</p></details>
+    <p>Click <b>setup</b> in the overlay's header (next to <b>pause</b>). The same setup screen opens with everything pre-filled. Change what you need, press <b>Save</b>, and choose <b>Restart now</b> so the new settings apply. Your license and trial are untouched.</p></details>
   <details><summary>Windows SmartScreen blocks the installer</summary>
     <p>Click <b>More info → Run anyway</b>. The installer is unsigned (signing certificates cost more than the app earns for now). It installs only into your own user folder, needs no admin rights, and adds a Start-menu and Desktop shortcut. Prefer no installer? The portable <code>Interview-Sarthi.exe</code> on the <a href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest" target="_blank" rel="noopener">releases page</a> runs from anywhere.</p></details>
 
@@ -71,21 +71,21 @@
       <li>Right-click the speaker icon in the taskbar → <b>Sound settings</b> → make sure an <b>Output</b> device and an <b>Input</b> device are listed and not disabled.</li>
       <li>Close and start Interview Sarthi again. It listens to whatever Windows plays through, so a working output device is required.</li>
     </ol></details>
-  <details><summary>The transcript stays empty — the interviewer is never heard</summary>
+  <details><summary>The transcript stays empty. The interviewer is never heard</summary>
     <p>The app listens to the device Windows plays sound through. Check, in order:</p>
     <ol>
       <li>Sound is actually playing through the computer (not a Bluetooth headset paired to your phone).</li>
-      <li>Click <b>setup</b> in the overlay's header and set <b>Interviewer / desktop sound</b> to the exact device you hear the call on — the one showing a moving green bar in Windows Sound settings.</li>
-      <li>Exclusive-mode audio apps (some games, DAWs) block capture — close them.</li>
+      <li>Click <b>setup</b> in the overlay's header and set <b>Interviewer / desktop sound</b> to the exact device you hear the call on, the one showing a moving green bar in Windows Sound settings.</li>
+      <li>Exclusive-mode audio apps (some games, DAWs) block capture. Close them.</li>
     </ol></details>
   <details><summary>It answers my own voice, or answers twice</summary>
-    <p>Your microphone is picking up the speakers. Use headphones or earphones — any kind. In the wizard, <b>Your microphone</b> should be your mic, not “Stereo Mix”.</p></details>
-  <details><summary>Answers are generic — nothing from my resume</summary>
-    <p>Click <b>setup</b> in the overlay's header and check the resume line says “Resume ready: N lines”. If it says it could not be summarised, press Save again with internet on. Also check <b>Your field</b> is filled — it tunes the answers.</p></details>
+    <p>Your microphone is picking up the speakers. Use headphones or earphones, any kind. In the wizard, <b>Your microphone</b> should be your mic, not “Stereo Mix”.</p></details>
+  <details><summary>Answers are generic, nothing from my resume</summary>
+    <p>Click <b>setup</b> in the overlay's header and check the resume line says “Resume ready: N lines”. If it says it could not be summarised, press Save again with internet on. Also check <b>Your field</b> is filled. It tunes the answers.</p></details>
   <details><summary>The overlay is visible in my shared screen</summary>
     <p>On Windows 10 (2004+) and 11 the window is excluded from capture by Teams, Zoom, Meet and OBS. It is <em>not</em> hidden from a phone camera, from Windows 10 older than 2004, or from some proctoring software. Share a single window rather than the whole screen when you can.</p></details>
   <details><summary>“Gemini Live reconnecting” appears mid-call</summary>
-    <p>Normal: Google limits a live session to about 10 minutes, and the app reconnects and carries the conversation over. You lose at most a few seconds. If it repeats every few seconds, your internet is dropping — switch to a wired connection or mobile hotspot.</p></details>
+    <p>Normal: Google limits a live session to about 10 minutes, and the app reconnects and carries the conversation over. You lose at most a few seconds. If it repeats every few seconds, your internet is dropping. Switch to a wired connection or mobile hotspot.</p></details>
 
   <h2>Your pass</h2>
   <details><summary>“Your pass has ended”</summary>
