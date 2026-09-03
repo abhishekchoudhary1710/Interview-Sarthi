@@ -179,9 +179,72 @@
       color: #fff
     }
 
-    @media(max-width:720px) {
-      .links a:not(.cta) {
+    .navtoggle {
+      display: none;
+      background: #fff;
+      border: 1px solid var(--line2);
+      border-radius: 8px;
+      width: 40px;
+      height: 40px;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+      padding: 0;
+      margin-left: 12px
+    }
+
+    .navtoggle svg {
+      width: 22px;
+      height: 22px
+    }
+
+    .navtoggle .ic-close {
+      display: none
+    }
+
+    @media(max-width:1024px) {
+      .navtoggle {
+        display: inline-flex
+      }
+
+      .links {
+        display: none;
+        position: absolute;
+        top: 62px;
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, .97);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--line);
+        padding: 8px 22px 14px;
+        flex-direction: column;
+        align-items: flex-start;
+        box-shadow: 0 14px 30px rgba(15, 23, 42, .08)
+      }
+
+      nav.open .links {
+        display: flex
+      }
+
+      nav.open .navtoggle .ic-menu {
         display: none
+      }
+
+      nav.open .navtoggle .ic-close {
+        display: block
+      }
+
+      .links a {
+        margin: 0;
+        padding: 11px 0;
+        width: 100%;
+        font-size: 15px;
+        border-bottom: 1px solid var(--line)
+      }
+
+      .links a:last-child {
+        border-bottom: 0
       }
     }
 
@@ -1758,12 +1821,6 @@
       color: var(--muted);
       margin-top: 12px
     }
-     @media(max-width:1024px) {
-       .links{
-        display: none;
-       }
-     }
-
     @media(max-width:720px) {
       .pbrow {
         grid-template-columns: 1fr
@@ -1781,14 +1838,32 @@
     <div class="wrap">
       <a class="logo" href="./"><img src="assets/logo.svg" alt="Interview Sarthi logo"><span class="wm">Interview
           <i>Sarthi</i></span></a>
-      <div class="links"><a href="#pricing">Pricing</a><a href="#hidden">Stays hidden</a><a href="#why">Why us</a><a
+      <div class="links" id="navlinks"><a href="#pricing">Pricing</a><a href="#hidden">Stays hidden</a><a href="#why">Why us</a><a
           href="#features">Features</a><a href="#how">How it works</a><a href="#install">Installing</a><a
           href="#faq">FAQ</a><a href="guides/">Guides</a><a href="help.html">Help</a></div>
-    </div>
-    <a class="cta sm"
+          <a class="cta sm"
           href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download
           free</a>
+      <button class="navtoggle" aria-label="Menu" aria-expanded="false" aria-controls="navlinks">
+        <svg class="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
   </nav>
+  <script>
+    (function () {
+      var nav = document.querySelector('nav'), btn = nav.querySelector('.navtoggle');
+      btn.addEventListener('click', function () {
+        btn.setAttribute('aria-expanded', nav.classList.toggle('open'));
+      });
+      nav.querySelectorAll('.links a').forEach(function (a) {
+        a.addEventListener('click', function () {
+          nav.classList.remove('open');
+          btn.setAttribute('aria-expanded', 'false');
+        });
+      });
+    })();
+  </script>
 
   <header class="hero">
     <div class="bubbles" aria-hidden="true">
