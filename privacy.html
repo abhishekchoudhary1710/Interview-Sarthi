@@ -46,7 +46,7 @@
   <div class="box"><p style="margin:0"><b>Short version:</b> the software runs on your computer. Your audio, resume and transcripts go from your PC directly to the AI provider under <i>your</i> key. We run no servers and never receive them.</p></div>
   <h2>What the software processes, and where</h2>
   <ul>
-    <li><b>Meeting audio</b>: captured on your PC and streamed to Google Gemini (or OpenAI, if you add a key) for transcription and answers. It is not sent to us.</li>
+    <li><b>Meeting audio</b>: captured on your PC and streamed to Google Gemini under your own API key for transcription and answers. It is not sent to us.</li>
     <li><b>Your resume</b>: converted to text on your PC and stored in <code>%APPDATA%\Interview Sarthi</code>. A compressed summary is sent to the AI provider with each answer request. A scanned PDF is sent once to Gemini to be read.</li>
     <li><b>Transcripts and summaries</b>: saved only on your PC. Delete the folder above to remove them.</li>
     <li><b>API keys</b>: stored on your PC in <code>config.env</code>. Never transmitted to us.</li>
@@ -63,7 +63,7 @@
   <p>No ads, no selling or sharing of data, no tracking of any kind inside the software. The desktop app sends nothing to us, not a single event.</p>
   <h2>Your rights</h2>
   <p>Email us to see or delete what we hold about you (your order details). For payment records, contact Dodo Payments. Data on your own PC is under your control at all times.</p>
-  <h2>AI providers</h2>
+  <h2>The AI provider</h2>
   <p>Google's handling of API data is described in the <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini API terms</a>; on the free tier Google may use API content to improve its services. Use a paid key if that matters for your interviews.</p>
 
   <p class="lead" style="margin-top:40px">Questions: <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></p>
