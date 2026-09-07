@@ -57,6 +57,7 @@
   /* The three passes, keyed by the Dodo product id in the checkout link, so a
    * price change on the site does not silently desync the reported revenue. */
   var PASSES = {
+    pdt_0Nn41S0EP7d5UNAJZNPAL: { name: "Day Pass", value: 99 },
     pdt_0NmLzNTWbybTsXtpmtmaH: { name: "7-Day Pass", value: 399 },
     pdt_0NmHQqaKlKiZ57ISIRzdn: { name: "1-Month Pass", value: 999 },
     pdt_0NmHNZ2I6qiJg6CrzInBg: { name: "3-Month Pass", value: 1999 }
