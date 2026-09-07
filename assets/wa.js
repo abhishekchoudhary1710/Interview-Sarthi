@@ -1,4 +1,4 @@
-/* Interview Sarthi — floating "ask on WhatsApp" button.
+/* Interview Sarthi: floating "ask on WhatsApp" button.
  *
  * One script on every page rather than markup in nineteen files: the button,
  * its styles and its analytics event all live here, so changing the number or
@@ -38,10 +38,10 @@
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    /* Page name from the <title>, before the em dash: "Pricing", "Installing",
-       "Interview Sarthi vs Cluely". Falls back to the path on any page whose
-       title is shaped differently. */
-    var name = (document.title.split("—")[0] || "").trim() || location.pathname;
+    /* Page name from the <title>, before the first separator: "Pricing",
+       "Installing", "Interview Sarthi vs Cluely". Titles use ":" or "|"; a
+       title with neither is used whole. */
+    var name = (document.title.split(/[:|]/)[0] || "").trim() || location.pathname;
 
     var link = document.createElement("a");
     link.className = "wa-fab";

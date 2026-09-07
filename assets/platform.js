@@ -1,7 +1,7 @@
-/* Interview Sarthi — platform gate for the download buttons.
+/* Interview Sarthi: platform gate for the download buttons.
  *
  * The app is a Windows .exe, but (GA4, Aug 2026) four of five download clicks
- * happen on phones — mostly Instagram traffic — where the installer downloads
+ * happen on phones, mostly Instagram traffic, where the installer downloads
  * and then does nothing. This script relabels every download CTA on
  * non-Windows devices and, on tap, offers to send the link to the visitor's
  * PC instead of serving them a dead file.
@@ -14,7 +14,7 @@
  *     and "Download anyway" all keep working; we only change the label and
  *     intercept the tap.
  *   - Gated anchors get data-gated="1", which tells analytics.js NOT to count
- *     the tap as download_click — nothing was downloaded. The sheet's own
+ *     the tap as download_click: nothing was downloaded. The sheet's own
  *     "Download anyway" link is ungated, so a real override still counts.
  *
  * Events reported (gtag if present, plus a Clarity tag):
@@ -23,7 +23,7 @@
  *   download_anyway     they overrode the gate
  *
  * The shared URL carries utm_source=self_share, so the desktop sessions it
- * brings back are visible in GA4 as their own source — that number, not
+ * brings back are visible in GA4 as their own source. That number, not
  * download_click, is how to judge whether this gate earns its keep.
  */
 (function () {
@@ -45,8 +45,8 @@
     ? (new URLSearchParams(location.search).get("license_key") || "").split(",")[0].trim()
     : "";
   var shareText = key
-    ? "Interview Sarthi license key: " + key + " — install on your Windows PC: " + SITE
-    : "Interview Sarthi — real-time interview help on your Windows PC. Install from here: " + SITE;
+    ? "Interview Sarthi license key: " + key + ". Install on your Windows PC: " + SITE
+    : "Interview Sarthi: real-time interview help on your Windows PC. Install from here: " + SITE;
 
   var CSS = [
     ".pf-note{margin-top:10px;font-size:13px;color:#b45309;text-align:center}",
@@ -99,7 +99,7 @@
     sheet.innerHTML =
       "<h3>Interview Sarthi runs on Windows PCs</h3>" +
       "<p>" + (onThanks
-        ? "Your pass is active — now get the installer onto your Windows PC."
+        ? "Your pass is active. Now get the installer onto your Windows PC."
         : "This device can't run the installer. Send yourself the link and open it on your PC.") +
       "</p>" +
       (canShare ? "<button class='pf-btn' data-act='share'>Send myself the link</button>" : "") +
@@ -116,7 +116,7 @@
       if (act === "share") {
         navigator.share({ title: "Interview Sarthi", text: shareText, url: SITE })
           .then(function () { report("mobile_link_sent", { method: "share" }); closeSheet(); })
-          .catch(function () { /* cancelled the share sheet — not an event */ });
+          .catch(function () { /* cancelled the share sheet, not an event */ });
       } else if (act === "copy") {
         copy(shareText, ev.target);
       } else if (act === "anyway") {
@@ -171,14 +171,24 @@
   }
 
   function build() {
-    var anchors = document.querySelectorAll("a[href*='releases/latest/download']");
+    /* Both install paths are dead ends on a phone: the .exe will not run, and
+     * the Store listing cannot install a Windows desktop app either. Gate both. */
+    var anchors = document.querySelectorAll(
+      "a[href*='releases/latest/download'], a[href*='apps.microsoft.com']");
     if (!anchors.length) return;
 
     var style = document.createElement("style");
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    buildSheet(anchors[0].getAttribute("href"));
+    /* The sheet's override link should be the real installer, not the Store
+     * page, so hunt for an .exe href and fall back to the first anchor. */
+    var exeHref = anchors[0].getAttribute("href");
+    for (var j = 0; j < anchors.length; j++) {
+      var h = anchors[j].getAttribute("href") || "";
+      if (h.indexOf("releases/latest/download") !== -1) { exeHref = h; break; }
+    }
+    buildSheet(exeHref);
 
     var noted = false;
     for (var i = 0; i < anchors.length; i++) {
@@ -186,7 +196,7 @@
         a.setAttribute("data-gated", "1");
         /* Keep any icon; swap only the wording. Nav is tight on space. */
         var label = a.closest("nav") ? "Get the link"
-          : (onThanks ? "Send the link to my PC" : "Windows only — send me the link");
+          : (onThanks ? "Send the link to my PC" : "Windows only: send me the link");
         var svg = a.querySelector("svg");
         a.textContent = "";
         if (svg) a.appendChild(svg);
@@ -203,7 +213,7 @@
           var host = a.closest(".ctas, .ctarow, .dl") || a;
           var note = document.createElement("div");
           note.className = "pf-note";
-          note.textContent = "Runs on Windows 10/11 PCs — the installer won't run on a phone.";
+          note.textContent = "Runs on Windows 10/11 PCs. The installer won't run on a phone.";
           host.parentNode.insertBefore(note, host.nextSibling);
         }
       })(anchors[i]);

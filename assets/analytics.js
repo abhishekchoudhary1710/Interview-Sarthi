@@ -1,4 +1,4 @@
-/* Interview Sarthi — website analytics.
+/* Interview Sarthi: website analytics.
  *
  * Paste your two IDs below and the site starts reporting. A value left as its
  * placeholder simply keeps that tool switched off, so this file is safe to ship
@@ -9,7 +9,7 @@
  *   CLARITY_ID  clarity.microsoft.com ->  new project  ->  Settings  ->  Setup
  *               ->  the id inside the install snippet. Looks like abcd1234ef.
  *
- * What this reports: page views, plus the three steps of the funnel —
+ * What this reports: page views, plus the three steps of the funnel:
  * download_click, begin_checkout, purchase. Nothing about the app itself is
  * touched; the desktop app still sends nothing anywhere.
  */
@@ -67,7 +67,10 @@
     if (!a) return;
     var href = a.getAttribute("href") || "";
 
-    if (href.indexOf("releases/latest/download") !== -1) {
+    /* Both install paths count as a download: the Microsoft Store listing and
+     * the direct .exe on GitHub Releases. */
+    if (href.indexOf("releases/latest/download") !== -1 ||
+        href.indexOf("apps.microsoft.com") !== -1) {
       /* platform.js gates this anchor on non-Windows devices: the tap opens a
        * "send me the link" sheet instead of downloading, so it is not a
        * download. The sheet's own "Download anyway" link is ungated and still
@@ -76,7 +79,9 @@
       track("download_click", {
         /* where on the page the click came from, so you can tell whether the
          * hero, the pricing table or the closing CTA is doing the work */
-        placement: a.closest("nav") ? "nav" : (a.closest("section") ? "section" : "page")
+        placement: a.closest("nav") ? "nav" : (a.closest("section") ? "section" : "page"),
+        /* which install path: the Store listing or the direct installer */
+        method: href.indexOf("apps.microsoft.com") !== -1 ? "store" : "exe"
       });
       return;
     }
@@ -92,7 +97,7 @@
     }
   }, true);
 
-  /* Dodo sends the buyer back to thanks.html?license_key=... — that redirect is
+  /* Dodo sends the buyer back to thanks.html?license_key=... That redirect is
    * the only purchase signal a static site gets. The key itself is a secret and
    * is never sent on; localStorage just stops a page refresh double-counting. */
   if (new URLSearchParams(location.search).get("license_key")) {
