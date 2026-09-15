@@ -27,17 +27,32 @@
   function gtag() { window.dataLayer.push(arguments); }
   window.gtag = gtag;
 
+  /* Remove receipt/query secrets from the browser URL before either analytics
+   * SDK can read it. Keep the key in memory for the existing receipt handler. */
+  var incomingParams = new URLSearchParams(location.search);
+  var licenceKey = incomingParams.get("license_key");
+  var privateReturn = incomingParams.has("license_key");
+  if (privateReturn) {
+    try { history.replaceState(null, "", location.pathname + location.hash); }
+    catch (e) { gaOn = false; clarityOn = false; }
+  }
+
   if (gaOn) {
     var s = document.createElement("script");
     s.async = true;
     s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA4_ID;
     document.head.appendChild(s);
     gtag("js", new Date());
-    gtag("config", GA4_ID, { anonymize_ip: true });
+    gtag("config", GA4_ID, {
+      anonymize_ip: true,
+      page_location: location.origin + location.pathname,
+      page_referrer: safeReferrer(document.referrer)
+    });
   }
 
   /* ---- Microsoft Clarity ---- */
-  if (clarityOn) {
+  /* Receipt content can include a license key; never record that page. */
+  if (clarityOn && !privateReturn && location.pathname !== "/thanks.html") {
     (function (c, l, a, r, i, t, y) {
       c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
       t = l.createElement(r); t.async = 1;
@@ -54,10 +69,43 @@
     if (clarityOn && window.clarity) window.clarity("set", name, "yes");
   }
 
-  /* The three passes, keyed by the Dodo product id in the checkout link, so a
+  function safeReferrer(value) {
+    try { var url = new URL(value); return url.origin + url.pathname; }
+    catch (e) { return ""; }
+  }
+
+  function aiSource(value) {
+    var aliases = {
+      "chatgpt": "chatgpt", "chatgpt.com": "chatgpt", "chat.openai.com": "chatgpt",
+      "claude": "claude", "claude.ai": "claude",
+      "perplexity": "perplexity", "perplexity.ai": "perplexity",
+      "gemini": "gemini", "gemini.google.com": "gemini",
+      "copilot": "copilot", "copilot.microsoft.com": "copilot"
+    };
+    return aliases[String(value || "").toLowerCase().replace(/^www\./, "")] || "";
+  }
+  var referralSource = aiSource(incomingParams.get("utm_source"));
+  if (!referralSource) {
+    try { referralSource = aiSource(new URL(document.referrer).hostname); } catch (e) { }
+  }
+  /* One event per source per browser tab session. Attribution is a signal,
+   * not proof of an AI recommendation. No raw referrer/query values are sent. */
+  if (referralSource && !privateReturn && location.pathname !== "/thanks.html") {
+    var referralOnce = "ai_referral_" + referralSource;
+    var shouldReport = true;
+    try {
+      shouldReport = !sessionStorage.getItem(referralOnce);
+      if (shouldReport && gaOn) sessionStorage.setItem(referralOnce, "1");
+    } catch (e) { /* Storage denied: still permit this page's event. */ }
+    if (shouldReport && gaOn) gtag("event", "ai_referral_visit", {
+      ai_source: referralSource, landing_page: location.pathname
+    });
+  }
+
+  /* The four passes, keyed by the Dodo product id in the checkout link, so a
    * price change on the site does not silently desync the reported revenue. */
   var PASSES = {
-    pdt_0Nn41S0EP7d5UNAJZNPAL: { name: "Day Pass", value: 99 },
+    pdt_0Nn41S0EP7d5UNAJZNPAL: { name: "2-Day Pass", value: 99 },
     pdt_0NmLzNTWbybTsXtpmtmaH: { name: "7-Day Pass", value: 399 },
     pdt_0NmHQqaKlKiZ57ISIRzdn: { name: "1-Month Pass", value: 999 },
     pdt_0NmHNZ2I6qiJg6CrzInBg: { name: "3-Month Pass", value: 1999 }
@@ -108,7 +156,6 @@
   /* Dodo sends the buyer back to thanks.html?license_key=... That redirect is
    * the only purchase signal a static site gets. The key itself is a secret and
    * is never sent on; localStorage just stops a page refresh double-counting. */
-  var licenceKey = new URLSearchParams(location.search).get("license_key");
   if (licenceKey) {
     /* A short non-reversible hash of the key. It gives GA4 a transaction_id to
      * deduplicate on and lets a second purchase report, without the key itself
