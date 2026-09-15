@@ -21,14 +21,35 @@
 <meta name="twitter:description" content="Who builds Interview Sarthi, why it exists, and how to reach a real person.">
 <meta name="twitter:image" content="https://interviewsarthi.com/assets/og.jpg">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"AboutPage",
- "name":"About Interview Sarthi",
- "url":"https://interviewsarthi.com/about.html",
- "mainEntity":{"@type":"Organization","@id":"https://interviewsarthi.com/#org",
-   "name":"Interview Sarthi","url":"https://interviewsarthi.com/",
-   "logo":"https://interviewsarthi.com/assets/icon-512.png",
-   "email":"support@interviewsarthi.com",
-   "founder":{"@type":"Person","name":"Abhishek Choudhary","url":"https://github.com/abhishekchoudhary1710"}}}
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About Interview Sarthi",
+  "url": "https://interviewsarthi.com/about.html",
+  "mainEntity": {
+    "@type": "Organization",
+    "@id": "https://interviewsarthi.com/#organization",
+    "name": "Interview Sarthi",
+    "url": "https://interviewsarthi.com/",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://interviewsarthi.com/assets/icon-512.png"
+    },
+    "email": "support@interviewsarthi.com",
+    "founder": {
+      "@type": "Person",
+      "name": "Abhishek Choudhary",
+      "url": "https://interviewsarthi.com/about.html#founder",
+      "@id": "https://interviewsarthi.com/about.html#founder",
+      "sameAs": [
+        "https://github.com/abhishekchoudhary1710"
+      ]
+    },
+    "sameAs": [
+      "https://github.com/abhishekchoudhary1710/Interview-Sarthi"
+    ]
+  }
+}
 </script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96.png"><link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png"><link rel="apple-touch-icon" href="assets/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,6 +77,26 @@
 </style>
 <script defer src="assets/analytics.js"></script>
 <script defer src="assets/wa.js"></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://interviewsarthi.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "About Interview Sarthi",
+      "item": "https://interviewsarthi.com/about.html"
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -64,34 +105,43 @@
     <nav><a href="./#pricing">Pricing</a><a href="guides/">Guides</a><a href="help.html">Help</a></nav>
   </header>
 
-  <h1>About Interview Sarthi</h1>
+  <p class="crumb" aria-label="Breadcrumb"><a href="/">Home</a> › About Interview Sarthi</p>
+<h1>About Interview Sarthi</h1>
   <p class="lead">One developer, one app, priced for India. This page says plainly who is behind the product, why it exists, and how to reach a real person before and after you pay.</p>
 
-  <h2>Who builds this</h2>
+  <h2 id="founder">Who builds this</h2>
   <p>Interview Sarthi is built and supported by <b>Abhishek Choudhary</b>, an independent software developer in India, not a company with a sales team. The same person who writes the code answers the support mail. The app's releases are published openly on <a href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases" rel="noopener">GitHub</a>, so every installer you download is a file with a public version history, not a mystery download.</p>
 
-  <h2>Why it exists</h2>
-  <p>Every well-known AI interview copilot is American: priced in dollars, billed monthly on auto-renew, built for English. For a job seeker in India that means ₹2,600–26,000 <i>per month</i>, on an international card, for a tool that has never heard a Hinglish interview. That pricing makes sense for Silicon Valley salaries. It does not make sense here.</p>
+  <p>Interview Sarthi is a Windows AI interview assistant for Indian job seekers, with resume-grounded assistance and English, Hindi and Hinglish support.</p>
+<h2>Why it exists</h2>
+  <p>Interview preparation often involves explaining your own projects clearly while switching between English and Hindi. Interview Sarthi focuses on that workflow for Windows users, with fixed-duration passes priced in rupees.</p>
+
   <p>"Sarthi" (सारथी) means charioteer: the one who guides from beside you, like Krishna in the Mahabharata. The app was built around three decisions that follow from the name:</p>
   <ul>
-    <li><b>Priced for a job hunt, not a subscription.</b> A hunt lasts weeks, so passes last a day to 90 days (₹99–1,999), are paid once by UPI or card, and simply end. Nothing ever auto-renews.</li>
+    <li><b>Priced for a job hunt, not a subscription.</b> A hunt lasts weeks, so passes last 2 to 90 days (₹99–1,999), are paid once by UPI or card, and simply end. Nothing ever auto-renews.</li>
     <li><b>Hinglish is a first-class language.</b> Indian interviews switch between English and Hindi mid-sentence. The app follows the interviewer either way.</li>
     <li><b>Private by architecture.</b> The app runs on your PC with your own free Google Gemini key. Your audio and resume go from your machine to Google directly. There are no Interview Sarthi servers in between, no account, and nothing for us to store or leak. We could not read your interviews even if we wanted to.</li>
   </ul>
 
   <h2>How the business works</h2>
-  <p>Revenue is pass sales. That's all. There are no ads, no data selling, no "free" tier that harvests your resume. The free trial (3 full sessions, no card) exists so nobody has to pay to find out whether the app works on their PC and their accent. If a paid pass doesn't work on your machine, there is a <a href="refunds.html">7-day refund policy</a>.</p>
+  <p>Revenue is pass sales. That's all. There are no ads, no data selling, no "free" tier that harvests your resume. The free trial (30 minutes, no card) exists so nobody has to pay to find out whether the app works on their PC and their accent. If a paid pass doesn't work on your machine, there is a <a href="refunds.html">7-day refund policy</a>.</p>
 
   <div class="box"><p style="margin:0"><b>Where we're honest about limits:</b> the overlay is hidden from screen share via a Windows API, but a phone camera pointed at your monitor still sees it, and some proctoring tools can detect capture-excluded windows. The site and the guides say so plainly, see <a href="can-interviewer-see-my-screen.html">"Can the interviewer see my screen?"</a> and <a href="guides/ai-in-interviews-rules.html">where the rules on AI in interviews actually sit</a>. A tool you rely on in an interview should not oversell itself to you first.</p></div>
 
-  <h2>Contact</h2>
+  <h2>Product facts and editorial approach</h2>
+<p>See our <a href="facts.html">product facts</a> for the current trial, plans, platforms and official links. We publish the comparisons and also build Interview Sarthi. Our recommendations are editorial judgments, not independent rankings. We identify official sources, review dates and gaps in verification; we do not claim that listed features have been independently benchmarked.</p>
+<p>Send corrections and supporting source links to <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a>.</p>
+
+<h2>Contact</h2>
   <p>Questions before buying, problems after, refunds, or press: <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a>. Mail is read and answered by the developer, usually within a day. Bug reports are also welcome on the <a href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/issues" rel="noopener">GitHub issue tracker</a>.</p>
 
   <div class="ctarow"><a class="cta" href="./#pricing">See what it costs →</a></div>
 
   <footer>
+<p><a href="facts.html">Product facts</a> · <a href="guides/ai-in-interviews-rules.html">AI interview rules</a></p>
     © 2026 Interview Sarthi · <a href="./">Home</a> · <a href="help.html">Help</a> · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a> · <a href="refunds.html">Refunds</a> · <a href="guides/">All guides</a>
   </footer>
 </div>
+<p style="max-width:780px;margin:20px auto;padding:0 20px">Use AI assistance only where your employer, interviewer or assessment provider permits it. For preparation, practise in a mock call and review suggestions against your own experience.</p>
 </body>
 </html>

@@ -5,11 +5,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Can the interviewer see my screen in Zoom, Teams or Google Meet?</title>
-<meta name="description" content="What the interviewer really sees in Teams, Zoom and Meet: window vs full-screen share, notifications, second monitors and capture-excluded overlays.">
+<meta name="description" content="Understand screen and window sharing, privacy limits, recording and interview permissions. Official Teams, Google Meet and Windows documentation.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://interviewsarthi.com/can-interviewer-see-my-screen.html">
 <meta property="og:title" content="Can the interviewer see my screen? What screen share really shows">
-<meta property="og:description" content="Window vs full screen, notifications, second monitors, capture-excluded overlays: what's actually visible in Teams, Zoom and Meet.">
+<meta property="og:description" content="Understand screen and window sharing, privacy limits, recording and interview permissions. Official Teams, Google Meet and Windows documentation.">
 <meta property="og:url" content="https://interviewsarthi.com/can-interviewer-see-my-screen.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Interview Sarthi">
@@ -18,23 +18,30 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Can the interviewer see my screen? What screen share really shows">
-<meta name="twitter:description" content="Window vs full screen, notifications, second monitors, capture-excluded overlays: what's actually visible in Teams, Zoom and Meet.">
+<meta name="twitter:description" content="Understand screen and window sharing, privacy limits, recording and interview permissions. Official Teams, Google Meet and Windows documentation.">
 <meta name="twitter:image" content="https://interviewsarthi.com/assets/og.jpg">
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
-{"@type":"ListItem","position":1,"name":"Home","item":"https://interviewsarthi.com/"},
-{"@type":"ListItem","position":2,"name":"Can the interviewer see my screen?","item":"https://interviewsarthi.com/can-interviewer-see-my-screen.html"}]}
-</script>
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://interviewsarthi.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Can the interviewer see my screen?",
+      "item": "https://interviewsarthi.com/can-interviewer-see-my-screen.html"
+    }
+  ]
+}</script>
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="assets/mark.svg"><link rel="icon" type="image/png" sizes="96x96" href="assets/favicon-96.png"><link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png"><link rel="apple-touch-icon" href="assets/icon-512.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
-{"@type":"Question","name":"Can the interviewer see my other windows when I share one window?","acceptedAnswer":{"@type":"Answer","text":"No. When you share a single window on Teams, Zoom or Meet, only that window's contents are transmitted. Other windows, your taskbar and your desktop are not visible. Even when another window covers the shared one on your own monitor, the interviewer keeps seeing just the shared window."}},
-{"@type":"Question","name":"Can the interviewer see my second monitor?","acceptedAnswer":{"@type":"Answer","text":"Only if you share that monitor. Screen share transmits the specific screen or window you selected. But be careful in proctored settings: some proctoring software detects the presence of multiple monitors, and an interviewer can notice your eyes and face angled towards a second screen on camera."}},
-{"@type":"Question","name":"Do my notifications show in a screen share?","acceptedAnswer":{"@type":"Answer","text":"If you share your entire screen, yes. WhatsApp Web pop-ups, email toasts and any overlay appear for everyone. If you share a single window, notifications outside that window are not transmitted. Turning on Focus Assist / Do Not Disturb before an interview is the safe habit either way."}},
-{"@type":"Question","name":"How can an app be invisible in screen share?","acceptedAnswer":{"@type":"Answer","text":"Windows has a display-affinity API that lets a window exclude itself from screen capture. The compositor draws the window on your physical monitor but leaves it out of the capture stream that Teams, Zoom, Meet or OBS receives. That is how capture-excluded overlays like Interview Sarthi work. It does not defeat a phone camera pointed at the screen, and some proctoring tools can detect that a capture-excluded window exists."}}]}
-</script>
+
 <style>
   :root { --bg:#ffffff; --bg2:#f6f8fb; --line:#e6eaf1; --text:#0f172a; --muted:#5b6b81; --accent:#2563eb; --ok:#059669; --warn:#b45309; }
   * { box-sizing:border-box; }
@@ -73,92 +80,29 @@
     <nav><a href="./#pricing">Pricing</a><a href="guides/">Guides</a><a href="help.html">Help</a></nav>
   </header>
 
-  <h1>Can the interviewer see my screen? What Teams, Zoom and Meet actually transmit</h1>
-  <p class="lead">Half the anxiety of an online interview is not knowing what the other side can see. The rules are mechanical and knowable. Here they are, plainly, including the myths.</p>
-
-  <h2>The one rule that answers most questions</h2>
-  <div class="box"><p style="margin:0"><b>The interviewer sees exactly what you selected in the share dialog, nothing else.</b> Share a window → they see that window only. Share a screen → they see that entire screen, including everything that appears on it. They never see your camera roll, your other monitor, your taskbar behind a shared window, or anything you didn't select. Screen share is a transmission, not access to your computer.</p></div>
-
-  <h2>Window share vs full-screen share</h2>
-  <div class="tblwrap"><table>
-    <thead><tr><th>What happens</th><th>Sharing one window</th><th>Sharing the entire screen</th></tr></thead>
-    <tbody>
-      <tr><td>Your other windows</td><td>Not visible, even if they overlap it on your monitor</td><td>Visible the moment they're on that screen</td></tr>
-      <tr><td>Notifications (WhatsApp, email toasts)</td><td>Not transmitted</td><td>Transmitted, in full, to everyone</td></tr>
-      <tr><td>Taskbar and desktop</td><td>Not visible</td><td>Visible</td></tr>
-      <tr><td>You switch to another app</td><td>Share keeps showing the old window (or goes blank)</td><td>Everyone watches you switch</td></tr>
-    </tbody>
-  </table></div>
-  <p>Practical rule: <b>when an interviewer asks you to share "your screen" for a coding task, share the browser or editor window, not the display</b>. It's normal, nobody objects, and it removes the whole category of notification accidents. And turn on Do Not Disturb (Windows: Win+N → Focus) regardless.</p>
-
-  <h2>The second-monitor question</h2>
-  <p>A second monitor is invisible to screen share unless you explicitly share it. What <i>can</i> give it away: your eyes. On camera, repeatedly looking off-axis at another screen is the classic tell interviewers actually notice, far more than anything technical. In separately <b>proctored assessments</b> (HackerRank-style tests with a proctoring agent), the software may also flag multiple displays at the OS level. An interview call and a proctored test are different situations; know which one you're in.</p>
-
-  <h2>Can the platform see apps I'm not sharing? Can it see my browser tabs?</h2>
-  <p>No. Teams, Zoom and Meet transmit pixels of what you share plus your camera and mic. They do not report your running apps, open tabs, clipboard or files to the interviewer. (A company-managed laptop with monitoring software is a different machine-level matter, another reason to interview from your personal computer.)</p>
-
-  <h2>How can an app be on your screen but not in the share?</h2>
-  <p>Windows has a compositor feature (a display-affinity flag) that lets a window <b>exclude itself from screen capture</b>: your physical monitor renders it, but the capture stream handed to Teams, Zoom, Meet or OBS doesn't contain it. It's the same mechanism DRM-protected video players use: share Netflix and the frame goes black for viewers. Capture-excluded overlays, including our own <a href="./">Interview Sarthi</a>, sit in that gap: you see the transcript and suggested answer; the transmitted share shows the area behind the window.</p>
-  <div class="warn"><p><b>What it does not do:</b> a capture-excluded window is still physically on your monitor. A phone camera pointed at the screen sees it, a person behind you sees it, and some proctoring tools can detect that a capture-excluded window exists even without seeing its contents. Anyone who markets "undetectable in every situation" is overselling. We say the same thing on our own <a href="terms.html">terms page</a>. Whether using an overlay is appropriate for a given interview is a separate question, <a href="guides/ai-in-interviews-rules.html">our honest take on the rules</a>.</p></div>
-
-  <h2>Teams, Zoom and Meet: the differences that matter</h2>
-  <p>The three platforms follow the same rule, but the share dialog is not identical and the differences trip people up.</p>
-  <div class="tblwrap"><table>
-    <thead><tr><th></th><th>Microsoft Teams</th><th>Zoom</th><th>Google Meet</th></tr></thead>
-    <tbody>
-      <tr><td>What you can share</td><td>Whole screen, one window, or a PowerPoint file</td><td>Whole screen, one window, one app, a whiteboard</td><td>Whole screen, one window, or <b>one Chrome tab</b></td></tr>
-      <tr><td>Sharing computer sound</td><td>A tick box you must switch on</td><td>A tick box you must switch on</td><td>Automatic when you share a Chrome tab, otherwise a tick box</td></tr>
-      <tr><td>Does it warn you that you are sharing?</td><td>A border and a floating toolbar</td><td>A green border and a floating toolbar</td><td>A banner and a border</td></tr>
-      <tr><td>If you stop sharing</td><td>Everyone sees it stop at once</td><td>Everyone sees it stop at once</td><td>Everyone sees it stop at once</td></tr>
-    </tbody>
-  </table></div>
-  <p>The <b>Chrome tab share</b> in Google Meet is the safest option in any interview and the least known. It transmits one tab and only that tab. Switch to a different tab and the interviewer keeps seeing the original one; your other tabs, your bookmarks bar and your notifications never enter the stream. When a Meet interviewer asks you to share for a coding round, choose the tab, not the screen.</p>
-
-  <h2>Do they see my mouse, and do they know when I switch tabs?</h2>
-  <p>Your cursor is part of the picture in a screen or window share, so yes, they watch it move. That is worth knowing mainly because a cursor drifting repeatedly to one corner is noticeable in a way that people underestimate.</p>
-  <p>Tab switching depends on what you shared. Share a <b>Chrome tab</b> and switching tabs changes nothing for the viewer. Share a <b>window</b> and switching to a different application usually freezes the last frame or shows blank, which the interviewer can see happening. Share the <b>whole screen</b> and they watch every switch in real time.</p>
-  <p>No platform sends the interviewer a separate alert saying "the candidate has switched away". What gives it away is the picture itself, plus your eyes and your pauses on camera.</p>
-
-  <h2>Can the interviewer take control of my computer?</h2>
-  <p>Only if you let them, and you should not. Zoom and Teams both have a request-control feature: the other person asks, a prompt appears on your machine, and nothing happens until you approve it. There is no way for a participant to seize control silently.</p>
-  <p>In a genuine coding interview the interviewer may ask for control to type a hint. That is normal and harmless, and you can revoke it instantly from the toolbar. What is not normal is being asked to install remote-access software, grant control before the interview starts, or share your screen while logging into anything. Those requests belong to recruitment scams rather than interviews, and the correct answer is no.</p>
-
-  <h2>Recordings: who sees them afterwards</h2>
-  <p>A recording captures exactly what was transmitted, so the same rule applies: whatever you shared is in it, and whatever you did not share is not. Both Teams and Zoom show every participant a clear recording indicator, and Meet announces it, so you will know.</p>
-  <p>What changes with a recording is the audience and the timeline. The file usually lands in the company's own storage, is kept under their retention policy, and can be watched later by people who were never on the call, typically the hiring manager or a second panel. Assume anything visible during the call can be reviewed at leisure by someone you have not met. That includes a notification that flashed up for two seconds and that nobody reacted to at the time.</p>
-
-  <h2>My camera is off. What can they still see?</h2>
-  <p>Nothing from your camera, and no, turning the camera off does not stop a screen share. They are separate switches. A surprising number of people believe that going camera-off also pauses the share; it does not, and the share keeps transmitting until you stop it from the toolbar.</p>
-  <p>Your microphone is also separate. Camera off with the mic live is the most common accidental-audio situation there is.</p>
-
-  <h2>An interview call is not a proctored test</h2>
-  <p>This is the distinction that causes the most confusion, because advice written about one gets applied to the other.</p>
-  <div class="tblwrap"><table>
-    <thead><tr><th></th><th>A normal interview call</th><th>A proctored assessment</th></tr></thead>
-    <tbody>
-      <tr><td>What it is</td><td>Teams, Zoom or Meet, a human on the other side</td><td>HackerRank, HackerEarth, Mettl and similar, often with an agent or a locked browser</td></tr>
-      <tr><td>Sees your other apps</td><td>No</td><td>Often yes, that is the point of it</td></tr>
-      <tr><td>Notices a second monitor</td><td>Only from your eyes on camera</td><td>Frequently, at the operating-system level</td></tr>
-      <tr><td>Watches tab switching</td><td>Only what the share shows</td><td>Usually logged and flagged</td></tr>
-      <tr><td>Records your face continuously</td><td>Only if the call is recorded</td><td>Commonly, with snapshots or continuous capture</td></tr>
-    </tbody>
-  </table></div>
-  <p>Before you worry about what is visible, work out which of these you are actually in. An invitation to a Teams or Meet link with a person's name on it is an interview. A link to a testing platform, especially one that asks permission for your camera and asks you to close other applications, is a proctored assessment and the rules are entirely different.</p>
-
-  <h2>Straight answers to the questions people ask</h2>
-  <p><b>"Can you see my screen?"</b> Only what you chose in the share dialog, and only while the share is running. If you have not started a share, they see your camera and nothing else.</p>
-  <p><b>"Do interviewers usually ask to share screen?"</b> For a technical or coding round, often. For an HR or managerial round, rarely. If it happens, it is about the work, not about checking on you.</p>
-  <p><b>"Can they see my other tabs?"</b> Not unless you shared the whole screen and brought those tabs onto it. A window share or a Chrome tab share does not carry them.</p>
-  <p><b>"Can they see my phone?"</b> No, unless it is in front of your camera. What they can see is you looking down at it repeatedly.</p>
-  <p><b>"Will they know if I take a screenshot?"</b> No. Teams, Zoom and Meet do not notify anyone when a participant takes a screenshot.</p>
-  <p><b>"Can they see my files or my clipboard?"</b> No. Screen sharing sends pictures, not access. Nothing on your disk is readable by the platform or the interviewer.</p>
-
-  <h2>Quick pre-interview checklist</h2>
-  <p>① Do Not Disturb on. ② Close WhatsApp Web and email tabs. ③ Share a window, not the screen, when given the choice. ④ Clean desktop if a full-screen share is likely. ⑤ One rehearsal share with a friend on the same platform. You'll see exactly what they'd see, and the anxiety drops to zero.</p>
-
-  <div class="ctarow"><a class="cta" href="./">See how Interview Sarthi stays out of the share →</a></div>
-
-  <footer>
+  <p class="crumb" aria-label="Breadcrumb"><a href="/">Home</a> › Can the interviewer see my screen? What Teams, Zoom and Meet actually transmit</p>
+<h1>Can the interviewer see my screen?</h1>
+<p class="lead">In a normal meeting, screen sharing sends the content you choose to present. What appears depends on the application, operating system, share mode and meeting settings. A managed device or proctored assessment can have additional monitoring.</p>
+<p>Technical sources reviewed 15 September 2026. Confirm the sharing requirements with your interviewer before starting.</p>
+<h2>What you select matters</h2>
+<p>Teams offers screen and window presentation; Google Meet offers tab, window and entire-screen options. Follow the interviewer's requested share mode. If the choice is yours, select the content needed for the task and check the preview before presenting.</p>
+<p>Official instructions: <a href="https://support.microsoft.com/en-us/teams/meetings/present-content-in-microsoft-teams-meetings">present content in Teams</a> and <a href="https://support.google.com/meet/answer/15738543?hl=en">Google Meet presentation controls</a>. Options can differ by device, browser and administrator policy.</p>
+<h2>Protect unrelated personal information</h2>
+<p>Before a rehearsal, close unrelated private documents, pause personal notifications and use a clean workspace. Share only material you have permission to disclose. Never display a password, API key or license key as part of a setup demonstration.</p>
+<p>Ask a friend to join a short practice call and describe what they see as you open the editor or presentation you plan to use. Check camera and microphone controls separately from screen sharing. Stop the share when the presentation is finished.</p>
+<h2>Screen capture is not a privacy guarantee</h2>
+<p>Windows provides <code>SetWindowDisplayAffinity</code>, including capture exclusion from Windows 10 version 2004. Microsoft explicitly says this mechanism is not a security or DRM guarantee; it cannot prevent someone photographing a monitor. See <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity">the Windows API documentation</a>.</p>
+<p>Interview Sarthi uses a Windows overlay, but a capture-exclusion feature does not establish whether assistance is allowed. Avoid treating any tool's screen-share claim as universal protection across recording software, devices and assessment systems.</p>
+<h2>A meeting and an assessment can use different controls</h2>
+<p>An assessment provider may require a specific browser, application, camera arrangement or share mode. Your device may also be managed by an employer. Read the actual instructions rather than assuming a familiar meeting link means no additional controls exist.</p>
+<p>If the rules prohibit outside help, complete the interview without it. Use preparation tools in advance. Our <a href="guides/ai-in-interviews-rules.html">AI interview rules guide</a> explains how to discuss permission and practise appropriately.</p>
+<h2>Recordings and remote control</h2>
+<p>Ask whether the call is recorded and how recordings are used. Content visible during the call may be reviewed later. Do not rely on meeting indicators to rule out every possible recording method.</p>
+<p>Screen presentation and remote control are different functions. Review any control request carefully and use the platform's controls to end sharing or control when finished. Clarify unfamiliar installation requests with the recruiter through a known contact channel.</p>
+<h2>Pre-interview checklist</h2><ol><li>Read the instructions on permitted tools and required screen sharing.</li><li>Check app permissions and the actual sharing preview.</li><li>Close unrelated personal material and protect credentials.</li><li>Rehearse the audio, camera and presentation setup on your device.</li><li>Know how to stop sharing and who to contact if something fails.</li></ol>
+<p>Continue with <a href="online-interview-tips.html">online interview preparation</a>, <a href="help.html">app setup help</a> or <a href="facts.html">Interview Sarthi product facts</a>.</p>
+<footer>
+<p><a href="facts.html">Product facts</a> · <a href="guides/ai-in-interviews-rules.html">AI interview rules</a></p>
     © 2026 Interview Sarthi · <a href="./">Home</a> · <a href="online-interview-tips.html">Stop blanking out</a> · <a href="hr-interview-questions-hinglish.html">HR questions in Hinglish</a> · <a href="guides/ai-in-interviews-rules.html">Is AI in interviews OK?</a> · <a href="ai-interview-assistant-india.html">AI assistants in India</a> · <a href="guides/">All guides</a> · <a href="help.html">Help</a>
   </footer>
 </div>
