@@ -169,7 +169,7 @@ def audit(root=ROOT):
         text = ' '.join(page.visible)
         if re.search(r'\b(TODO|CHANGEME|PLACEHOLDER)\b', text):
             warnings.append(f'{path}: possible visible placeholder')
-        if re.search(r'(?:three|3)\s+(?:full\s+|15.minute\s+)sessions\s+(?:are\s+)?free', text, re.I):
+        if re.search(r'(?:three|3)\s+(?:full\s+|15.minute\s+)sessions\s+(?:(?:are\s+)?free|with every feature|,?\s*no card)', text, re.I):
             errors.append(f'{path}: stale trial copy')
         for href in page.links + page.images + [page.meta.get('og:image', '')]:
             if not href:
