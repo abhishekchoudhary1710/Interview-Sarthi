@@ -1,0 +1,1002 @@
+{
+  "pages": 40,
+  "indexable": 38,
+  "errors": [],
+  "warnings": [],
+  "inventory": [
+    {
+      "file": "404.html",
+      "title": [
+        "Page not found: Interview Sarthi"
+      ],
+      "description": [
+        "That page doesn't exist. Head back to Interview Sarthi: the invisible AI interview assistant for India."
+      ],
+      "canonical": [],
+      "robots": [
+        "noindex, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [],
+      "in_sitemap": false
+    },
+    {
+      "file": "about.html",
+      "title": [
+        "About Interview Sarthi: who builds it and why"
+      ],
+      "description": [
+        "Interview Sarthi is built by one independent developer in India. Who is behind it, why it exists, how it makes money, and how to reach a real person."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/about.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "AboutPage",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Person"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "ai-interview-assistant-india.html",
+      "title": [
+        "AI Interview Assistants in India: How to Choose"
+      ],
+      "description": [
+        "Understand live interview assistants, mock interview tools, Hinglish support, resume grounding, Windows compatibility and what to check before paying."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/ai-interview-assistant-india.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Article",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "ai-interview-statistics-india.html",
+      "title": [
+        "AI and Interview Research in India: Sources and Limits"
+      ],
+      "description": [
+        "A source-led guide to AI and interview research in India: publication dates, geographic scope, pricing evidence and how to avoid misleading statistics."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/ai-interview-statistics-india.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Article",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "best-ai-interview-assistant-india.html",
+      "title": [
+        "Best AI Interview Assistant in India: 7 Tools Compared"
+      ],
+      "description": [
+        "Compare seven AI interview assistants by workflow, public pricing and limits. Official sources, review dates and clear gaps in verification."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/best-ai-interview-assistant-india.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "BreadcrumbList",
+        "ItemList",
+        "ListItem"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "can-interviewer-see-my-screen.html",
+      "title": [
+        "Can the interviewer see my screen in Zoom, Teams or Google Meet?"
+      ],
+      "description": [
+        "Understand screen and window sharing, privacy limits, recording and interview permissions. Official Teams, Google Meet and Windows documentation."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/can-interviewer-see-my-screen.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "facts.html",
+      "title": [
+        "Interview Sarthi: Product Facts, Pricing and Official Links"
+      ],
+      "description": [
+        "Interview Sarthi product facts: Windows requirements, languages, 30-minute trial, one-time passes, developer, privacy and official links."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/facts.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "AboutPage",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "SoftwareApplication"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "free-gemini-api-key-guide.html",
+      "title": [
+        "Gemini API Key Setup: Limits and Interview Sarthi"
+      ],
+      "description": [
+        "Set up a Gemini API key for Interview Sarthi, check Google project quotas, protect your key and understand separate API billing."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/free-gemini-api-key-guide.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "BreadcrumbList",
+        "HowTo",
+        "HowToStep",
+        "ListItem"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/accenture-cognizant-capgemini-hr-interview.html",
+      "title": [
+        "Accenture, Cognizant & Capgemini HR round: real questions (2026)"
+      ],
+      "description": [
+        "What the HR round at Accenture, Cognizant and Capgemini actually checks: communication, flexibility, consistency, with honest answers that clear it."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/accenture-cognizant-capgemini-hr-interview.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/accenture-interview-questions-freshers.html",
+      "title": [
+        "Accenture interview questions for freshers (2026): ASE"
+      ],
+      "description": [
+        "Accenture fresher hiring: ASE vs Advanced ASE pay, the pseudocode test, the communication assessment nobody prepares for, and interview questions with answers."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/accenture-interview-questions-freshers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/ai-in-interviews-rules.html",
+      "title": [
+        "Is It OK to Use AI in a Job Interview? An Honest Answer"
+      ],
+      "description": [
+        "Check permission for AI interview assistance, ask clear questions about allowed tools, and practise with your own experience."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/ai-in-interviews-rules.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Article",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/capgemini-interview-questions-freshers.html",
+      "title": [
+        "Capgemini interview questions for freshers (2026): full process"
+      ],
+      "description": [
+        "The Capgemini fresher process: the game-based aptitude round, pseudocode, the English test, the behavioral + technical interview, with answers that work."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/capgemini-interview-questions-freshers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/career-gap-explanation-interview.html",
+      "title": [
+        "How to explain a career gap in an interview: every type (2026)"
+      ],
+      "description": [
+        "Scripts for every kind of career gap: health, family, layoff, exam prep, failed startup, the three-beat formula, and what never to say. English + Hinglish."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/career-gap-explanation-interview.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/cognizant-interview-questions-freshers.html",
+      "title": [
+        "Cognizant GenC interview questions for freshers (2026)"
+      ],
+      "description": [
+        "The Cognizant fresher process: GenC vs GenC Pro / Elevate pay, the assessment, what the technical and HR interviews actually ask, with answers that work."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/cognizant-interview-questions-freshers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/first-job-interview-guide-freshers.html",
+      "title": [
+        "First job interview guide for freshers: India (2026)"
+      ],
+      "description": [
+        "Your first job interview, start to finish: what freshers are actually judged on, the 5 questions that always come, documents, online setup, and after."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/first-job-interview-guide-freshers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/hinglish-interview-answers.html",
+      "title": [
+        "How to Answer Interview Questions in Hinglish (2026)"
+      ],
+      "description": [
+        "When Hinglish helps in an Indian job interview and when it hurts, four habits that keep it professional, and five worked answers with reasoning."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/hinglish-interview-answers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Article",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/index.html",
+      "title": [
+        "Interview Guides: straight answers on interviewing in India"
+      ],
+      "description": [
+        "Practical guides for Indian candidates: AI interview assistant prices in ₹, Hinglish answers that sound professional, and the rules on AI in interviews."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "CollectionPage",
+        "WebSite"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/infosys-interview-questions-freshers.html",
+      "title": [
+        "Infosys interview questions for freshers (2026): SE & DSE"
+      ],
+      "description": [
+        "The Infosys fresher process: SE vs DSE vs Specialist Programmer pay, InfyTQ, the questions the single interview actually asks, Mysuru training, with answers."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/infosys-interview-questions-freshers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/reason-for-job-change.html",
+      "title": [
+        "Reason for job change: what to say in interviews (2026)"
+      ],
+      "description": [
+        "Safe, honest reasons for job change in an interview: growth, scope, scale, what never to say, and scripts in English and Hinglish."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/reason-for-job-change.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/salary-expectation-answer.html",
+      "title": [
+        "“What are your salary expectations?”: how to answer (India, 2026)"
+      ],
+      "description": [
+        "How to answer the salary expectation question in India: research a range, say it confidently in English or Hinglish, and avoid the lines that cost money."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/salary-expectation-answer.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/self-introduction-interview-hinglish.html",
+      "title": [
+        "Self-introduction for interviews: English & Hinglish (2026)"
+      ],
+      "description": [
+        "The 30-second self-introduction that works in Indian interviews: one simple structure, with English and Hinglish templates for freshers and experienced."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/self-introduction-interview-hinglish.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/strengths-and-weaknesses-interview.html",
+      "title": [
+        "Strengths and weaknesses for interviews: real answers (2026)"
+      ],
+      "description": [
+        "How to pick a strength you can prove and a weakness that isn't fake, with worked answers, the weakness + system formula, and Hinglish versions."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/strengths-and-weaknesses-interview.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/tcs-infosys-wipro-hr-interview-questions.html",
+      "title": [
+        "TCS, Infosys & Wipro HR round: real questions & answers (2026)"
+      ],
+      "description": [
+        "The questions TCS, Infosys and Wipro actually ask in the HR round: relocation, service agreements, shifts, gaps, with honest answers that clear it."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/tcs-infosys-wipro-hr-interview-questions.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/tcs-interview-questions-freshers.html",
+      "title": [
+        "TCS interview questions for freshers (2026): NQT to HR"
+      ],
+      "description": [
+        "The TCS fresher process end to end: NQT cycles, Ninja vs Digital vs Prime pay, the questions the TR/MR/HR panel actually asks, and Hinglish answers that work."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/tcs-interview-questions-freshers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/why-should-we-hire-you.html",
+      "title": [
+        "“Why should we hire you?”: answers that work (2026)"
+      ],
+      "description": [
+        "How to answer 'Why should we hire you?' with evidence instead of adjectives, worked answers for freshers, experienced candidates and career switchers."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/why-should-we-hire-you.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "guides/wipro-interview-questions-freshers.html",
+      "title": [
+        "Wipro interview questions for freshers (2026): Elite & Turbo"
+      ],
+      "description": [
+        "The Wipro fresher process: Elite NTH vs Turbo pay, the essay round nobody prepares for, the technical and HR questions that come up, and answers that work."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/guides/wipro-interview-questions-freshers.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "Article",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Question",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "help.html",
+      "title": [
+        "Interview Sarthi: Help"
+      ],
+      "description": [
+        "Setup and troubleshooting for Interview Sarthi: installation, Gemini API key, audio devices, screen-share invisibility, and license activation."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/help.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "hinglish-interview-help.html",
+      "title": [
+        "Hinglish interview help: live AI answers during the call"
+      ],
+      "description": [
+        "Indian interviews switch between English and Hindi mid-sentence. Interview Sarthi transcribes both and drafts answers in natural Hinglish, live."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/hinglish-interview-help.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Article",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "hr-interview-questions-hinglish.html",
+      "title": [
+        "10 HR interview questions with Hinglish answers (2026)"
+      ],
+      "description": [
+        "10 HR interview questions with natural Hinglish sample answers: tell me about yourself, salary expectations, career gap, and why each answer works."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/hr-interview-questions-hinglish.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "index.html",
+      "title": [
+        "AI Interview Assistant for India | Interview Sarthi"
+      ],
+      "description": [
+        "Windows AI interview assistant for Indian job seekers. Resume-grounded help in English, Hindi and Hinglish. 30 minutes free; one-time passes from ₹99."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "ImageObject",
+        "Offer",
+        "Organization",
+        "Person",
+        "SoftwareApplication",
+        "WebSite"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "online-interview-tips.html",
+      "title": [
+        "How to stop blanking out in online interviews (9 fixes)"
+      ],
+      "description": [
+        "Why your mind goes blank in online interviews and 9 practical fixes, the STAR bank, the 3-second pause, audio setup, and a safety net for the rest."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/online-interview-tips.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Article",
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Thing"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "privacy.html",
+      "title": [
+        "Interview Sarthi: Privacy Policy"
+      ],
+      "description": [
+        "Privacy policy for Interview Sarthi. The software runs on your PC; audio and resume go directly to the AI provider under your own key. No servers."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/privacy.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "refunds.html",
+      "title": [
+        "Interview Sarthi: Refund Policy"
+      ],
+      "description": [
+        "Refund policy for Interview Sarthi: 7-day money-back guarantee on your first pass, no questions asked. 30 free minutes before you buy."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/refunds.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "terms.html",
+      "title": [
+        "Interview Sarthi: Terms of Service"
+      ],
+      "description": [
+        "Terms of service for Interview Sarthi: what a pass covers, acceptable use, licenses and devices, and refunds."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/terms.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "BreadcrumbList",
+        "ListItem"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "thanks.html",
+      "title": [
+        "Interview Sarthi: Thank you"
+      ],
+      "description": [
+        "Your Interview Sarthi pass is active. Download the app and activate your license key."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/thanks.html"
+      ],
+      "robots": [
+        "noindex, nofollow"
+      ],
+      "h1_count": 1,
+      "schema_types": [],
+      "in_sitemap": false
+    },
+    {
+      "file": "vs-cluely.html",
+      "title": [
+        "Interview Sarthi vs Cluely: Pricing and Trade-offs"
+      ],
+      "description": [
+        "Compare Interview Sarthi and Cluely: current source checks, Windows requirements, trial access and questions to test before choosing."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/vs-cluely.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "vs-final-round-ai.html",
+      "title": [
+        "Interview Sarthi vs Final Round AI: Pricing and Trade-offs"
+      ],
+      "description": [
+        "Compare Interview Sarthi and Final Round AI: current source checks, Windows requirements, trial access and questions to test before choosing."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/vs-final-round-ai.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "vs-lockedin-ai.html",
+      "title": [
+        "Interview Sarthi vs LockedIn AI: Pricing and Trade-offs"
+      ],
+      "description": [
+        "Compare Interview Sarthi and LockedIn AI: current source checks, Windows requirements, trial access and questions to test before choosing."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/vs-lockedin-ai.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "vs-ophyai.html",
+      "title": [
+        "Interview Sarthi vs OphyAI: Pricing and Trade-offs"
+      ],
+      "description": [
+        "Compare Interview Sarthi and OphyAI: current source checks, Windows requirements, trial access and questions to test before choosing."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/vs-ophyai.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question"
+      ],
+      "in_sitemap": true
+    },
+    {
+      "file": "vs-parakeet-ai.html",
+      "title": [
+        "Interview Sarthi vs Parakeet AI: Pricing and Trade-offs"
+      ],
+      "description": [
+        "Compare Interview Sarthi and Parakeet AI: current source checks, Windows requirements, trial access and questions to test before choosing."
+      ],
+      "canonical": [
+        "https://interviewsarthi.com/vs-parakeet-ai.html"
+      ],
+      "robots": [
+        "index, follow"
+      ],
+      "h1_count": 1,
+      "schema_types": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question"
+      ],
+      "in_sitemap": true
+    }
+  ]
+}
