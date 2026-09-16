@@ -72,7 +72,8 @@ class SeoTests(unittest.TestCase):
         links = Links()
         links.feed((ROOT/'index.html').read_text(encoding='utf-8'))
         self.assertEqual(len(links.found), 2)
-        self.assertTrue(all('/pdt_0NmLzNTWbybTsXtpmtmaH?' in href for href in links.found))
+        # The licence server picks Dodo or Cashfree; the plan code is what must match the label.
+        self.assertTrue(all('license.interviewsarthi.com/buy?plan=7d' in href for href in links.found))
 
 
 if __name__ == '__main__':

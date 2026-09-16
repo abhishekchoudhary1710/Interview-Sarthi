@@ -102,14 +102,23 @@
     });
   }
 
-  /* The four passes, keyed by the Dodo product id in the checkout link, so a
-   * price change on the site does not silently desync the reported revenue. */
+  /* The four passes, keyed by the plan code in the checkout link
+   * (license.interviewsarthi.com/buy?plan=7d), so a price change on the site
+   * does not silently desync the reported revenue. Rupee prices: the value
+   * is what the report is for, not what a foreign card was charged. */
   var PASSES = {
-    pdt_0Nn41S0EP7d5UNAJZNPAL: { name: "2-Day Pass", value: 99 },
-    pdt_0NmLzNTWbybTsXtpmtmaH: { name: "7-Day Pass", value: 399 },
-    pdt_0NmHQqaKlKiZ57ISIRzdn: { name: "1-Month Pass", value: 999 },
-    pdt_0NmHNZ2I6qiJg6CrzInBg: { name: "3-Month Pass", value: 1999 }
+    "2d": { name: "2-Day Pass", value: 99 },
+    "7d": { name: "7-Day Pass", value: 399 },
+    "30d": { name: "1-Month Pass", value: 999 },
+    "90d": { name: "3-Month Pass", value: 1999 }
   };
+  /* The licence server names the pass by its label ("7-Day Pass"). */
+  function passByName(label) {
+    for (var code in PASSES) {
+      if (PASSES[code].name === label) return { id: code, name: label, value: PASSES[code].value };
+    }
+    return null;
+  }
 
   document.addEventListener("click", function (ev) {
     var a = ev.target.closest && ev.target.closest("a[href]");
@@ -135,11 +144,14 @@
       return;
     }
 
-    var buy = href.match(/checkout\.dodopayments\.com\/buy\/(pdt_[A-Za-z0-9]+)/);
+    /* Every buy button goes to license.interviewsarthi.com/buy?plan=7d, which
+     * sends the buyer on to Dodo or Cashfree. The plan code names the pass. */
+    var buy = href.match(/license\.interviewsarthi\.com\/buy\?plan=(\d+d)\b/);
     if (buy) {
       var pass = PASSES[buy[1]] || { name: buy[1], value: 0 };
       /* Park it so the purchase event on thanks.html can report the amount.
-       * Dodo's redirect carries only the license key, never the product. */
+       * The return trip carries the key (Dodo) or an order id (Cashfree),
+       * never the product. */
       try {
         localStorage.setItem("pending_pass", JSON.stringify({
           id: buy[1], name: pass.name, value: pass.value, at: Date.now()
@@ -153,10 +165,13 @@
     }
   }, true);
 
-  /* Dodo sends the buyer back to thanks.html?license_key=... That redirect is
-   * the only purchase signal a static site gets. The key itself is a secret and
-   * is never sent on; localStorage just stops a page refresh double-counting. */
-  if (licenceKey) {
+  /* A purchase reaches thanks.html one of two ways. Dodo sends the buyer back
+   * with ?license_key=..., read here on load. The licence server (Cashfree)
+   * sends ?order_id=..., and thanks.html calls window.sarthiReportPurchase
+   * once its poll has the key. The key itself is a secret and is never sent
+   * on; localStorage just stops a page refresh double-counting. */
+  function reportPurchase(key, passLabel) {
+    if (!key) return;
     /* A short non-reversible hash of the key. It gives GA4 a transaction_id to
      * deduplicate on and lets a second purchase report, without the key itself
      * ever leaving the page. */
@@ -164,10 +179,13 @@
       var h = 5381;
       for (var i = 0; i < str.length; i++) { h = ((h << 5) + h + str.charCodeAt(i)) | 0; }
       return "t" + (h >>> 0).toString(36);
-    })(licenceKey);
+    })(key);
 
     var pending = null;
     try { pending = JSON.parse(localStorage.getItem("pending_pass") || "null"); } catch (e) { }
+    /* A buyer who paid on another device, or in private mode, has nothing
+     * parked; the licence server's pass label fills the gap. */
+    if (!(pending && pending.value) && passLabel) pending = passByName(passLabel);
 
     var payload = { currency: "INR", transaction_id: txid };
     if (pending && pending.value) {
@@ -191,4 +209,7 @@
       track("purchase", payload);
     }
   }
+  window.sarthiReportPurchase = reportPurchase;
+  window.sarthiTrack = track;
+  if (licenceKey) reportPurchase(licenceKey, "");
 })();

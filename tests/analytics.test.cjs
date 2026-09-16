@@ -16,7 +16,7 @@ function run(url, referrer='', session=storage(), local=storage(), disabled=fals
   const context = {window,document,location,URL,URLSearchParams,sessionStorage:session,localStorage:local,
     history:{replaceState:(_,__,value)=>{location.href = new URL(value, location).href;}},Date};
   vm.runInNewContext(disabled ? source.replace('G-CCFHWPJD9K','G-XXXX').replace('yb9mq7tzkq','XXXX') : source, context);
-  return {get events(){return window.dataLayer.map(x=>Array.from(x));},scripts,location,listeners};
+  return {get events(){return window.dataLayer.map(x=>Array.from(x));},scripts,location,listeners,window};
 }
 const referral = r => r.events.filter(e=>e[0]==='event' && e[1]==='ai_referral_visit');
 test('known UTM and referrer sources; UTM takes precedence',()=>{
@@ -52,8 +52,17 @@ test('disabled analytics and denied storage do not break navigation',()=>{
 });
 test('checkout still records the selected 7-day product and price',()=>{
   const local=storage(); const r=run('https://interviewsarthi.com/','',storage(),local);
-  const anchor={getAttribute:()=> 'https://checkout.dodopayments.com/buy/pdt_0NmLzNTWbybTsXtpmtmaH',closest:()=>null};
+  const anchor={getAttribute:()=> 'https://license.interviewsarthi.com/buy?plan=7d',closest:()=>null};
   r.listeners.click({target:{closest:()=>anchor}});
   assert.equal(JSON.parse(local.getItem('pending_pass')).value,399);
   assert.equal(r.events.find(e=>e[1]==='begin_checkout')[2].items[0].item_name,'7-Day Pass');
+});
+test('a Cashfree order reports the purchase once, valued by the plan label, without the key',()=>{
+  const local=storage(); const r=run('https://interviewsarthi.com/thanks.html?order_id=order_123','',storage(),local);
+  r.window.sarthiReportPurchase('IS-TEST-KEY','7-Day Pass');
+  r.window.sarthiReportPurchase('IS-TEST-KEY','7-Day Pass');
+  const purchases=r.events.filter(e=>e[1]==='purchase');
+  assert.equal(purchases.length,1);
+  assert.equal(purchases[0][2].value,399);
+  assert.ok(!JSON.stringify(r.events).includes('IS-TEST-KEY'));
 });

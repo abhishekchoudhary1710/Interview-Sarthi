@@ -112,6 +112,13 @@
     });
   }
   function noKey(){document.getElementById("nokey").style.display="block";}
+  // analytics.js is deferred; on a fast reply it may not have run yet.
+  function report(name,key,plan,n){
+    n=n||0;
+    if(name==="purchase"&&window.sarthiReportPurchase){window.sarthiReportPurchase(key,plan||"");}
+    else if(name!=="purchase"&&window.sarthiTrack){window.sarthiTrack(name,{});}
+    else if(n<6){setTimeout(function(){report(name,key,plan,n+1);},500);}
+  }
   // Cashfree sends the buyer back with ?order_id=; the key arrives a moment
   // later via the license server, so poll for it instead of relying on email.
   function poll(n,s){
@@ -121,10 +128,11 @@
       return r.json();
     }).then(function(d){
       if(!d){return;}
-      if(d.status==="paid"&&d.key){show(d.key,d.email||"");}
+      if(d.status==="paid"&&d.key){show(d.key,d.email||"");report("purchase",d.key,d.plan);}
       else if(d.status==="failed"){
         document.querySelector("h1").textContent="Payment did not complete";
-        sub.textContent="Nothing was charged. Go back to the pricing page and try again, or email support.";
+        sub.innerHTML='Nothing was charged. <a href="./#pricing">Try again from the pricing page</a>, or email <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a> and we will sort it out.';
+        report("payment_failed");
       }
       else if(n<30){sub.textContent="Confirming your payment…";setTimeout(function(){poll(n+1);},2000);}
       else{noKey();}
