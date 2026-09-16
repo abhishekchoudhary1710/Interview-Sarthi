@@ -69,7 +69,7 @@
     </div>
 
     <div class="nokey" id="nokey">
-      Your license key has been <b>emailed to you</b> (check spam too). It's in the receipt from Dodo Payments, copy it from there for step 2.
+      Your license key has been <b>emailed to you</b> (check spam too). It's in your purchase email, copy it from there for step 2.
     </div>
 
     <ol class="steps">
@@ -88,12 +88,17 @@
 
 <script>
 (function(){
+  // Production first; sandbox orders (test purchases) live on the test server.
+  var SERVERS=["https://license.interviewsarthi.com","https://interview-sarthi-license-test.interview-sarthi-license.workers.dev"];
   var q=new URLSearchParams(location.search);
   var key=(q.get("license_key")||"").split(",")[0].trim();
   var email=q.get("email")||"";
-  if(key){
+  var order=q.get("order_id")||"";
+  var sub=document.getElementById("sub");
+  function show(key,email){
     document.getElementById("keyval").textContent=key;
     document.getElementById("keywrap").style.display="block";
+    sub.textContent="Your pass is ready. Three steps and you're set for the interview.";
     if(email){document.getElementById("mail").textContent=" ("+email+")";}
     var btn=document.getElementById("copy");
     btn.addEventListener("click",function(){
@@ -105,9 +110,29 @@
         btn.textContent="Copied ✓";setTimeout(function(){btn.textContent="Copy";},2000);
       });
     });
-  }else{
-    document.getElementById("nokey").style.display="block";
   }
+  function noKey(){document.getElementById("nokey").style.display="block";}
+  // Cashfree sends the buyer back with ?order_id=; the key arrives a moment
+  // later via the license server, so poll for it instead of relying on email.
+  function poll(n,s){
+    s=s||0;
+    fetch(SERVERS[s]+"/orders/"+encodeURIComponent(order)).then(function(r){
+      if(r.status===404&&s+1<SERVERS.length){return poll(n,s+1);}
+      return r.json();
+    }).then(function(d){
+      if(!d){return;}
+      if(d.status==="paid"&&d.key){show(d.key,d.email||"");}
+      else if(d.status==="failed"){
+        document.querySelector("h1").textContent="Payment did not complete";
+        sub.textContent="Nothing was charged. Go back to the pricing page and try again, or email support.";
+      }
+      else if(n<30){sub.textContent="Confirming your payment…";setTimeout(function(){poll(n+1);},2000);}
+      else{noKey();}
+    }).catch(function(){if(n<30){setTimeout(function(){poll(n+1);},2000);}else{noKey();}});
+  }
+  if(key){show(key,email);}
+  else if(order){poll(0);}
+  else{noKey();}
 })();
 </script>
 </body>
