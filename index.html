@@ -939,6 +939,18 @@
       font-weight: 600
     }
 
+    .region {
+      margin: 16px auto 0;
+      text-align: center;
+      font-size: 13.5px;
+      color: var(--muted)
+    }
+
+    .region a {
+      color: var(--brand);
+      font-weight: 600
+    }
+
     .copied {
       margin-left: 8px;
       padding: 2px 8px;
@@ -2183,7 +2195,7 @@
       <div class="plans">
         <div class="plan rv">
           <h3>Free</h3>
-          <div class="amt">₹0</div>
+          <div class="amt" data-intl="$0">₹0</div>
           <div class="per">30 minutes free · all features · no card</div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
@@ -2204,8 +2216,8 @@
         </div>
         <div class="plan rv">
           <h3>2-Day Pass</h3>
-          <div class="amt">₹99 <small>one-time</small></div>
-          <div class="per">2 days · 1 device · UPI</div>
+          <div class="amt" data-intl="$9.99 &lt;small&gt;one-time&lt;/small&gt;">₹99 <small>one-time</small></div>
+          <div class="per" data-intl="2 days · 1 device · card">2 days · 1 device · UPI</div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -2218,15 +2230,15 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
                 <path d="M20 6L9 17l-5-5" />
-              </svg>2 full days of access, with no automatic renewal.</li>
+              </svg><span data-intl="One interview, hidden from screen share. Nothing renews.">2 full days of access, with no automatic renewal.</span></li>
           </ul>
           <a class="cta ghost"
-            href="https://checkout.dodopayments.com/buy/pdt_0Nn41S0EP7d5UNAJZNPAL?quantity=1&redirect_url=https://interviewsarthi.com%2Fthanks.html">Buy 2-Day Pass</a>
+            href="https://license.interviewsarthi.com/buy?plan=2d">Buy 2-Day Pass</a>
         </div>
         <div class="plan best rv"><span class="badge">Most popular</span>
           <h3>7-Day Pass</h3>
-          <div class="amt">₹399 <small>one-time</small></div>
-          <div class="per">7 days · ₹57 a day · 1 device</div>
+          <div class="amt" data-intl="$19.99 &lt;small&gt;one-time&lt;/small&gt;">₹399 <small>one-time</small></div>
+          <div class="per" data-intl="7 days · $2.86 a day · 1 device">7 days · ₹57 a day · 1 device</div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -2239,15 +2251,15 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
                 <path d="M20 6L9 17l-5-5" />
-              </svg>Key comes by email in seconds</li>
+              </svg><span data-intl="Hidden from screen share included. Cluely charges $149.99 a month for that.">Key comes by email in seconds</span></li>
           </ul>
           <a class="cta"
-            href="https://checkout.dodopayments.com/buy/pdt_0NmLzNTWbybTsXtpmtmaH?quantity=1&redirect_url=https://interviewsarthi.com%2Fthanks.html">Buy 7-Day Pass</a>
+            href="https://license.interviewsarthi.com/buy?plan=7d">Buy 7-Day Pass</a>
         </div>
         <div class="plan rv">
           <h3>1-Month Pass</h3>
-          <div class="amt">₹999 <small>one-time</small></div>
-          <div class="per">30 days · ₹33 a day · 2 devices</div>
+          <div class="amt" data-intl="$39.99 &lt;small&gt;one-time&lt;/small&gt;">₹999 <small>one-time</small></div>
+          <div class="per" data-intl="30 days · $1.33 a day · 2 devices">30 days · ₹33 a day · 2 devices</div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -2260,15 +2272,15 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
                 <path d="M20 6L9 17l-5-5" />
-              </svg>30 days of access on 2 devices</li>
+              </svg><span data-intl="A month for less than one week of Parakeet AI ($78).">30 days of access on 2 devices</span></li>
           </ul>
           <a class="cta ghost"
-            href="https://checkout.dodopayments.com/buy/pdt_0NmHQqaKlKiZ57ISIRzdn?quantity=1&redirect_url=https://interviewsarthi.com%2Fthanks.html">Buy 1-Month Pass</a>
+            href="https://license.interviewsarthi.com/buy?plan=30d">Buy 1-Month Pass</a>
         </div>
         <div class="plan rv">
           <h3>3-Month Pass</h3>
-          <div class="amt">₹1,999 <small>one-time</small></div>
-          <div class="per">90 days · ₹22 a day · 2 devices</div>
+          <div class="amt" data-intl="$69.99 &lt;small&gt;one-time&lt;/small&gt;">₹1,999 <small>one-time</small></div>
+          <div class="per" data-intl="90 days · 78¢ a day · 2 devices">90 days · ₹22 a day · 2 devices</div>
           <ul>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -2281,20 +2293,55 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
                 <path d="M20 6L9 17l-5-5" />
-              </svg>90 days of access on 2 devices</li>
+              </svg><span data-intl="A whole job search for less than one month of Final Round AI ($90).">90 days of access on 2 devices</span></li>
           </ul>
           <a class="cta ghost"
-            href="https://checkout.dodopayments.com/buy/pdt_0NmHNZ2I6qiJg6CrzInBg?quantity=1&redirect_url=https://interviewsarthi.com%2Fthanks.html">Buy 3-Month Pass</a>
+            href="https://license.interviewsarthi.com/buy?plan=90d">Buy 3-Month Pass</a>
         </div>
       </div>
+      <p class="region">Prices for <b id="regionname">India</b> · <a href="#pricing" id="regionswap">Outside India? See prices in $</a></p>
       <p class="refer"><b>First pass: 7-day money-back, no questions asked.</b> Nothing renews. Nothing is charged again. The AI uses your own Gemini key. Free-tier limits and any paid Google usage are separate.</p>
       <p class="ask">Not sure which pass, or whether it works on your setup? Ask before you pay: <a
           href="mailto:support@interviewsarthi.com" id="askmail">support@interviewsarthi.com</a><span class="copied"
           id="askcopied" hidden>copied</span>, answered the same day by the person who built it.</p>
-      <p class="pay">Secure checkout by Dodo Payments · UPI (GPay / PhonePe / Paytm) · Cards · 7-day money-back on
+      <p class="pay" data-intl="Secure checkout by Dodo Payments · Cards, Apple Pay, Google Pay · Prices in USD, shown in your currency at checkout · 7-day money-back on your first pass · &lt;a href=&quot;refunds.html&quot;&gt;policy&lt;/a&gt;">Secure checkout by Dodo Payments · UPI (GPay / PhonePe / Paytm) · Cards · 7-day money-back on
         your first pass · <a href="refunds.html">policy</a></p>
     </div>
   </section>
+  <script>
+    // Indian visitors see rupees and UPI; everyone else the USD ladder. The
+    // license server reads the country Cloudflare attaches to the request;
+    // the switch under the cards overrides it and is remembered.
+    (function () {
+      var API = "https://license.interviewsarthi.com";
+      var swap = document.getElementById("regionswap"), name = document.getElementById("regionname");
+      if (!swap || !name) return;
+      var els = document.querySelectorAll("[data-intl]");
+      var ctas = document.querySelectorAll('a[href^="' + API + '/buy"]');
+      var current = "in";
+      function apply(region) {
+        current = region;
+        for (var i = 0; i < els.length; i++) {
+          var el = els[i];
+          if (el.getAttribute("data-in") === null) el.setAttribute("data-in", el.innerHTML);
+          el.innerHTML = region === "intl" ? el.getAttribute("data-intl") : el.getAttribute("data-in");
+        }
+        for (var j = 0; j < ctas.length; j++) {
+          ctas[j].href = ctas[j].href.replace(/&region=\w+/, "") + "&region=" + region;
+        }
+        name.textContent = region === "intl" ? "outside India (USD)" : "India";
+        swap.textContent = region === "intl" ? "In India? See prices in ₹" : "Outside India? See prices in $";
+        try { localStorage.setItem("sarthi-region", region); } catch (e) { }
+      }
+      swap.addEventListener("click", function (e) { e.preventDefault(); apply(current === "intl" ? "in" : "intl"); });
+      var saved = null;
+      try { saved = localStorage.getItem("sarthi-region"); } catch (e) { }
+      if (saved === "intl" || saved === "in") { apply(saved); return; }
+      fetch(API + "/geo").then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.country && d.country !== "IN") apply("intl");
+      }).catch(function () { });
+    })();
+  </script>
 
   <section id="hidden">
     <div class="wrap split">
@@ -2642,8 +2689,8 @@
           it helped.</p>
         <div class="ctas"><a class="cta"
             href="https://apps.microsoft.com/detail/9NMKQPSQ1KS8">Get it free from Microsoft Store</a><a class="cta ghost"
-            href="https://checkout.dodopayments.com/buy/pdt_0NmLzNTWbybTsXtpmtmaH?quantity=1&redirect_url=https://interviewsarthi.com%2Fthanks.html">Buy
-            7-Day Pass · ₹399</a></div>
+            href="https://license.interviewsarthi.com/buy?plan=7d">Buy
+            7-Day Pass · <span data-intl="$19.99">₹399</span></a></div>
       </div>
     </div>
   </section>
