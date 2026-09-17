@@ -53,7 +53,7 @@ with sync_playwright() as p:
     weekly = page.get_by_role('link',name='Buy 7-Day Pass',exact=False)
     assert weekly.count()==2
     for item in weekly.all():
-        assert 'pdt_0NmLzNTWbybTsXtpmtmaH' in item.get_attribute('href')
+        assert 'license.interviewsarthi.com/buy?plan=7d' in item.get_attribute('href')
     page.goto('http://localhost/thanks.html?license_key=TEST-RECEIPT&email=test@example.invalid',wait_until='load')
     assert page.locator('#keyval').inner_text() == 'TEST-RECEIPT'
     assert urlsplit(page.url).query == ''
