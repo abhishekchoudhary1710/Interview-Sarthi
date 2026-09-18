@@ -33,6 +33,7 @@ Open `http://localhost:8000`. Website analytics are configured in `assets/analyt
 Python 3.10+ and Node.js 18+:
 
 ```sh
+python scripts/build_apply_pages.py --check
 python scripts/seo_audit.py
 python scripts/generate_sitemap.py --check
 python -m unittest discover -s tests -p 'test_*.py'
@@ -57,6 +58,18 @@ python scripts/seo_audit.py
 ```
 
 The reviewed allow-list in `scripts/seo_pages.json` controls inclusion and dates. Formatting edits and builds do not advance dates. Add new canonical pages deliberately; noindex receipt/error pages are excluded. Existing IndexNow behavior remains in its separate workflow.
+
+## ApplySarthi pages
+
+The pages under `apply/` are generated from `scripts/apply_pages/`, so the shared header, footer and
+schema are written once rather than thirteen times. Edit the content module, then:
+
+```sh
+python scripts/build_apply_pages.py      # rewrite the HTML, which is committed like any other page
+```
+
+`scripts/apply_pages/_shared.py` is the fact register for that content: every number an ApplySarthi page
+states must exist there with a note on where it was read from. See [APPLYSARTHI_SEO.md](APPLYSARTHI_SEO.md).
 
 ## Research and reach
 

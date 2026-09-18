@@ -30,6 +30,7 @@ blockquote{margin:20px 0;padding:2px 18px;border-left:3px solid var(--accent);co
 .qa{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:16px 0}
 .qa .q{font-weight:600;margin:0 0 8px}
 .qa .a{margin:0;color:#28374a}
+p.note{font-size:13.5px;color:var(--muted);margin-top:-8px}
 .qa .note{font-size:13.5px;color:var(--muted);margin:10px 0 0;padding-top:10px;border-top:1px dashed var(--line2)}
 .cta{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600;font-size:15px}
 .cta:hover{background:#1d4ed8}
