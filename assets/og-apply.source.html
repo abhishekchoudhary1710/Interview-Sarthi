@@ -5,23 +5,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{width:1200px;height:630px;font-family:Inter,system-ui,sans-serif;overflow:hidden;
-  background:#0d1530;position:relative}
-/* the chariot wheel, blown up and bled off the right edge as a watermark */
+body{width:1200px;height:630px;font-family:Inter,system-ui,sans-serif;overflow:hidden;background:#0d1530;position:relative}
 .bg{position:absolute;right:-150px;top:-90px;width:820px;height:820px;opacity:.09}
 .glow{position:absolute;left:-200px;bottom:-320px;width:760px;height:760px;border-radius:50%;
   background:radial-gradient(circle,#3B82F6 0%,rgba(59,130,246,0) 70%);opacity:.5}
-.pad{position:relative;padding:62px 70px;height:630px;display:flex;flex-direction:column}
+.pad{position:relative;padding:58px 70px;height:630px;display:flex;flex-direction:column}
 .brand{display:flex;align-items:center;gap:15px}
 .brand img{width:52px;height:52px;border-radius:13px}
 .brand .n{font-size:30px;font-weight:800;color:#fff;letter-spacing:-.4px}
 .brand .n i{font-style:normal;color:#93b4fd}
+.brand .tag{font-size:18px;color:#7f90b3;font-weight:500;border-left:1.5px solid #ffffff25;padding-left:15px}
 .free{margin-left:auto;font-size:17px;font-weight:600;color:#a7f3d0;border:1.5px solid #34d39955;
   background:#05966922;padding:9px 20px;border-radius:99px}
-h1{margin-top:auto;font-size:68px;line-height:1.1;font-weight:800;color:#fff;letter-spacing:-2px;
-  max-width:1010px}
+h1{margin-top:auto;font-weight:800;color:#fff;letter-spacing:-1.8px;max-width:1015px;
+  font-size:var(--h1,64px);line-height:1.12}
 h1 b{font-weight:800;color:#8ab4ff}
-.sub{margin-top:24px;font-size:25px;color:#a9b7d4;font-weight:400;letter-spacing:-.2px}
+.sub{margin-top:26px;font-size:25px;line-height:1.45;color:#a9b7d4;font-weight:400;letter-spacing:-.2px;max-width:990px}
 .row{margin-top:auto;display:flex;align-items:center;gap:14px}
 .chip{font-size:20px;font-weight:600;color:#dbe6ff;background:#ffffff14;border:1.5px solid #ffffff21;
   padding:12px 22px;border-radius:12px;white-space:nowrap}
@@ -32,15 +31,21 @@ h1 b{font-weight:800;color:#8ab4ff}
 <div class="pad">
   <div class="brand">
     <img src="mark.svg" alt=""><span class="n">Apply<i>Sarthi</i></span>
+    <span class="tag">Find it. Tailor it. Apply.</span>
     <span class="free">Free in early access</span>
   </div>
-  <h1>The jobs that fit you &mdash; with the application <b>already filled in</b>.</h1>
-  <p class="sub">Matched to your CV. Your CV rewritten for each one. Then you press submit.</p>
+  <h1 id="h1"></h1>
+  <p class="sub" id="sub"></p>
   <div class="row">
-    <span class="chip">21 job sites</span>
-    <span class="chip">754 career pages</span>
-    <span class="chip">Naukri &middot; LinkedIn &middot; Indeed</span>
+    <span class="chip">Naukri &middot; LinkedIn &middot; Indeed &middot; Shine</span>
+    <span class="chip">754 company career pages</span>
     <span class="url">interviewsarthi.com/apply</span>
   </div>
 </div>
+<script>
+const q = new URLSearchParams(location.search);
+document.getElementById('h1').innerHTML = q.get('h') || '';
+document.getElementById('sub').innerHTML = q.get('s') || '';
+if (q.get('size')) document.documentElement.style.setProperty('--h1', q.get('size'));
+</script>
 </body></html>
