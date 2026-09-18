@@ -18,6 +18,7 @@ ORIGIN = 'https://interviewsarthi.com'
 # ApplySarthi's own share card. og.jpg pictures the Interview Sarthi overlay and belongs to that
 # product's pages; rendered from assets/og-apply.source.html.
 OG_IMAGE = ORIGIN + '/assets/og-apply.jpg'
+OG_ALT = ('ApplySarthi: we auto-apply to every job that fits you. Naukri, LinkedIn, Indeed and 754 company career pages in one place, matched to your CV.')
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -109,6 +110,7 @@ def render(page):
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Interview Sarthi">
 <meta property="og:image" content="{OG_IMAGE}">
+<meta property="og:image:alt" content="{OG_ALT}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
