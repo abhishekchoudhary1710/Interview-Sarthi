@@ -15,7 +15,9 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'https://interviewsarthi.com'
-OG_IMAGE = ORIGIN + '/assets/og.jpg'
+# ApplySarthi's own share card. og.jpg pictures the Interview Sarthi overlay and belongs to that
+# product's pages; rendered from assets/og-apply.source.html.
+OG_IMAGE = ORIGIN + '/assets/og-apply.jpg'
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 

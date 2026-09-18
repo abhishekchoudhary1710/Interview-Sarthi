@@ -43,9 +43,17 @@ h1 b{font-weight:800;color:#8ab4ff}
   </div>
 </div>
 <script>
+// The wording that is live. Override any of it with ?h=&s=&size= to try an alternative before
+// replacing assets/og-apply.jpg with the new render.
+const LIVE = {
+  h: 'We auto-apply to<br><b>every job that fits you</b>.',
+  s: 'Naukri, LinkedIn, Indeed and 754 company career pages in one place, matched to your CV. ' +
+     'ApplySarthi fills in every application for you.',
+  size: '68px',
+};
 const q = new URLSearchParams(location.search);
-document.getElementById('h1').innerHTML = q.get('h') || '';
-document.getElementById('sub').innerHTML = q.get('s') || '';
-if (q.get('size')) document.documentElement.style.setProperty('--h1', q.get('size'));
+document.getElementById('h1').innerHTML = q.get('h') || LIVE.h;
+document.getElementById('sub').innerHTML = q.get('s') || LIVE.s;
+document.documentElement.style.setProperty('--h1', q.get('size') || LIVE.size);
 </script>
 </body></html>

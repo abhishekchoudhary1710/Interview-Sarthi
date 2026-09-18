@@ -70,10 +70,19 @@ Python regression tests: 8 passed
 
 ## Still outstanding
 
-- **The share image is wrong.** Every ApplySarthi page — these thirteen and `apply/index.html` — uses
-  `assets/og.jpg`, which pictures the Interview Sarthi overlay on a video call. Shared anywhere, an
-  ApplySarthi link advertises the other product. It needs its own 1200×630 card, and then one change to
-  `OG_IMAGE` in `scripts/build_apply_pages.py` plus the `apply/index.html` head.
+- ~~The share image is wrong.~~ **Done, 18 September 2026.** All fourteen ApplySarthi pages now use
+  `assets/og-apply.jpg` instead of `assets/og.jpg`, which pictures the Interview Sarthi overlay and stays
+  on that product's pages. The card is rendered from `assets/og-apply.source.html`, whose `LIVE` object
+  holds the wording that is published; open it with `?h=&s=&size=` to try an alternative before
+  re-rendering. Changing it means editing that file, re-rendering to `assets/og-apply.jpg`, and updating
+  `LIVE` to match — `OG_IMAGE` in the generator and the two references in `apply/index.html` already
+  point at the stable filename and do not need touching again.
+
+  The published wording is *"We auto-apply to every job that fits you."* That is the owner's decision,
+  taken with the following noted: ApplySarthi does not submit by default — Autopilot is off until
+  switched on — so the headline promises more than a new user's first session delivers, and it places
+  ApplySarthi in the blind-auto-apply category that `vs-lazyapply.html` and `vs-loopcv.html` argue
+  against. Worth revisiting if early users arrive expecting applications to send themselves.
 - **Pricing.** ApplySarthi is described as free in early access, which is currently true. When plans
   launch, the offer in `apply/index.html`'s schema and the price column in
   `best-auto-apply-tools-india.html` both need updating, and `_shared.py` is where to start.
