@@ -2417,10 +2417,13 @@
             sees</button>
         </div>
         <figure class="tgfig">
-          <img id="tgImg" src="assets/shot-you-see.png" width="1920" height="1080"
-            alt="A Google Meet interview with the Interview Sarthi panel over it, drafting a Hinglish answer from the candidate's own project.">
-          <figcaption id="tgCap"><b>Your screen.</b> The interviewer asked in Hinglish; the answer came back in
-            Hinglish, built from your resume.</figcaption>
+          <picture>
+            <source id="tgSrc" type="image/webp" srcset="assets/shot-you-see.webp">
+            <img id="tgImg" src="assets/shot-you-see.png" width="1672" height="941"
+              alt="A Google Meet interview with the Interview Sarthi panel over it: the panel shows the live transcript of two questions from the interviewers and a drafted spoken answer marked high confidence.">
+          </picture>
+          <figcaption id="tgCap"><b>Your screen.</b> The panel followed both questions as they were asked, and had a
+            spoken-style answer ready before you opened your mouth.</figcaption>
         </figure>
       </div>
     </div>
@@ -2763,24 +2766,28 @@
   <script>
     (function () {
       var img = document.getElementById("tgImg"), cap = document.getElementById("tgCap"),
+        src = document.getElementById("tgSrc"),
         a = document.getElementById("tgYou"), b = document.getElementById("tgThem");
       if (!img || !a || !b) return;
       var views = {
         you: {
           src: "assets/shot-you-see.png",
-          alt: "A Google Meet interview with the Interview Sarthi panel over it, drafting a Hinglish answer.",
-          cap: "<b>Your screen.</b> The interviewer asked in Hinglish; the answer came back in Hinglish, built from your resume."
+          webp: "assets/shot-you-see.webp",
+          alt: "A Google Meet interview with the Interview Sarthi panel over it: the live transcript of two questions from the interviewers, and a drafted spoken answer marked high confidence.",
+          cap: "<b>Your screen.</b> The panel followed both questions as they were asked, and had a spoken-style answer ready before you opened your mouth."
         },
         them: {
           src: "assets/shot-they-see.png",
-          alt: "The same Google Meet call as the interviewer receives it, with no overlay anywhere in the frame.",
+          webp: "assets/shot-they-see.webp",
+          alt: "The same Google Meet call as the interviewer receives it: three faces in the grid and no overlay anywhere in the frame.",
           cap: "<b>What the interviewer sees.</b> Same call, same second. The panel is simply not in the stream."
         }
       };
       // preload so the swap is instant rather than a flash of empty frame
-      var pre = new Image(); pre.src = views.them.src;
+      var pre = new Image(); pre.src = views.them.webp;
       function show(k, btn, other) {
         var v = views[k];
+        if (src) src.srcset = v.webp;
         img.src = v.src; img.alt = v.alt; cap.innerHTML = v.cap;
         btn.classList.add("on"); other.classList.remove("on");
         btn.setAttribute("aria-selected", "true"); other.setAttribute("aria-selected", "false");
