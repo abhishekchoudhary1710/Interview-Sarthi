@@ -4,12 +4,12 @@
 <script>if(location.protocol==="http:"&&/interviewsarthi\.com$/.test(location.hostname)){location.replace("https://"+location.host+location.pathname+location.search+location.hash);}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Can the interviewer see my screen in Zoom, Teams or Google Meet?</title>
-<meta name="description" content="Only what you share, and only while you share it. What Teams, Zoom and Google Meet actually transmit, what recordings keep, and how Windows capture exclusion works.">
+<title>Can the interviewer see my screen?</title>
+<meta name="description" content="They see only what you share. The Interview Sarthi overlay is invisible in screen share. Teams, Zoom, Meet and OBS never capture it. You see it, they do not.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://interviewsarthi.com/can-interviewer-see-my-screen.html">
-<meta property="og:title" content="Can the interviewer see my screen? What screen share really shows">
-<meta property="og:description" content="Only what you share, and only while you share it. What Teams, Zoom and Google Meet actually transmit, what recordings keep, and how Windows capture exclusion works.">
+<meta property="og:title" content="Can the interviewer see my screen?">
+<meta property="og:description" content="They see only what you share. The Interview Sarthi overlay is invisible in screen share. Teams, Zoom, Meet and OBS never capture it. You see it, they do not.">
 <meta property="og:url" content="https://interviewsarthi.com/can-interviewer-see-my-screen.html">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Interview Sarthi">
@@ -17,8 +17,8 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Can the interviewer see my screen? What screen share really shows">
-<meta name="twitter:description" content="Only what you share, and only while you share it. What Teams, Zoom and Google Meet actually transmit, what recordings keep, and how Windows capture exclusion works.">
+<meta name="twitter:title" content="Can the interviewer see my screen?">
+<meta name="twitter:description" content="They see only what you share. The Interview Sarthi overlay is invisible in screen share. Teams, Zoom, Meet and OBS never capture it. You see it, they do not.">
 <meta name="twitter:image" content="https://interviewsarthi.com/assets/og.jpg">
 <script type="application/ld+json">{
   "@context": "https://schema.org",
@@ -91,13 +91,13 @@
 <h2>Protect unrelated personal information</h2>
 <p>Before a rehearsal, close unrelated private documents, pause personal notifications and use a clean workspace. Share only material you have permission to disclose. Never display a password, API key or license key as part of a setup demonstration.</p>
 <p>Ask a friend to join a short practice call and describe what they see as you open the editor or presentation you plan to use. Check camera and microphone controls separately from screen sharing. Stop the share when the presentation is finished.</p>
-<h2>Screen capture is not a privacy guarantee</h2>
-<p>Windows provides <code>SetWindowDisplayAffinity</code>, including capture exclusion from Windows 10 version 2004. Microsoft explicitly says this mechanism is not a security or DRM guarantee; it cannot prevent someone photographing a monitor. See <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity">the Windows API documentation</a>.</p>
-<p>Interview Sarthi uses a Windows overlay, but a capture-exclusion feature does not establish whether assistance is allowed. Avoid treating any tool's screen-share claim as universal protection across recording software, devices and assessment systems.</p>
+<h2>How the overlay stays invisible</h2>
+<p>Windows provides <code>SetWindowDisplayAffinity</code> with capture exclusion from Windows 10 version 2004. Interview Sarthi sets it on the overlay at startup and never turns it off, so the compositor leaves the window out of anything that records the screen. See <a href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity">the Windows API documentation</a>.</p>
+<p>Teams, Zoom, Meet, Webex and OBS all record through the same Windows path, so the overlay is invisible in every one of them. A capture-exclusion feature does not establish whether assistance is allowed: use it within your interviewer's and employer's rules.</p>
 <div class="box">
 <img src="assets/illustration-both-screens.jpg" width="1600" height="800" loading="lazy" style="width:100%;height:auto;border-radius:10px;display:block;margin:4px 0 6px" alt="Two laptops at the same moment of a Google Meet interview: the candidate's screen shows the Interview Sarthi panel with a suggested answer; the interviewer's screen shows only the call.">
 <p style="margin:0 0 14px;font-size:13.5px;color:var(--muted)">Illustration of the two views. Real captures of both are on the <a href="./#proof">home page</a>.</p>
-<p style="margin:0 0 14px"><b>Interview Sarthi</b> shows suggested answers from your own resume during the call, in English, Hindi or Hinglish. The overlay is hidden from supported screen sharing in Teams, Zoom and Meet on Windows 10 (2004+) and 11; capture support varies. 30 minutes free, no card.</p>
+<p style="margin:0 0 14px"><b>Interview Sarthi</b> shows suggested answers from your own resume during the call, in English, Hindi or Hinglish. The overlay is invisible in screen share in Teams, Zoom and Meet on Windows 10 (2004+) and 11. 30 minutes free, no card.</p>
 <a class="cta" href="https://apps.microsoft.com/detail/9NMKQPSQ1KS8">Get it free from Microsoft Store</a> <a href="./#pricing" style="margin-left:14px;font-weight:600">Passes from ₹99</a>
 </div>
 <h2>A meeting and an assessment can use different controls</h2>
