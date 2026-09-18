@@ -1250,10 +1250,13 @@
     /* hero stats */
     /* hero: the words on the left, the product on the right. Breaks out of the
      1080px text column because the panel inside the shot needs the width. */
+    /* the call frame is 16:9, so it needs more of the row than the old drawn mock
+     did to carry the same weight -- but only where there is room for it, or the
+     copy column gets squeezed on small laptops. */
     .hgrid {
       display: grid;
-      grid-template-columns: 1fr 1.12fr;
-      gap: 44px;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 40px;
       align-items: center;
       text-align: left;
       padding: 0 22px;
@@ -1261,6 +1264,13 @@
       width: calc(100vw - 44px);
       margin-left: 50%;
       transform: translateX(-50%)
+    }
+
+    @media(min-width:1200px) {
+      .hgrid {
+        grid-template-columns: 1fr 1.5fr;
+        gap: 36px
+      }
     }
 
     .hgrid h1 {
@@ -1278,263 +1288,138 @@
       justify-content: flex-start
     }
 
-    /* the meeting, and the panel floating on top of it. Drawn here rather than
-     cropped out of a screenshot: the panel text stays crisp at any column
-     width, and the answer can type itself in. */
+    /* the meeting: one still frame of a real call, with each face swapped for a
+     short generated loop, and the answer typing itself into the panel. Sizes are
+     in cqw so the plates and the answer track the column width. */
     .hmock {
-      background: #12151d;
-      border: 1px solid #232c3d;
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1672/941;
       border-radius: 14px;
       overflow: hidden;
+      border: 1px solid #232c3d;
       box-shadow: 0 26px 64px rgba(15, 23, 42, .28);
-      text-align: left;
-      color: #e8edf7
+      background: #12151d;
+      container-type: inline-size
     }
 
-    .hmbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 13px;
-      font-size: 11.5px;
-      color: #8d97ad;
-      border-bottom: 1px solid rgba(255, 255, 255, .07)
+    .hmock>img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover
     }
 
-    .hmrec {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      color: #fca5a5;
-      font-weight: 700;
-      font-size: 10.5px
-    }
-
-    .hmrec i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #f87171;
-      animation: blink 1.2s steps(1) infinite
-    }
-
-    .hmstage {
-      position: relative;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 9px;
-      padding: 11px;
-      min-height: 430px
-    }
-
-    .hmtile {
-      border-radius: 9px;
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center
-    }
-
-    .hmtile.them {
-      background: #2b3550
-    }
-
-    .hmtile.you {
-      background: #2c4038
-    }
-
-    .hmav {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 15px;
-      letter-spacing: .5px;
-      margin-bottom: 34px
-    }
-
-    .hmtile.them .hmav {
-      background: #59688f;
-      color: #eaf0ff
-    }
-
-    .hmtile.you .hmav {
-      background: #4d7d65;
-      color: #eafff3
-    }
-
-    .hmname {
+    /* each clip covers only the part of its tile the panel does not sit over */
+    .hmvid {
       position: absolute;
-      left: 8px;
-      bottom: 8px;
-      background: rgba(9, 12, 18, .72);
-      border-radius: 5px;
-      padding: 2px 7px;
-      font-size: 10px;
-      color: #c7d0e0
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity .7s ease
     }
 
-    .hmctrl {
-      display: flex;
-      gap: 9px;
-      justify-content: center;
-      padding: 9px 0 11px;
-      border-top: 1px solid rgba(255, 255, 255, .07)
+    .hmvid.on {
+      opacity: 1
     }
 
-    .hmctrl span {
-      width: 19px;
-      height: 19px;
-      border-radius: 50%;
-      background: #2a3140
+    .hmvid.them1 {
+      left: 0;
+      top: 6.06%;
+      width: 26.32%;
+      height: 44.85%
     }
 
-    .hmctrl .end {
-      background: #e5484d;
-      width: 30px;
-      border-radius: 10px
+    .hmvid.them2 {
+      left: 73.74%;
+      top: 6.06%;
+      width: 26.26%;
+      height: 44.85%
     }
 
-    /* the panel */
-    .hmpanel {
+    .hmvid.you {
+      left: 21.65%;
+      top: 63.76%;
+      width: 56.99%;
+      height: 27.31%
+    }
+
+    /* name plates, drawn rather than baked in so the text never garbles */
+    .hmtag {
       position: absolute;
-      left: 50%;
-      top: 30px;
-      transform: translateX(-50%);
-      width: 78%;
-      background: rgba(13, 17, 30, .86);
-      border: 1px solid rgba(96, 165, 250, .3);
-      border-radius: 10px;
-      box-shadow: 0 22px 54px rgba(0, 0, 0, .55);
-      padding: 9px 10px 10px;
-      backdrop-filter: blur(3px)
+      padding: .5cqw .8cqw .55cqw;
+      border-radius: .45cqw;
+      background: rgba(24, 21, 17, .76);
+      line-height: 1.25
     }
 
-    .hmpbar {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      font-size: 10.5px;
-      color: #8d97ad;
-      margin-bottom: 9px
+    .hmtag b {
+      display: block;
+      font-size: 1.05cqw;
+      font-weight: 600;
+      color: #fff
     }
 
-    .hmpbar i {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #fbbf24;
-      flex: none
+    .hmtag span {
+      display: block;
+      font-size: .92cqw;
+      color: #e4e4e4
     }
 
-    .hmpbar b {
-      color: #e8edf7;
-      font-size: 11.5px
+    .hmtag.t1 {
+      left: 1.2%;
+      top: 43.57%
     }
 
-    .hmpbar em {
-      margin-left: auto;
-      font-style: normal;
-      color: #6ee7b7;
-      font-size: 9.5px
+    .hmtag.t2 {
+      right: .3%;
+      top: 43.57%;
+      text-align: right
     }
 
-    .hmpsec {
-      font-size: 9px;
-      letter-spacing: 1.3px;
-      text-transform: uppercase;
-      color: #6b7590;
-      margin: 0 0 5px
+    .hmtag.t3 {
+      left: 22.19%;
+      top: 83.53%
     }
 
-    .hmpconv {
-      border: 1px solid rgba(255, 255, 255, .08);
-      border-radius: 7px;
-      padding: 8px 9px;
-      margin-bottom: 10px
-    }
-
-    .hmpconv p {
-      margin: 0 0 7px;
-      font-size: 11.5px;
-      line-height: 1.5;
-      color: #cfd8e8
-    }
-
-    .hmpconv p:last-child {
-      margin-bottom: 0
-    }
-
-    .hmpconv b {
-      color: #7fb0ff;
-      font-size: 10.5px
-    }
-
-    .hmpconv time {
-      color: #6b7590;
-      font-size: 9px
-    }
-
-    .hmpsay {
-      border: 1px solid rgba(52, 211, 153, .3);
-      border-left: 3px solid #34d399;
-      border-radius: 7px;
-      background: rgba(16, 64, 50, .42);
-      padding: 8px 10px
-    }
-
-    .hmpq {
-      color: #fca5a5;
-      font-weight: 700;
-      font-size: 11px;
-      margin-bottom: 5px
+    /* the suggested answer, masked over the still and typed back in */
+    .hmmask {
+      position: absolute;
+      left: 28.47%;
+      top: 40.81%;
+      width: 41.39%;
+      height: 9.35%;
+      background: rgb(2, 33, 37)
     }
 
     .hmpa {
+      position: absolute;
+      left: 28.83%;
+      top: 41.23%;
+      width: 40.67%;
+      height: 9.1%;
       margin: 0;
-      font-size: 11.5px;
-      line-height: 1.62;
+      font-size: .87cqw;
+      line-height: 1.19cqw;
       color: #dbe4f2;
-      min-height: 74px
+      overflow: hidden
     }
 
     .hmpa .cur {
       display: inline-block;
-      width: 6px;
-      height: 12px;
+      width: .16cqw;
+      height: .85cqw;
       background: #34d399;
-      vertical-align: -2px;
+      vertical-align: -.05cqw;
       margin-left: 2px;
       animation: blink 1s steps(1) infinite
     }
 
-    .hmpfoot {
-      display: flex;
-      align-items: center;
-      margin-top: 7px;
-      font-size: 9.5px;
-      color: #6ee7b7
-    }
-
-    .hmpfoot .cp {
-      margin-left: auto;
-      color: #8d97ad;
-      border: 1px solid rgba(255, 255, 255, .12);
-      border-radius: 5px;
-      padding: 1px 7px
-    }
-
-    .hmpask {
-      margin-top: 9px;
-      border: 1px solid rgba(255, 255, 255, .1);
-      border-radius: 7px;
-      padding: 7px 9px;
-      font-size: 10.5px;
-      color: #5c6680
+    /* phones get the still only: the tiles are thumbnail sized there and the
+     connection is usually the slowest */
+    @media (max-width:760px) {
+      .hmvid {
+        display: none
+      }
     }
 
     .shotcap {
@@ -1542,17 +1427,6 @@
       font-size: 13.5px;
       color: var(--muted);
       line-height: 1.5
-    }
-
-    @media(max-width:620px) {
-      .hmstage {
-        min-height: 360px
-      }
-
-      .hmpanel {
-        width: 90%;
-        top: 16px
-      }
     }
 
     @media(max-width:940px) {
@@ -2023,31 +1897,22 @@
               href="vs-final-round-ai.html">Interview Sarthi vs Final Round AI</a></div>
         </div>
         <div class="hvis rv">
-          <div class="hmock" aria-label="A video interview with the Interview Sarthi panel on top of it">
-            <div class="hmbar"><span>Google Meet · Product Analyst, Round 2</span><span class="hmrec"><i></i>REC</span>
-            </div>
-            <div class="hmstage">
-              <div class="hmtile them"><span class="hmav">RK</span><span class="hmname">Rohit · Interviewer</span></div>
-              <div class="hmtile you"><span class="hmav">AC</span><span class="hmname">You · sharing screen</span></div>
-              <div class="hmpanel">
-                <div class="hmpbar"><i></i><b>Interview Sarthi</b><span>listening · Google Meet</span><em>hidden from
-                    share</em></div>
-                <div class="hmpsec">Conversation</div>
-                <div class="hmpconv">
-                  <p><b>Them</b> <time>09:21</time><br>Your resume mein e-commerce ka project dikh raha hai.</p>
-                  <p><b>Them</b> <time>09:22</time><br>Accha, ye batao, is project mein sabse bada challenge kya tha?
-                  </p>
-                </div>
-                <div class="hmpsec">Say this</div>
-                <div class="hmpsay">
-                  <div class="hmpq">Is project mein sabse bada challenge kya tha?</div>
-                  <p class="hmpa" id="hmAns"></p>
-                  <div class="hmpfoot"><span class="conf">high confidence</span><span class="cp">copy</span></div>
-                </div>
-                <div class="hmpask">Ask the AI about this meeting…</div>
-              </div>
-            </div>
-            <div class="hmctrl"><span></span><span></span><span></span><span></span><span class="end"></span></div>
+          <div class="hmock">
+            <img src="assets/hero-mock.webp"
+              srcset="assets/hero-mock-sm.webp 836w, assets/hero-mock.webp 1672w"
+              sizes="(max-width:940px) 92vw, 46vw" width="1672" height="941" fetchpriority="high"
+              alt="A Google Meet interview round with the Interview Sarthi panel over it: the interviewers' questions in a conversation list, and a suggested answer marked Say this with a copy button.">
+            <video class="hmvid them1" data-src="assets/hero-vikram.mp4" muted loop playsinline preload="none"
+              aria-hidden="true"></video>
+            <video class="hmvid them2" data-src="assets/hero-meera.mp4" muted loop playsinline preload="none"
+              aria-hidden="true"></video>
+            <video class="hmvid you" data-src="assets/hero-candidate.mp4" muted loop playsinline preload="none"
+              aria-hidden="true"></video>
+            <div class="hmtag t1"><b>Vikram Iyer</b><span>Head of Product</span></div>
+            <div class="hmtag t2"><b>Meera Nair</b><span>Product Lead</span></div>
+            <div class="hmtag t3"><b>You</b><span>Candidate</span></div>
+            <div class="hmmask"></div>
+            <p class="hmpa" id="hmAns" aria-hidden="true"></p>
           </div>
           <p class="shotcap">Your screen while they talk. The panel sits on top of the call and never enters the share.
             <a href="#proof">See the real capture →</a></p>
@@ -2797,12 +2662,33 @@
     })();
   </script>
   <script>
+    // the hero clips start downloading only once the page itself has loaded, so they
+    // never compete with the still frame or the install button
+    (function () {
+      var vids = document.querySelectorAll(".hmvid");
+      if (!vids.length) return;
+      if (window.matchMedia("(max-width:760px)").matches) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      function start() {
+        Array.prototype.forEach.call(vids, function (v) {
+          v.addEventListener("canplay", function () { v.classList.add("on"); }, { once: true });
+          v.src = v.getAttribute("data-src");
+          var p = v.play();
+          if (p && p.catch) p.catch(function () { });
+        });
+      }
+      if (document.readyState === "complete") { setTimeout(start, 300); }
+      else { window.addEventListener("load", function () { setTimeout(start, 300); }); }
+    })();
+  </script>
+  <script>
     (function () {
       var out = document.getElementById("hmAns");
       if (!out) return;
-      var text = "Sabse bada challenge scale ka tha. Launch ke time hum roughly 500 orders a day handle kar rahe the, " +
-        "aur festive season mein wo 8,000 tak chala gaya. Purana sync flow wahan tut raha tha, toh maine order " +
-        "processing ko queue-based kar diya \u2014 Redis pe, retries ke saath. Uske baad peak day bhi bina downtime nikal gaya.";
+      var text = "I would start by aligning with the product goals and key user problems, then use a framework " +
+        "like RICE or MoSCoW to evaluate features based on impact, effort, and strategic fit. Given limited " +
+        "bandwidth, I'd focus on high-impact, low-effort items that validate core value, and keep a clear " +
+        "feedback loop with users to iterate quickly.";
       var words = text.split(" ");
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { out.textContent = text; return; }
       var i = 0, timer;
