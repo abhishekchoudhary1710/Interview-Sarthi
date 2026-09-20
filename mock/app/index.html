@@ -11,9 +11,37 @@
   <meta name="theme-color" content="#FBF7F0">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+  /* Which screen the visitor asked for, decided before anything is painted.
+   * app.js is a module and runs only after the page is parsed, by which time
+   * the browser has already drawn the first screen; this is what stops the CV
+   * step flashing past on the way to a pass. The app confirms it all a moment
+   * later from the server, and clears these classes as it takes over. */
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      var buy = q.get("buy"), order = q.get("order_id");
+      if (buy !== "w" && buy !== "m") buy = null;
+      if (!buy && !order) return;
+      window.__ps = { buy: buy, order: order || null };
+      var c = document.documentElement.classList;
+      c.add("ps-pass");
+      if (buy) c.add("ps-checkout");
+      if (order) c.add("ps-confirm");
+      // The address bar should not keep an instruction that has been carried out.
+      history.replaceState(null, "", location.pathname);
+    } catch (e) { /* any trouble: the app sorts it out as usual */ }
+  })();
+  </script>
   <link rel="stylesheet" href="../prep.css">
   <style>
     .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
+    /* the first paint, before app.js has loaded */
+    html.ps-pass #s-cv{display:none}
+    html.ps-pass #s-pass{display:block}
+    html.ps-checkout #buy-block{display:none}
+    html.ps-checkout #checkout{display:block}
+    html.ps-confirm #pass-body{display:none}
     .screen h1{font-size:clamp(34px,6vw,50px);margin:10px 0 12px}
     .screen h1 em{font-style:italic;color:var(--accent)}
     .lede{color:var(--muted);font-size:16.5px;margin:0 0 8px;max-width:36em}
@@ -163,6 +191,14 @@
     <h1 id="pass-title">Unlimited mocks, <em>one payment.</em></h1>
     <p class="lede" id="pass-lede">No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.</p>
     <div class="notice" id="pass-notice"></div>
+    <script>
+      /* Fill in what the head decided, as these elements appear. */
+      (function () {
+        if (!window.__ps) return;
+        var n = document.getElementById("pass-notice");
+        if (window.__ps.order) { n.textContent = "Confirming your payment… keep this page open."; }
+      })();
+    </script>
     <div class="offer warn" id="pass-running" style="display:none">
       <p>Your interview is still running in the background. Paying opens Cashfree and would end it without a report. Finish it first, then buy.</p>
       <button class="pill small" id="pass-running-back">Back to my interview</button>
@@ -198,6 +234,12 @@
       <div class="card" id="checkout" style="display:none">
         <div class="acct-top">
           <div><span class="label" id="checkout-label">You are buying</span><p id="checkout-plan" style="margin:4px 0 0;font-weight:600"></p></div>
+          <script>
+            (function () {
+              var buy = window.__ps && window.__ps.buy;
+              if (buy) document.getElementById("checkout-plan").textContent = { w: "7-Day Pass · Rs 99", m: "30-Day Pass · Rs 249" }[buy];
+            })();
+          </script>
           <button class="linkink" id="checkout-back">Change</button>
         </div>
         <div id="pass-signin" style="margin-top:18px">

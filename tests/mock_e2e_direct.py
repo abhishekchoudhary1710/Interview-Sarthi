@@ -55,6 +55,16 @@ def main() -> int:
         page.goto(f"{BASE}/mock/#pricing", wait_until="networkidle")
         href = page.get_attribute('.pricecard.best a.pill', "href")
         print("1. pricing button goes to:", href)
+        # The very first paint must already be the pass screen: no flash of the
+        # CV step on the way there.
+        first = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True).new_page()
+        first.goto(f"{BASE}/mock/app/?buy=w", wait_until="commit")
+        first.wait_for_selector(".screen.on", timeout=10000)
+        shown = first.evaluate("document.querySelector('.screen.on').id + '|' + (document.getElementById('checkout-plan')||{}).textContent")
+        print("   first paint           :", shown)
+        if not shown.startswith("s-pass"):
+            failures.append(f"the CV screen paints before the pass screen ({shown})")
+        first.close()
         page.click('.pricecard.best a.pill')
         page.wait_for_selector("#s-pass.on", timeout=15000)
         page.wait_for_selector("#checkout", state="visible", timeout=10000)

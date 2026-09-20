@@ -85,14 +85,17 @@ export async function initPasses(context) {
     $("testlogin").style.display = "block";
     $("testlogin-go").onclick = () => onGoogle("test:" + ($("testlogin-email").value.trim() || "tester@example.com"));
   }
-  choosePlan(ctx.state.plan || "w");
+  const asked = window.__ps || {};
+  choosePlan(asked.buy || ctx.state.plan || "w");
+  if (asked.buy || asked.order) {
+    // The head put the right screen up; from here the app owns it.
+    if (asked.buy) { step = "checkout"; ctx.show("s-pass"); }
+    document.documentElement.classList.remove("ps-pass", "ps-checkout", "ps-confirm");
+  }
   if (await resumePendingOrder()) return;
-  // "Get the 7-day pass" on the pricing page: straight to checkout for that pass.
-  const want = new URLSearchParams(location.search).get("buy");
-  if (want === "w" || want === "m") {
-    history.replaceState(null, "", location.pathname);
-    ctx.track("mock_buy_link", { plan: want });
-    await openPasses("", { plan: want, checkout: true });
+  if (asked.buy) {
+    ctx.track("mock_buy_link", { plan: asked.buy });
+    await openPasses("", { plan: asked.buy, checkout: true });
   }
 }
 
@@ -249,10 +252,13 @@ async function pay() {
 async function resumePendingOrder() {
   let pending = null;
   try { pending = JSON.parse(localStorage.getItem(PENDING) || "null"); } catch (_) { /* corrupt */ }
-  const fromUrl = new URLSearchParams(location.search).get("order_id");
+  const fromUrl = (window.__ps || {}).order;
   if (fromUrl) pending = { order_id: fromUrl, hash: (pending && pending.hash) || null, at: (pending && pending.at) || Date.now() };
-  if (!pending || !session.get() || Date.now() - (pending.at || 0) > 3600_000) return false;
-  if (fromUrl) history.replaceState(null, "", location.pathname);
+  if (!pending || !session.get() || Date.now() - (pending.at || 0) > 3600_000) {
+    document.documentElement.classList.remove("ps-pass", "ps-confirm");
+    if (fromUrl) { ctx.show("s-pass"); $("pass-body").style.display = "block"; say("That payment could not be matched to this browser. If money left your account, sign in below with the same Google account and your pass will be there.", ""); return true; }
+    return false;
+  }
   ctx.state.hash = ctx.state.hash || pending.hash;
   ctx.show("s-pass");
   $("pass-body").style.display = "none";
