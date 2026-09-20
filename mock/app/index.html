@@ -191,16 +191,17 @@
         </div>
         <div class="actions"><button class="pill wide" id="buy-cta">Buy the 7-day pass →</button></div>
         <p class="muted" style="font-size:13.5px;margin:14px 0 0">UPI, card or netbanking through Cashfree. One payment, no auto-renew. <a href="/refunds.html" target="_blank">Refunds</a>.</p>
+        <p class="muted" id="have-pass-row" style="font-size:14.5px;margin:14px 0 0">Already bought a pass? <button class="linkink" id="have-pass">Sign in to use it here</button></p>
       </div>
 
       <!-- step 2: who you are, then pay -->
       <div class="card" id="checkout" style="display:none">
         <div class="acct-top">
-          <div><span class="label">You are buying</span><p id="checkout-plan" style="margin:4px 0 0;font-weight:600"></p></div>
+          <div><span class="label" id="checkout-label">You are buying</span><p id="checkout-plan" style="margin:4px 0 0;font-weight:600"></p></div>
           <button class="linkink" id="checkout-back">Change</button>
         </div>
         <div id="pass-signin" style="margin-top:18px">
-          <p class="muted" style="margin:0 0 14px">Sign in with Google first, so your pass follows you to any phone or laptop.</p>
+          <p class="muted" id="signin-why" style="margin:0 0 14px">Sign in with Google first, so your pass follows you to any phone or laptop.</p>
           <div id="gbutton"></div>
           <div id="testlogin" style="display:none;margin-top:12px">
             <span class="label">Sandbox sign-in (local preview only)</span>

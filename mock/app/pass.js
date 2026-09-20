@@ -22,7 +22,8 @@ const SCORE_WORTH_SHARING = 70;
 let ctx = null;          // { state, setEntitlement, show, track, log, resume, practise }
 let cfg = null;
 let googleReady = false;
-let step = "choose";     // choose | checkout
+let step = "choose";     // choose | checkout | signin (a buyer on a new device, not buying)
+const PHONE = "ps_phone";
 let extendOpen = false;
 
 function loadScript(src) {
@@ -63,8 +64,10 @@ export async function initPasses(context) {
   $("pass-running-back").onclick = () => ctx.resume();
   $("extend").onclick = () => { extendOpen = true; step = "choose"; paint(); $("buy-block").scrollIntoView({ behavior: "smooth", block: "center" }); };
   for (const el of document.querySelectorAll(".plan")) el.onclick = () => choosePlan(el.dataset.plan);
-  $("buy-cta").onclick = () => { step = "checkout"; paint(); };
+  $("buy-cta").onclick = () => { step = "checkout"; say(""); paint(); };
+  $("have-pass").onclick = () => { step = "signin"; say(""); paint(); };
   $("checkout-back").onclick = () => { step = "choose"; say(""); paint(); };
+  try { $("phone").value = localStorage.getItem(PHONE) || ""; } catch (_) { /* private mode */ }
   $("pay").onclick = pay;
   const signOut = () => { session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null, kind: ctx.state.ent && ctx.state.ent.hasTrial ? (ctx.state.ent.trialLeft > 0 ? "trial" : "none") : "none", secondsLeft: (ctx.state.ent && ctx.state.ent.trialLeft) || 0, expiresAt: null }); step = "choose"; extendOpen = false; paint(); };
   $("signout").onclick = signOut;
@@ -75,7 +78,14 @@ export async function initPasses(context) {
     $("testlogin-go").onclick = () => onGoogle("test:" + ($("testlogin-email").value.trim() || "tester@example.com"));
   }
   choosePlan(ctx.state.plan || "w");
-  await resumePendingOrder();
+  if (await resumePendingOrder()) return;
+  // "Get the 7-day pass" on the pricing page: straight to checkout for that pass.
+  const want = new URLSearchParams(location.search).get("buy");
+  if (want === "w" || want === "m") {
+    history.replaceState(null, "", location.pathname);
+    ctx.track("mock_buy_link", { plan: want });
+    await openPasses("", { plan: want, checkout: true });
+  }
 }
 
 // ------------------------------------------------------------------ passes
@@ -91,9 +101,16 @@ function choosePlan(id) {
   }
 }
 
-export async function openPasses(message) {
+/**
+ * @param {string} [message]
+ * @param {{plan?: "w"|"m", checkout?: boolean}} [opts]  the pricing page's buttons
+ *        open the app straight at checkout for the pass that was clicked
+ */
+export async function openPasses(message, opts = {}) {
   ctx.show("s-pass");
   say(message || "");
+  if (opts.plan && planOf(opts.plan)) choosePlan(opts.plan);
+  if (opts.checkout) { step = "checkout"; if (ctx.state.ent && ctx.state.ent.kind === "pass") extendOpen = true; }
   if (!ctx.passesOn) {
     $("pass-body").style.display = "none";
     say("Passes open in a few days. Until then, invite a friend: you both get 20 free minutes.", "");
@@ -141,10 +158,19 @@ function paint() {
 
   // Buying: hidden behind "Extend" once a pass is live.
   const buying = !live || extendOpen;
+  const signinOnly = step === "signin" && !account;
+  if (step === "signin" && account) step = "choose";       // signed in: nothing left to ask
   $("buy-block").style.display = buying && step === "choose" ? "block" : "none";
-  $("checkout").style.display = buying && step === "checkout" ? "block" : "none";
+  $("checkout").style.display = buying && (step === "checkout" || signinOnly) ? "block" : "none";
   $("pass-signin").style.display = account ? "none" : "block";
-  $("pass-pay").style.display = account ? "block" : "none";
+  $("pass-pay").style.display = account && !signinOnly ? "block" : "none";
+  $("have-pass-row").style.display = account ? "none" : "block";
+  $("checkout-label").textContent = signinOnly ? "Welcome back" : "You are buying";
+  $("checkout-plan").style.display = signinOnly ? "none" : "block";
+  $("checkout-back").textContent = signinOnly ? "Back" : "Change";
+  $("signin-why").textContent = signinOnly
+    ? "Sign in with the Google account you bought with, and your pass appears here."
+    : "Sign in with Google first, so your pass follows you to any phone or laptop.";
   if (account) $("pass-who2").textContent = `Signed in as ${account.email}`;
 
   // Words at the top follow the state, so the page never asks for money twice.
@@ -161,18 +187,22 @@ function paint() {
     $("start-days").textContent = account ? `Start my ${banked} free day${banked > 1 ? "s" : ""}` : "Sign in above to start them";
     $("start-days").disabled = !account;
   }
-  if (buying && step === "checkout") showGoogleButton();
+  if (buying && (step === "checkout" || signinOnly)) showGoogleButton();
 }
 
+/* A Google account is all it takes. No Gemini key is needed to sign in or to
+ * buy; the key only matters once an interview starts. */
 async function onGoogle(credential) {
-  if (!ctx.state.hash) { say("Add your Gemini key first, then come back to sign in.", "bad"); return; }
+  const cameToSignIn = step === "signin";
   say("Signing you in…");
   try {
     ctx.setEntitlement(await signIn(credential, ctx.state.hash));
-    say("");
-    ctx.track("mock_sign_in", {});
+    ctx.track("mock_sign_in", { with_key: !!ctx.state.hash, to_buy: !cameToSignIn });
+    const live = ctx.state.ent.kind === "pass";
+    if (cameToSignIn) { step = "choose"; say(live ? "Welcome back. Your pass is live." : "Signed in. There is no active pass on this account, so choose one below.", live ? "ok" : ""); }
+    else say("");
     paint();
-    $("phone").focus();
+    if (!cameToSignIn && !live) $("phone").focus();
   } catch (err) { say(err.message, "bad"); }
 }
 
@@ -183,7 +213,10 @@ async function pay() {
   say("Opening secure checkout…");
   try {
     const order = await startOrder(ctx.state.plan || "w", phone);
-    try { localStorage.setItem(PENDING, JSON.stringify({ order_id: order.order_id, hash: ctx.state.hash, at: Date.now() })); } catch (_) { /* private mode */ }
+    try {
+      localStorage.setItem(PENDING, JSON.stringify({ order_id: order.order_id, hash: ctx.state.hash || null, at: Date.now() }));
+      localStorage.setItem(PHONE, phone.slice(-10));
+    } catch (_) { /* private mode */ }
     ctx.track("begin_checkout", { product: "prep-sarthi", plan: ctx.state.plan || "w", value: order.amount, currency: "INR" });
     await loadScript("https://sdk.cashfree.com/js/v3/cashfree.js");
     window.Cashfree({ mode: order.mode }).checkout({ paymentSessionId: order.payment_session_id, redirectTarget: "_self" });
@@ -199,14 +232,18 @@ async function resumePendingOrder() {
   let pending = null;
   try { pending = JSON.parse(localStorage.getItem(PENDING) || "null"); } catch (_) { /* corrupt */ }
   const fromUrl = new URLSearchParams(location.search).get("order_id");
-  if (fromUrl && (!pending || pending.order_id !== fromUrl)) pending = pending && pending.hash ? { ...pending, order_id: fromUrl } : null;
-  if (!pending || !session.get() || Date.now() - (pending.at || 0) > 3600_000) return;
+  if (fromUrl) pending = { order_id: fromUrl, hash: (pending && pending.hash) || null, at: (pending && pending.at) || Date.now() };
+  if (!pending || !session.get() || Date.now() - (pending.at || 0) > 3600_000) return false;
   if (fromUrl) history.replaceState(null, "", location.pathname);
   ctx.state.hash = ctx.state.hash || pending.hash;
   ctx.show("s-pass");
   $("pass-body").style.display = "none";
-  say("Confirming your payment… keep this page open.");
-  for (let i = 0; i < 40; i++) {
+  // Cashfree sends people back with ?order_id= after a payment, good or bad.
+  // Arriving without it means they pressed Back on Cashfree's page: ask a few
+  // times in case the money did move, then stop pretending something is pending.
+  const cameBackByHand = !fromUrl;
+  say(cameBackByHand ? "Checking whether a payment went through…" : "Confirming your payment… keep this page open.");
+  for (let i = 0; i < (cameBackByHand ? 3 : 40); i++) {
     let r;
     try { r = await orderStatus(pending.order_id, pending.hash); } catch (_) { r = { status: "pending" }; }
     if (r.status === "paid") {
@@ -217,19 +254,27 @@ async function resumePendingOrder() {
       $("pass-body").style.display = "block"; paint();
       say(`Paid. Your ${r.plan} is live. Practise as much as you like.`, "ok");
       $("pass-back").textContent = "Back";
-      return;
+      return true;
     }
     if (r.status === "failed") {
       try { localStorage.removeItem(PENDING); } catch (_) { /* ignore */ }
       step = "choose";
       $("pass-body").style.display = "block"; paint();
       say("That payment did not go through, and nothing was charged. You can try again.", "bad");
-      return;
+      return true;
     }
     await new Promise((ok) => setTimeout(ok, 2500));
   }
+  if (cameBackByHand) {
+    try { localStorage.removeItem(PENDING); } catch (_) { /* ignore */ }
+    step = "checkout";
+    $("pass-body").style.display = "block"; paint();
+    say("That payment was not completed, and nothing was charged. You can pay whenever you are ready.", "");
+    return true;
+  }
   $("pass-body").style.display = "block"; paint();
   say("The payment is still being confirmed. If money left your account, your pass will appear here within a few minutes. Otherwise write to support@interviewsarthi.com.", "");
+  return true;
 }
 
 async function startDays() {

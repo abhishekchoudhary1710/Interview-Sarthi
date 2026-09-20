@@ -114,10 +114,12 @@ export async function tick(hash, seconds) {
 
 export const config = () => post("/mock/config", {});
 
+/* `hash` is optional: someone buying straight from the pricing page has no
+ * Gemini key in this browser yet. The invite code rides along so it still counts. */
 export async function signIn(idToken, hash) {
-  const r = await post("/mock/auth/google", { id_token: idToken, hash });
+  const r = await post("/mock/auth/google", { id_token: idToken, hash: hash || undefined, ref: mem.get("ps_ref") || undefined });
   session.set(r.session);
-  return shape(r, hash);
+  return shape(r, hash || null);
 }
 
 export const startOrder = (plan, phone) => post("/mock/buy", { session: session.get(), plan, phone });

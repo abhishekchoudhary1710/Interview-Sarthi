@@ -45,6 +45,7 @@ let gate = new VoiceGate(), micHelpTimer = null, micStats = { chunks: 0, voiced:
 let sheStoppedAt = 0, quietMax = 0, micWarned = false;
 let youClearTimer = null;
 let offerShown = false;
+let booted = false;
 const bubbles = new Map();
 const logLines = [];
 const wheel = new Wheel($("wheel"));
@@ -77,9 +78,13 @@ function fmtLong(seconds) {
 }
 function renderEntitlement() {
   const e = S.ent, el = $("entitle");
-  if (!e) { el.textContent = "\u2026"; el.className = "chip"; return; }
+  // Nothing known yet: a dash while the server is being asked, and the honest
+  // default for a first-time visitor once it is clear nobody is signed in.
+  if (!e) { el.textContent = booted ? "20 min free" : "\u2026"; el.className = "chip"; return; }
   if (e.kind === "pass") { el.textContent = `Pass · ${fmtLong(e.secondsLeft)} left`; el.className = "chip ok"; }
   else if (e.kind === "trial") { el.textContent = `Free · ${fmtLong(e.secondsLeft)} left`; el.className = "chip"; }
+  // Signed in, but no Gemini key in this browser yet: no free-minute count to show.
+  else if (e.hasTrial === false) { el.textContent = "Get a pass"; el.className = "chip"; }
   else { el.textContent = passCtx.passesOn ? "Get a pass" : "Free minutes used"; el.className = "chip warn"; }
 }
 
@@ -131,6 +136,7 @@ async function restore() {
     const byAccount = await entitlementBySession();
     if (byAccount) { S.ent = byAccount; log("entitlement", { kind: byAccount.kind, source: "session", at: "load" }); }
   }
+  booted = true;
   renderEntitlement();
 }
 
