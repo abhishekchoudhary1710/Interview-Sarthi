@@ -151,6 +151,10 @@
       </div>
     </div>
     <div class="notice" id="live-notice"></div>
+    <div class="offer" id="live-offer" style="display:none">
+      <p id="live-offer-text"></p>
+      <button class="pill small" id="live-offer-go">See passes</button>
+    </div>
   </section>
 
   <!-- Passes and account -->
@@ -159,6 +163,10 @@
     <h1 id="pass-title">Unlimited mocks, <em>one payment.</em></h1>
     <p class="lede" id="pass-lede">No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.</p>
     <div class="notice" id="pass-notice"></div>
+    <div class="offer warn" id="pass-running" style="display:none">
+      <p>Your interview is still running in the background. Paying opens Cashfree and would end it without a report. Finish it first, then buy.</p>
+      <button class="pill small" id="pass-running-back">Back to my interview</button>
+    </div>
     <div id="pass-body">
 
       <!-- your account, once a pass is live -->
@@ -232,6 +240,10 @@
       <p class="muted" id="report-status">Scoring every answer against your CV. About twenty seconds.</p>
     </div>
     <div id="report" class="stack"></div>
+    <div class="offer" id="report-offer" style="display:none;margin-top:16px">
+      <p id="report-offer-text"></p>
+      <button class="pill small" id="report-offer-go">See passes</button>
+    </div>
     <div id="invite-report" style="margin-top:16px"></div>
     <div class="actions">
       <button class="pill" id="again">Practise again</button>

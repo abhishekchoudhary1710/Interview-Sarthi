@@ -33,6 +33,7 @@ const TICK_SECONDS = 30;
 const VOICE_RMS = 0.005;
 const BAR_SHAPE = [0.55, 1, 0.75, 0.95, 0.5];
 const MIC_MUTED_RMS = 0.00002;   // exact digital silence: a mute key or a dead input
+const LOW_FREE_SECONDS = 5 * 60;      // when the pass offer appears during a free interview
 
 const S = { cv: "", jd: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "w" };
 let lastScreen = "s-cv";
@@ -43,6 +44,7 @@ let phase = "idle";               // idle | miccheck | call
 let gate = new VoiceGate(), micHelpTimer = null, micStats = { chunks: 0, voiced: 0, maxRms: 0 };
 let sheStoppedAt = 0, quietMax = 0, micWarned = false;
 let youClearTimer = null;
+let offerShown = false;
 const bubbles = new Map();
 const logLines = [];
 const wheel = new Wheel($("wheel"));
@@ -86,8 +88,20 @@ const passCtx = {
   state: S, passesOn: false, show, track, log,
   setEntitlement(ent) { S.ent = ent; renderEntitlement(); },
   refresh: () => entitlement(S.hash),
-  resume() { $("pass-back").textContent = "Back"; if (S.key && S.ent && lastScreen === "s-live") preLive(); else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen); },
-  practise() { $("pass-back").textContent = "Back"; if (S.key && S.ent) preLive(); else show(S.cv || $("cv").value ? "s-key" : "s-cv"); },
+  // An interview keeps running while someone looks at passes; coming back must
+  // return to it, never reset it.
+  running: () => phase === "call" || phase === "miccheck",
+  resume() {
+    $("pass-back").textContent = "Back";
+    if (phase === "call" || phase === "miccheck") { show("s-live"); return; }
+    if (S.key && S.ent && lastScreen === "s-live") preLive();
+    else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen);
+  },
+  practise() {
+    $("pass-back").textContent = "Back";
+    if (phase === "call" || phase === "miccheck") { show("s-live"); return; }
+    if (S.key && S.ent) preLive(); else show(S.cv || $("cv").value ? "s-key" : "s-cv");
+  },
 };
 function currentLanguage() {
   const v = $("language").value;
@@ -234,8 +248,12 @@ $("anyway").onclick = () => {
   startCall();
 };
 
+function showOffer(id, text) { $(id + "-text").textContent = text; $(id).style.display = "flex"; }
+function hideOffer(id) { $(id).style.display = "none"; }
+
 function preLive() {
   phase = "idle";
+  hideOffer("live-offer"); offerShown = false;
   show("s-live");
   wheel.start(); wheel.setState("idle"); wheel.setLevel(0); wheel.setMic(0);
   $("pre-live").style.display = "grid"; $("youbar").style.display = "none";
@@ -415,6 +433,12 @@ async function onSecond() {
   if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
   else if (S.ent.kind === "pass") $("left").textContent = `Pass · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
   if (!wrapSent && remaining <= 60) { wrapSent = true; live.sendText(NOTES.wrapUp); log("wrap_up_sent", {}); }
+  // Free time is nearly gone: this is the moment someone decides to buy.
+  if (S.ent.kind === "trial" && passCtx.passesOn && !offerShown && trialLeftAtStart - elapsed <= LOW_FREE_SECONDS) {
+    offerShown = true;
+    showOffer("live-offer", `About ${Math.max(1, Math.round((trialLeftAtStart - elapsed) / 60))} free minutes left. A pass gives you unlimited mocks, from Rs 99 for a week.`);
+    track("mock_offer_shown", { where: "interview" });
+  }
   if (remaining <= 0) { endInterview("time"); return; }
 
   // She asked, and the microphone has delivered exact digital silence ever
@@ -511,6 +535,13 @@ async function writeReport(turns, elapsed, usage) {
   renderReport(record);
   if (S.ent.kind !== "pass") { const fresh = await entitlement(S.hash); if (fresh.source === "server") { S.ent = fresh; renderEntitlement(); } }
   renderInvite($("invite-report"), result.report.overall_score);
+  if (S.ent.kind !== "pass" && passCtx.passesOn) {
+    const left = Math.round((S.ent.secondsLeft || 0) / 60);
+    showOffer("report-offer", left > 0
+      ? `You have ${left} free minute${left === 1 ? "" : "s"} left. A pass gives you unlimited mocks, from Rs 99 for a week.`
+      : "Your free minutes are used up. A pass gives you unlimited mocks, from Rs 99 for a week.");
+    track("mock_offer_shown", { where: "report" });
+  } else hideOffer("report-offer");
   track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
 }
 
@@ -592,6 +623,9 @@ $("copydiag").onclick = async () => {
     $("copydiag-note").textContent = "Select all and copy.";
   }
 };
+
+$("live-offer-go").onclick = () => { track("mock_offer_click", { where: "interview" }); openPasses(); };
+$("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses(); };
 
 window.addEventListener("pagehide", () => { if (live) live.close(); });
 rememberInvite();

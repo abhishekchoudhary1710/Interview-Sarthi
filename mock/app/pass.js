@@ -60,6 +60,7 @@ export async function initPasses(context) {
   $("pass-back").onclick = () => ctx.resume();
   $("invite-back").onclick = () => ctx.resume();
   $("go-practise").onclick = () => ctx.practise();
+  $("pass-running-back").onclick = () => ctx.resume();
   $("extend").onclick = () => { extendOpen = true; step = "choose"; paint(); $("buy-block").scrollIntoView({ behavior: "smooth", block: "center" }); };
   for (const el of document.querySelectorAll(".plan")) el.onclick = () => choosePlan(el.dataset.plan);
   $("buy-cta").onclick = () => { step = "checkout"; paint(); };
@@ -116,6 +117,12 @@ async function showGoogleButton() {
 
 function paint() {
   const ent = ctx.state.ent || {};
+  // Cashfree takes over the page, which would end a running interview with no
+  // report. Say so, and keep the pay buttons out of reach until it is over.
+  const running = !!(ctx.running && ctx.running());
+  $("pass-running").style.display = running ? "flex" : "none";
+  $("buy-cta").disabled = running;
+  $("pay").disabled = running;
   const account = ent.account;
   const live = ent.kind === "pass";
 

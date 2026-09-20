@@ -85,6 +85,20 @@
   .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:14px} @media(max-width:760px){.trio{grid-template-columns:1fr}}
   .trio .card h3{font-size:26px;margin:10px 0 6px} .trio .card p{margin:0;color:var(--muted);font-size:15px}
   .trio .card.now{background:var(--dark);color:var(--dark-ink);border-color:var(--dark)} .trio .card.now p,.trio .card.now .label{color:var(--dark-muted)}
+  .prices{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch}
+  @media(max-width:820px){.prices{grid-template-columns:1fr}}
+  .pricecard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column}
+  .pricecard b{font-family:var(--display);font-weight:400;font-size:34px;line-height:1.05;margin:10px 0 2px}
+  .pricecard .amount{font:600 24px var(--body);letter-spacing:-.02em;margin:0 0 14px}
+  .pricecard ul{list-style:none;padding:0;margin:0 0 22px;flex:1}
+  .pricecard li{padding:9px 0 9px 22px;border-top:1px solid var(--line);position:relative;color:var(--muted);font-size:15px}
+  .pricecard li::before{content:"";position:absolute;left:2px;top:17px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .pricecard.best{background:var(--dark);color:var(--dark-ink);border-color:var(--dark)}
+  .pricecard.best .label,.pricecard.best li{color:var(--dark-muted)}
+  .pricecard.best li{border-top-color:var(--dark-line)}
+  .pricecard.best li::before{background:#8FA6FF}
+  .pricecard.best .pill{background:var(--dark-ink);color:var(--dark)}
+  .pricecard .pill{width:100%}
   .faq details{border-top:1px solid var(--line);padding:18px 0}
   .faq summary{cursor:pointer;font-family:var(--display);font-size:24px;list-style:none;display:flex;justify-content:space-between;gap:16px}
   .faq summary::-webkit-details-marker{display:none}
@@ -100,7 +114,7 @@
 <div class="wrap">
   <header class="nav">
     <a class="wm" href="./"><img src="../assets/mark.svg" alt="">Prep <i>Sarthi</i></a>
-    <nav class="links"><a class="opt" href="../">Interview Sarthi</a><a class="opt" href="../apply/">ApplySarthi</a><a class="opt" href="../guides/">Guides</a><a class="pill small" href="app/" style="color:var(--btn-ink)">Start free</a></nav>
+    <nav class="links"><a class="opt" href="../">Interview Sarthi</a><a class="opt" href="../apply/">ApplySarthi</a><a class="opt" href="../guides/">Guides</a><a href="#pricing">Pricing</a><a class="pill small" href="app/" style="color:var(--btn-ink)">Start free</a></nav>
   </header>
 
   <div class="hero">
@@ -109,7 +123,7 @@
       <h1>The interviewer has <em>read your CV.</em></h1>
       <p class="lead">Upload your CV and talk. She picks real lines from it and digs in out loud: how, why, give me a number. Dodge a question and she asks again. Then every answer is scored.</p>
       <div class="ctas"><a class="pill" href="app/">Start a mock interview &rarr;</a><a class="pill ghost" href="#report">See a sample report</a></div>
-      <p class="trust">In your browser, on phone or laptop. Any language. No sign-up, no card.</p>
+      <p class="trust">20 minutes free, no card. Then unlimited mocks from <a href="#pricing">Rs 99 a week</a>. Phone or laptop, any language.</p>
     </div>
     <div class="call" aria-label="What the interview screen looks like">
       <div class="top"><span class="live on">Live</span><span id="demo-clock">07:42</span></div>
@@ -175,6 +189,47 @@
     <div class="card"><span class="label">The day itself</span><h3>Interview Sarthi</h3><p>Live help during the real call, in English, Hindi or Hinglish. <a href="../">Windows app</a>.</p></div>
   </div>
   <p class="muted" style="margin-top:18px">One free Gemini key runs all three.</p>
+</div></section>
+
+<section class="band" id="pricing"><div class="wrap">
+  <span class="label">What it costs</span>
+  <h2>Free to start. Then Rs 99 a week.</h2>
+  <div class="prices">
+    <div class="pricecard">
+      <span class="label">Try it</span>
+      <b>20 minutes</b>
+      <p class="amount">Free</p>
+      <ul>
+        <li>A full voice mock and its scored report</li>
+        <li>No card, no sign-up</li>
+        <li>Invite a friend and you both get 20 minutes more</li>
+      </ul>
+      <a class="pill ghost" href="app/">Start free &rarr;</a>
+    </div>
+    <div class="pricecard best">
+      <span class="label">This week</span>
+      <b>7 days</b>
+      <p class="amount">Rs 99</p>
+      <ul>
+        <li>Unlimited mock interviews</li>
+        <li>Every report, in any language</li>
+        <li>One payment. Never renews by itself</li>
+      </ul>
+      <a class="pill" href="app/">Get the 7-day pass &rarr;</a>
+    </div>
+    <div class="pricecard">
+      <span class="label">Placement season</span>
+      <b>30 days</b>
+      <p class="amount">Rs 249</p>
+      <ul>
+        <li>Unlimited mock interviews</li>
+        <li>About Rs 8 a day</li>
+        <li>One payment. Never renews by itself</li>
+      </ul>
+      <a class="pill ghost" href="app/">Get the 30-day pass &rarr;</a>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:20px;max-width:52em">Pay by UPI, card or netbanking through Cashfree. The clock starts when you pay and the pass ends exactly on time. The interviewer always runs on your own free Google Gemini key, so nobody else's usage can slow you down.</p>
 </div></section>
 
 <section class="band faq"><div class="wrap">

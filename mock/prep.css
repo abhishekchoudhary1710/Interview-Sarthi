@@ -163,3 +163,10 @@ button.chip{border:0;cursor:pointer}
 .acct-stats{margin-top:16px;padding-top:14px;border-top:1px solid var(--dark-line);color:var(--dark-muted);font-size:13.5px}
 .acct-stats:empty{display:none}
 
+/* a pass offer, shown at the moments someone would want one */
+.offer{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--wash);border-radius:16px;padding:14px 16px;margin-top:12px}
+.offer p{margin:0;flex:1 1 220px;font-size:14.5px;color:var(--ink)}
+.offer .pill{flex:0 0 auto}
+.offer.warn{background:#FBEFD9}
+button.chip::after{content:" \203A";opacity:.7}
+
