@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script>if (location.protocol === "http:" && /interviewsarthi\.com$/.test(location.hostname)) { location.replace("https://" + location.host + location.pathname + location.search + location.hash); }</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Prep Sarthi: mock interview</title>
+  <meta name="description" content="The Prep Sarthi app: a voice mock interview from your CV, on your own Gemini key.">
+  <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
+  <meta name="theme-color" content="#FBF7F0">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../prep.css">
+  <style>
+    .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
+    .screen h1{font-size:clamp(34px,6vw,50px);margin:10px 0 12px}
+    .screen h1 em{font-style:italic;color:var(--accent)}
+    .lede{color:var(--muted);font-size:16.5px;margin:0 0 8px;max-width:36em}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+    .actions .pill{flex:1 1 auto}
+    ol.how{margin:14px 0 0;padding:0;list-style:none;counter-reset:k}
+    ol.how li{counter-increment:k;padding:12px 0 12px 44px;border-top:1px solid var(--line);position:relative;color:var(--muted)}
+    ol.how li::before{content:"0" counter(k);position:absolute;left:0;top:14px;font:500 12.5px var(--mono);color:var(--accent);letter-spacing:.08em}
+    .check{display:flex;gap:10px;align-items:center;margin-top:14px;color:var(--muted);font-size:14.5px}
+    .check input{width:18px;height:18px;accent-color:var(--accent)}
+    /* the call */
+    .call.big{padding:24px 22px 22px;min-height:min(640px,calc(100dvh - 150px));display:flex;flex-direction:column}
+    .call.big .wheelwrap{flex:1;min-height:240px}
+    .call.big .clock{font:500 15px var(--mono);letter-spacing:.06em;color:var(--dark-ink)}
+    .call.big .clock.low{color:#ff7a70}
+    .prestart{display:grid;gap:14px}
+    .prestart ul{margin:0;padding:0;list-style:none;color:var(--dark-muted);font-size:14.5px}
+    .prestart li{padding:8px 0;border-top:1px solid var(--dark-line)}
+    .prestart li:first-child{border-top:0}
+    .prestart .pill{background:var(--dark-ink);color:var(--dark)}
+    /* report */
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:700px){.two{grid-template-columns:1fr}}
+    .stack{display:grid;gap:16px}
+    .delivery p{margin:0;padding:12px 0;border-top:1px solid var(--line)} .delivery p:first-of-type{border-top:0}
+    .delivery b{font:500 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+    ol.next{margin:8px 0 0;padding:0;list-style:none;counter-reset:n}
+    ol.next li{counter-increment:n;padding:14px 0 14px 44px;border-top:1px solid var(--line);position:relative}
+    ol.next li:first-child{border-top:0}
+    ol.next li::before{content:"0" counter(n);position:absolute;left:0;top:16px;font:500 12.5px var(--mono);color:var(--accent);letter-spacing:.08em}
+    .writing{text-align:center;padding:60px 20px}
+    .writing .wheelwrap{padding:0 0 18px}
+    .writing .wheelwrap::before{display:none}
+    details.diag{margin:26px 0 0;color:var(--muted);font-size:13px}
+    details.diag summary{cursor:pointer}
+    #log{font:12px/1.45 var(--mono);max-height:220px;overflow:auto;white-space:pre-wrap;margin-top:10px}
+    #transcript{display:grid;gap:6px;margin-top:10px;font-size:13.5px}
+    #transcript .bubble small{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;display:block}
+  </style>
+</head>
+<body>
+<div class="narrow">
+  <div class="nav">
+    <a class="wm" href="/mock/"><img src="/assets/mark.svg" alt="">Prep <i>Sarthi</i></a>
+    <span id="entitle" class="chip">…</span>
+  </div>
+
+  <!-- 1. CV -->
+  <section class="screen on" id="s-cv">
+    <span class="label">Step 1 of 3</span>
+    <h1>Your CV <em>is</em> the interview.</h1>
+    <p class="lede">A real interviewer picks lines from your CV and digs in. So does this one. Nothing here leaves your device until the interview starts, and then it goes only to Google, on your own key.</p>
+    <div class="card" style="margin-top:22px">
+      <label class="f" style="margin-top:0">CV</label>
+      <div class="drop" id="drop"><input type="file" id="cvfile" accept=".pdf,.txt,.md,application/pdf,text/plain"><span id="droptext">Tap to choose a PDF or text file</span></div>
+      <label class="f">Or paste the CV text</label>
+      <textarea id="cv" placeholder="Paste your CV here if the file didn't read well."></textarea>
+      <div class="row">
+        <div><label class="f">Your first name</label><input type="text" id="name" placeholder="Riya" autocomplete="given-name"></div>
+        <div><label class="f">Interview language</label>
+          <select id="language">
+            <option value="English">English</option>
+            <option value="Hinglish">Hinglish</option>
+            <option value="Hindi">Hindi</option>
+            <option value="auto">Match whatever I speak</option>
+            <option value="other">Another language…</option>
+          </select>
+          <input type="text" id="language-other" placeholder="e.g. Tamil, Spanish, German" style="display:none;margin-top:8px">
+        </div>
+      </div>
+      <label class="f">Job description · optional</label>
+      <textarea id="jd" style="min-height:84px" placeholder="Paste the JD and the interviewer will target that role."></textarea>
+      <div class="row">
+        <div><label class="f">Length</label>
+          <select id="minutes"><option value="8">8 minutes · quick round</option><option value="12" selected>12 minutes</option><option value="18">18 minutes · full round</option></select></div>
+        <div><label class="f">Interviewer voice</label>
+          <select id="voice"><option value="Kore">Kore · female</option><option value="Aoede">Aoede · female</option><option value="Leda">Leda · female</option><option value="Charon">Charon · male</option><option value="Puck">Puck · male</option><option value="Fenrir">Fenrir · male</option></select></div>
+      </div>
+      <div class="notice" id="cv-notice"></div>
+      <div class="actions"><button class="pill wide" id="to-key">Continue →</button></div>
+    </div>
+  </section>
+
+  <!-- 2. Key -->
+  <section class="screen" id="s-key">
+    <span class="label">Step 2 of 3</span>
+    <h1>One key, <em>yours.</em></h1>
+    <p class="lede">The interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google. If you use Interview Sarthi or ApplySarthi, it is the same key.</p>
+    <div class="card" style="margin-top:22px">
+      <ol class="how" style="margin-top:0">
+        <li style="border-top:0">Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, signed in to any Google account.</li>
+        <li>Tap <b style="color:var(--ink)">Create API key</b>, then copy it.</li>
+        <li>Paste it below. Stuck? <a href="/free-gemini-api-key-guide.html" target="_blank">The guide with pictures</a>.</li>
+      </ol>
+      <label class="f">API key</label>
+      <input type="password" id="key" autocomplete="off" placeholder="Paste the key here">
+      <label class="check"><input type="checkbox" id="remember" checked> Remember on this device</label>
+      <div class="notice" id="key-notice"></div>
+      <div class="actions">
+        <button class="pill ghost" id="back-cv" style="flex:0 0 auto">Back</button>
+        <button class="pill" id="check-key">Check key and continue →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Interview -->
+  <section class="screen" id="s-live">
+    <div class="call big">
+      <div class="top"><span class="live" id="livetag">Ready</span><span class="clock" id="clock">12:00</span></div>
+      <div class="wheelwrap" id="wheel"></div>
+      <p class="caption" id="caption"><span class="hint" id="hint">Your interviewer</span><span id="line">She speaks first. Answer out loud, like a real call.</span></p>
+      <div class="prestart" id="pre-live">
+        <ul>
+          <li>Use earphones if you can. From a loud speaker she can hear herself.</li>
+          <li>You can interrupt, and so can she.</li>
+          <li>It ends by itself when time is up, then your report appears.</li>
+        </ul>
+        <button class="pill wide" id="start">Start the interview</button>
+      </div>
+      <div class="you" id="youbar" style="display:none">
+        <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
+        <small id="left">You're on</small>
+        <button class="pill small danger" id="end">End</button>
+      </div>
+    </div>
+    <div class="notice" id="live-notice"></div>
+  </section>
+
+  <!-- 4. Report -->
+  <section class="screen" id="s-report">
+    <div class="card writing" id="report-wait">
+      <div class="wheelwrap" id="wheel-wait"></div>
+      <h2 style="font-size:30px">Writing your report</h2>
+      <p class="muted" id="report-status">Scoring every answer against your CV. About twenty seconds.</p>
+    </div>
+    <div id="report" class="stack"></div>
+    <div class="actions">
+      <button class="pill" id="again">Practise again</button>
+      <button class="pill ghost" id="download">Download report</button>
+    </div>
+    <p class="muted" style="margin-top:22px;font-size:14.5px">Real interview coming up? <a href="/" target="_blank">Interview Sarthi</a> gives you live help on the call itself.</p>
+  </section>
+
+  <details class="diag"><summary>Diagnostics</summary><div id="transcript"></div><div id="log"></div></details>
+  <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
+</div>
+<script src="/assets/analytics.js" defer></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

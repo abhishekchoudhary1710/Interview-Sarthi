@@ -51,8 +51,11 @@
   }
 
   /* ---- Microsoft Clarity ---- */
-  /* Receipt content can include a license key; never record that page. */
-  if (clarityOn && !privateReturn && location.pathname !== "/thanks.html") {
+  /* Receipt content can include a license key; never record that page.
+   * The Prep Sarthi app shows interview captions and the report, which are the
+   * visitor's own CV and words; session recording never runs there either. */
+  var inMockApp = location.pathname.indexOf("/mock/app") === 0;
+  if (clarityOn && !privateReturn && !inMockApp && location.pathname !== "/thanks.html") {
     (function (c, l, a, r, i, t, y) {
       c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
       t = l.createElement(r); t.async = 1;

@@ -1,0 +1,198 @@
+/* Prep Sarthi: microphone in, interviewer voice out.
+ *
+ * One AudioContext at whatever rate the device runs (44.1k or 48k on most
+ * phones). Two worklets do the resampling so we never ask the browser for a
+ * fixed-rate context, which Firefox and some Android builds refuse when the
+ * microphone's hardware rate differs:
+ *
+ *   capture  : mic float samples  ->  16 kHz Int16 PCM in ~100 ms chunks,
+ *              plus the chunk's RMS (the engine's "is someone talking" floor)
+ *   playback : 24 kHz Int16 PCM from Gemini  ->  device rate, queued, with a
+ *              clear() for barge-in and playing/idle notices for the page
+ *
+ * Everything must be created inside a user gesture (Start button): iOS Safari
+ * keeps an AudioContext suspended otherwise.
+ */
+
+const CAPTURE_RATE = 16000;
+const PLAYBACK_RATE = 24000;
+
+const CAPTURE_WORKLET = `
+class CaptureProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.ratio = sampleRate / ${CAPTURE_RATE};
+    this.rest = new Float32Array(0);
+    this.out = new Int16Array(${CAPTURE_RATE / 10});   // 100 ms
+    this.filled = 0;
+    this.sq = 0;
+  }
+  process(inputs) {
+    const ch = inputs[0] && inputs[0][0];
+    if (!ch) return true;
+    const merged = new Float32Array(this.rest.length + ch.length);
+    merged.set(this.rest);
+    merged.set(ch, this.rest.length);
+    const outLen = Math.floor(merged.length / this.ratio);
+    for (let i = 0; i < outLen; i++) {
+      const start = Math.floor(i * this.ratio);
+      const end = Math.max(start + 1, Math.floor((i + 1) * this.ratio));
+      let s = 0;
+      for (let j = start; j < end; j++) s += merged[j];
+      s /= (end - start);
+      if (s > 1) s = 1; else if (s < -1) s = -1;
+      this.sq += s * s;
+      this.out[this.filled++] = s * 32767;
+      if (this.filled === this.out.length) {
+        const pcm = this.out.slice(0);
+        const rms = Math.sqrt(this.sq / this.filled);
+        this.port.postMessage({ pcm: pcm.buffer, rms }, [pcm.buffer]);
+        this.filled = 0;
+        this.sq = 0;
+      }
+    }
+    this.rest = merged.slice(Math.floor(outLen * this.ratio));
+    return true;
+  }
+}
+registerProcessor("sarthi-capture", CaptureProcessor);
+`;
+
+const PLAYBACK_WORKLET = `
+class PlaybackProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.step = ${PLAYBACK_RATE} / sampleRate;   // input samples per output sample
+    this.queue = [];      // Int16Array chunks
+    this.pos = 0;         // fractional read position inside queue[0]
+    this.playing = false;
+    this.played = 0;      // input samples consumed, for timing
+    this.sq = 0;          // loudness of what is actually leaving the speaker,
+    this.count = 0;       // reported ~20 times a second so the wheel can follow her voice
+    this.port.onmessage = (e) => {
+      if (e.data.clear) { this.queue = []; this.pos = 0; this.setPlaying(false); return; }
+      if (e.data.pcm) this.queue.push(new Int16Array(e.data.pcm));
+    };
+  }
+  setPlaying(v) {
+    if (v === this.playing) return;
+    this.playing = v;
+    this.port.postMessage({ playing: v, played: this.played });
+  }
+  sample(chunk, i) {
+    const a = chunk[i] || 0;
+    const b = chunk[i + 1] !== undefined ? chunk[i + 1] : a;
+    const f = this.pos - Math.floor(this.pos);
+    return (a + (b - a) * f) / 32768;
+  }
+  process(_inputs, outputs) {
+    const out = outputs[0][0];
+    if (!out) return true;
+    for (let n = 0; n < out.length; n++) {
+      if (!this.queue.length) { out[n] = 0; continue; }
+      const chunk = this.queue[0];
+      const i = Math.floor(this.pos);
+      if (i >= chunk.length) {
+        this.pos -= chunk.length;
+        this.queue.shift();
+        n--;
+        continue;
+      }
+      this.setPlaying(true);
+      out[n] = this.sample(chunk, i);
+      this.sq += out[n] * out[n];
+      this.pos += this.step;
+      this.played += this.step;
+    }
+    this.count += out.length;
+    if (this.count >= 2048) {
+      this.port.postMessage({ level: Math.sqrt(this.sq / this.count) });
+      this.sq = 0; this.count = 0;
+    }
+    if (!this.queue.length) this.setPlaying(false);
+    return true;
+  }
+}
+registerProcessor("sarthi-playback", PlaybackProcessor);
+`;
+
+function workletUrl(source) {
+  return URL.createObjectURL(new Blob([source], { type: "application/javascript" }));
+}
+
+export class AudioIO {
+  constructor() {
+    this.ctx = null;
+    this.stream = null;
+    this.capture = null;
+    this.playback = null;
+    this.onChunk = null;       // (Int16Array pcm16k, rms) => void
+    this.onPlaying = null;     // (bool) => void
+    this.onLevel = null;       // (rms 0..1 of the interviewer's voice right now) => void
+    this.speaking = false;
+    this._muted = false;
+  }
+
+  get sampleRate() { return this.ctx ? this.ctx.sampleRate : 0; }
+
+  /* Call from a click/tap handler. Asks for the mic and wires both worklets. */
+  async start() {
+    if (this.ctx) return;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    this.ctx = new Ctx({ latencyHint: "interactive" });
+    if (this.ctx.state !== "running") await this.ctx.resume();
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      video: false,
+    });
+    await this.ctx.audioWorklet.addModule(workletUrl(CAPTURE_WORKLET));
+    await this.ctx.audioWorklet.addModule(workletUrl(PLAYBACK_WORKLET));
+
+    const source = this.ctx.createMediaStreamSource(this.stream);
+    this.capture = new AudioWorkletNode(this.ctx, "sarthi-capture", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+    this.capture.port.onmessage = (e) => {
+      if (this._muted || !this.onChunk) return;
+      this.onChunk(new Int16Array(e.data.pcm), e.data.rms);
+    };
+    // A worklet only runs while it reaches the destination; a silent gain keeps
+    // the mic out of the speakers.
+    const sink = this.ctx.createGain();
+    sink.gain.value = 0;
+    source.connect(this.capture).connect(sink).connect(this.ctx.destination);
+
+    this.playback = new AudioWorkletNode(this.ctx, "sarthi-playback", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1] });
+    this.playback.port.onmessage = (e) => {
+      if (typeof e.data.playing === "boolean") {
+        this.speaking = e.data.playing;
+        if (this.onPlaying) this.onPlaying(e.data.playing);
+      }
+      if (typeof e.data.level === "number" && this.onLevel) this.onLevel(e.data.level);
+    };
+    this.playback.connect(this.ctx.destination);
+  }
+
+  /* Gemini's audio parts are 24 kHz Int16 PCM. */
+  play(pcm16) {
+    if (!this.playback) return;
+    const copy = pcm16.slice(0);
+    this.playback.port.postMessage({ pcm: copy.buffer }, [copy.buffer]);
+  }
+
+  /* Barge-in: the interviewer was interrupted; stop mid-sentence. */
+  clear() {
+    if (this.playback) this.playback.port.postMessage({ clear: true });
+  }
+
+  /* Half-duplex gate for devices whose echo cancellation is weak. */
+  set muted(v) { this._muted = !!v; }
+  get muted() { return this._muted; }
+
+  async stop() {
+    if (this.stream) for (const t of this.stream.getTracks()) t.stop();
+    if (this.ctx) { try { await this.ctx.close(); } catch (_) { /* already closed */ } }
+    this.ctx = null; this.stream = null; this.capture = null; this.playback = null;
+    this.speaking = false;
+  }
+}
+
+export { CAPTURE_RATE, PLAYBACK_RATE };
