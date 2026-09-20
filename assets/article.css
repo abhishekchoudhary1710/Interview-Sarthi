@@ -41,6 +41,10 @@ p.note{font-size:13.5px;color:var(--muted);margin-top:-8px}
 .more{border-top:1px solid var(--line);margin-top:44px;padding-top:22px}
 .more h2{font-size:18px;margin:0 0 12px}
 .more a{display:block;margin-bottom:8px;font-weight:500}
+.alsotry{margin:14px 0 0;font-size:14.5px;color:var(--muted)}
+.tools{margin:0 0 10px;font-size:13.5px}
+.tools a{color:var(--muted)}
+.tools a:hover{color:var(--text)}
 footer{border-top:1px solid var(--line);background:var(--bg2);color:var(--muted);font-size:13px;text-align:center;padding:26px 20px 40px}
 footer a{color:var(--muted);text-decoration:none;margin:0 7px}
 @media(max-width:600px){h1{font-size:27px}header.top nav a{margin-left:0;margin-right:14px}}

@@ -144,7 +144,8 @@ def render(page):
 <div class="promo">
   <h3>{html.escape(page['cta_title'])}</h3>
   <p>{page['cta_text']}</p>
-  <p><a class="cta" href="https://apply.interviewsarthi.com/">Open ApplySarthi</a> <a class="cta ghost" href="{prefix}apply/">What it does</a></p>
+  <p><a class="cta" href="https://apply.interviewsarthi.com/">Open ApplySarthi</a>
+  <p class="alsotry">An interview call coming? Practise it first with <a href="{prefix}mock/">a mock interview from your own CV</a>, 20 minutes free, then keep <a href="{prefix or '/'}">Interview Sarthi</a> open on the real call.</p> <a class="cta ghost" href="{prefix}apply/">What it does</a></p>
 </div>
 
 <div class="more">
