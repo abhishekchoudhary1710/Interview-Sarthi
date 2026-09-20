@@ -1,8 +1,12 @@
-/* Prep Sarthi: the pass screen and the invite card.
+/* Prep Sarthi: the pass screen, the account panel and the invite card.
  *
- * Buying: pick 7 or 30 days, sign in with Google (so the pass follows the
- * person, not the browser), pay through Cashfree, come back, and the page asks
- * the server until the pass is confirmed. Nothing renews by itself.
+ * Buying, in the order a buyer expects it:
+ *   1. see both passes and press Buy
+ *   2. say who you are (Google, so the pass follows the person not the browser)
+ *      and leave a number for the receipt
+ *   3. pay through Cashfree
+ *   4. come back to your own account, not to another pay form
+ * Nothing renews by itself.
  *
  * Inviting: every key has a link. The share text never carries the score
  * unless the person ticks it themselves, and the tick is only offered for a
@@ -14,11 +18,12 @@ import { LOCAL, config, inviteLink, orderStatus, session, signIn, startFreeDays,
 const $ = (id) => document.getElementById(id);
 const PENDING = "ps_pending_order";
 const SCORE_WORTH_SHARING = 70;
-const PLAN_COPY = { w: { days: "7 days", line: "For the interview this week" }, m: { days: "30 days", line: "For placement season, about Rs 8 a day" } };
 
-let ctx = null;          // { state, setEntitlement, show, track, log, resume }
+let ctx = null;          // { state, setEntitlement, show, track, log, resume, practise }
 let cfg = null;
 let googleReady = false;
+let step = "choose";     // choose | checkout
+let extendOpen = false;
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
@@ -31,6 +36,13 @@ function loadScript(src) {
 function say(text, cls = "") { const el = $("pass-notice"); el.textContent = text || ""; el.className = "notice " + cls; }
 function when(isoTime) { return new Date(isoTime).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
 function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function planOf(id) { return (cfg && cfg.plans && cfg.plans[id]) || null; }
+function daysLeft(seconds) {
+  const d = Math.floor(seconds / 86400), h = Math.floor((seconds % 86400) / 3600);
+  if (d >= 1) return `${d} day${d > 1 ? "s" : ""}${h ? ` ${h} h` : ""} left`;
+  if (h >= 1) return `${h} hour${h > 1 ? "s" : ""} left`;
+  return `${Math.max(1, Math.floor(seconds / 60))} min left`;
+}
 
 export async function initPasses(context) {
   ctx = context;
@@ -40,21 +52,28 @@ export async function initPasses(context) {
   if (cfg && cfg.plans) {
     for (const [id, p] of Object.entries(cfg.plans)) {
       const el = document.querySelector(`.plan[data-plan="${id}"]`);
-      if (el) { el.querySelector(".price").textContent = "Rs " + p.amount; el.querySelector("b").textContent = (PLAN_COPY[id] || {}).days || p.label; }
+      if (el) el.querySelector(".price").textContent = "Rs " + p.amount;
     }
   }
   $("entitle").onclick = () => openPasses();
   $("open-invite").onclick = () => openInvite();
   $("pass-back").onclick = () => ctx.resume();
   $("invite-back").onclick = () => ctx.resume();
+  $("go-practise").onclick = () => ctx.practise();
+  $("extend").onclick = () => { extendOpen = true; step = "choose"; paint(); $("buy-block").scrollIntoView({ behavior: "smooth", block: "center" }); };
   for (const el of document.querySelectorAll(".plan")) el.onclick = () => choosePlan(el.dataset.plan);
+  $("buy-cta").onclick = () => { step = "checkout"; paint(); };
+  $("checkout-back").onclick = () => { step = "choose"; say(""); paint(); };
   $("pay").onclick = pay;
-  $("signout").onclick = () => { session.clear(); ctx.state.ent = { ...ctx.state.ent, account: null }; paint(); };
+  const signOut = () => { session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null, kind: ctx.state.ent && ctx.state.ent.hasTrial ? (ctx.state.ent.trialLeft > 0 ? "trial" : "none") : "none", secondsLeft: (ctx.state.ent && ctx.state.ent.trialLeft) || 0, expiresAt: null }); step = "choose"; extendOpen = false; paint(); };
+  $("signout").onclick = signOut;
+  $("signout2").onclick = signOut;
   $("start-days").onclick = startDays;
   if (testLogin) {
     $("testlogin").style.display = "block";
     $("testlogin-go").onclick = () => onGoogle("test:" + ($("testlogin-email").value.trim() || "tester@example.com"));
   }
+  choosePlan(ctx.state.plan || "w");
   await resumePendingOrder();
 }
 
@@ -63,8 +82,12 @@ export async function initPasses(context) {
 function choosePlan(id) {
   ctx.state.plan = id;
   for (const el of document.querySelectorAll(".plan")) el.classList.toggle("on", el.dataset.plan === id);
-  const p = cfg && cfg.plans && cfg.plans[id];
-  $("pay").textContent = p ? `Pay Rs ${p.amount} →` : "Pay →";
+  const p = planOf(id);
+  if (p) {
+    $("buy-cta").textContent = `Buy the ${p.label.replace("-Day Pass", "-day pass")} →`;
+    $("pay").textContent = `Pay Rs ${p.amount} →`;
+    $("checkout-plan").textContent = `${p.label} · Rs ${p.amount}`;
+  }
 }
 
 export async function openPasses(message) {
@@ -76,28 +99,54 @@ export async function openPasses(message) {
     return;
   }
   $("pass-body").style.display = "block";
-  choosePlan(ctx.state.plan || "w");
   paint();
-  ctx.track("mock_pass_view", { signed_in: !!(ctx.state.ent && ctx.state.ent.account) });
-  if (cfg.google_client_id && !googleReady) {
-    try {
-      await loadScript("https://accounts.google.com/gsi/client");
-      window.google.accounts.id.initialize({ client_id: cfg.google_client_id, callback: (r) => onGoogle(r.credential), ux_mode: "popup" });
-      window.google.accounts.id.renderButton($("gbutton"), { theme: "filled_black", size: "large", shape: "pill", text: "continue_with", width: 300 });
-      googleReady = true;
-    } catch (err) { say("Google sign-in could not load. Check your connection and try again.", "bad"); }
-  }
+  ctx.track("mock_pass_view", { signed_in: !!(ctx.state.ent && ctx.state.ent.account), has_pass: ctx.state.ent && ctx.state.ent.kind === "pass" });
+  await showGoogleButton();
+}
+
+async function showGoogleButton() {
+  if (!cfg || !cfg.google_client_id || googleReady || $("checkout").style.display === "none") return;
+  try {
+    await loadScript("https://accounts.google.com/gsi/client");
+    window.google.accounts.id.initialize({ client_id: cfg.google_client_id, callback: (r) => onGoogle(r.credential), ux_mode: "popup" });
+    window.google.accounts.id.renderButton($("gbutton"), { theme: "filled_black", size: "large", shape: "pill", text: "continue_with", width: 300 });
+    googleReady = true;
+  } catch (_) { say("Google sign-in could not load. Check your connection and try again.", "bad"); }
 }
 
 function paint() {
   const ent = ctx.state.ent || {};
   const account = ent.account;
+  const live = ent.kind === "pass";
+
+  // Your account, when a pass is running.
+  $("account-card").style.display = live ? "block" : "none";
+  if (live) {
+    $("pass-who").textContent = account ? account.email : "";
+    $("pass-days").textContent = daysLeft(ent.secondsLeft);
+    $("pass-until").textContent = `Unlimited mocks until ${when(ent.expiresAt)}`;
+    const inv = ent.invite;
+    $("pass-stats").textContent = inv
+      ? `${inv.friends_tried} friend${inv.friends_tried === 1 ? "" : "s"} tried it through your link · ${inv.friends_bought} bought a pass`
+      : "";
+    $("extend").textContent = extendOpen ? "Choosing…" : "Extend my pass";
+  }
+
+  // Buying: hidden behind "Extend" once a pass is live.
+  const buying = !live || extendOpen;
+  $("buy-block").style.display = buying && step === "choose" ? "block" : "none";
+  $("checkout").style.display = buying && step === "checkout" ? "block" : "none";
   $("pass-signin").style.display = account ? "none" : "block";
   $("pass-pay").style.display = account ? "block" : "none";
-  if (account) $("pass-who").textContent = `Signed in as ${account.email}`;
-  const live = ent.kind === "pass";
-  $("pass-live").style.display = live ? "block" : "none";
-  if (live) $("pass-live-text").textContent = `Your pass is live until ${when(ent.expiresAt)}. Buying again adds the days on top.`;
+  if (account) $("pass-who2").textContent = `Signed in as ${account.email}`;
+
+  // Words at the top follow the state, so the page never asks for money twice.
+  $("pass-kicker").textContent = live ? "Your account" : "Passes";
+  $("pass-title").innerHTML = live ? 'Your pass is <em>live.</em>' : 'Unlimited mocks, <em>one payment.</em>';
+  $("pass-lede").textContent = live
+    ? "Practise as much as you like until it ends. Buying again adds the days on top, and nothing renews by itself."
+    : "No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.";
+
   const banked = (ent.invite && ent.invite.banked_days) || 0;
   $("freedays").style.display = banked > 0 ? "block" : "none";
   if (banked > 0) {
@@ -105,6 +154,7 @@ function paint() {
     $("start-days").textContent = account ? `Start my ${banked} free day${banked > 1 ? "s" : ""}` : "Sign in above to start them";
     $("start-days").disabled = !account;
   }
+  if (buying && step === "checkout") showGoogleButton();
 }
 
 async function onGoogle(credential) {
@@ -115,6 +165,7 @@ async function onGoogle(credential) {
     say("");
     ctx.track("mock_sign_in", {});
     paint();
+    $("phone").focus();
   } catch (err) { say(err.message, "bad"); }
 }
 
@@ -131,7 +182,7 @@ async function pay() {
     window.Cashfree({ mode: order.mode }).checkout({ paymentSessionId: order.payment_session_id, redirectTarget: "_self" });
   } catch (err) {
     say(err.status === 401 ? "Your sign-in expired. Sign in again." : err.message, "bad");
-    if (err.status === 401) { session.clear(); ctx.state.ent = { ...ctx.state.ent, account: null }; paint(); }
+    if (err.status === 401) { session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null }); paint(); }
     $("pay").disabled = false;
   }
 }
@@ -150,19 +201,21 @@ async function resumePendingOrder() {
   say("Confirming your payment… keep this page open.");
   for (let i = 0; i < 40; i++) {
     let r;
-    try { r = await orderStatus(pending.order_id, pending.hash); } catch (err) { r = { status: "pending" }; }
+    try { r = await orderStatus(pending.order_id, pending.hash); } catch (_) { r = { status: "pending" }; }
     if (r.status === "paid") {
       try { localStorage.removeItem(PENDING); } catch (_) { /* ignore */ }
       ctx.setEntitlement(r.entitlement);
       ctx.track("purchase", { product: "prep-sarthi", plan: r.plan });
+      step = "choose"; extendOpen = false;
       $("pass-body").style.display = "block"; paint();
-      say(`Paid. Your ${r.plan} is live until ${when(r.entitlement.expiresAt)}. Unlimited mocks until then.`, "ok");
-      $("pass-back").textContent = "Start practising →";
+      say(`Paid. Your ${r.plan} is live. Practise as much as you like.`, "ok");
+      $("pass-back").textContent = "Back";
       return;
     }
     if (r.status === "failed") {
       try { localStorage.removeItem(PENDING); } catch (_) { /* ignore */ }
-      $("pass-body").style.display = "block"; choosePlan(ctx.state.plan || "w"); paint();
+      step = "choose";
+      $("pass-body").style.display = "block"; paint();
       say("That payment did not go through, and nothing was charged. You can try again.", "bad");
       return;
     }
@@ -176,6 +229,7 @@ async function startDays() {
   try {
     await startFreeDays();
     ctx.setEntitlement(await ctx.refresh());
+    extendOpen = false; step = "choose";
     paint();
     say("Your free days have started. Unlimited mocks until they end.", "ok");
     ctx.track("mock_free_days_started", {});

@@ -16,7 +16,7 @@ import { buildInterviewerInstructions, NOTES } from "./interviewer.js";
 import { readCvFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
 import { generateReport } from "./report.js";
-import { keyHash, entitlement, tick, rememberInvite } from "./billing.js";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite } from "./billing.js";
 import { initPasses, openPasses, renderInvite } from "./pass.js";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
@@ -75,7 +75,7 @@ function fmtLong(seconds) {
 }
 function renderEntitlement() {
   const e = S.ent, el = $("entitle");
-  if (!e) { el.textContent = "20 min free"; el.className = "chip"; return; }
+  if (!e) { el.textContent = "\u2026"; el.className = "chip"; return; }
   if (e.kind === "pass") { el.textContent = `Pass · ${fmtLong(e.secondsLeft)} left`; el.className = "chip ok"; }
   else if (e.kind === "trial") { el.textContent = `Free · ${fmtLong(e.secondsLeft)} left`; el.className = "chip"; }
   else { el.textContent = passCtx.passesOn ? "Get a pass" : "Free minutes used"; el.className = "chip warn"; }
@@ -87,6 +87,7 @@ const passCtx = {
   setEntitlement(ent) { S.ent = ent; renderEntitlement(); },
   refresh: () => entitlement(S.hash),
   resume() { $("pass-back").textContent = "Back"; if (S.key && S.ent && lastScreen === "s-live") preLive(); else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen); },
+  practise() { $("pass-back").textContent = "Back"; if (S.key && S.ent) preLive(); else show(S.cv || $("cv").value ? "s-key" : "s-cv"); },
 };
 function currentLanguage() {
   const v = $("language").value;
@@ -96,13 +97,26 @@ function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&
 
 // ---------------------------------------------------------------- 1. CV
 
-function restore() {
+async function restore() {
   $("cv").value = store.get("ps_cv"); $("jd").value = store.get("ps_jd"); $("name").value = store.get("ps_name");
   const lang = store.get("ps_language", "English");
   if ([...$("language").options].some((o) => o.value === lang)) $("language").value = lang;
   else { $("language").value = "other"; $("language-other").value = lang; $("language-other").style.display = "block"; }
   $("key").value = store.get("ps_gemini_key");
   if ($("cv").value) { $("drop").classList.add("ok"); $("droptext").textContent = "CV loaded. Tap to choose a different file"; }
+  renderEntitlement();
+  // A returning visitor must see what they actually own, not the free-minutes
+  // placeholder: ask the server before they touch anything.
+  const saved = store.get("ps_gemini_key");
+  if (saved) {
+    S.key = saved;
+    S.hash = await keyHash(saved);
+    S.ent = await entitlement(S.hash);
+    log("entitlement", { kind: S.ent.kind, secondsLeft: S.ent.secondsLeft, source: S.ent.source, at: "load" });
+  } else {
+    const byAccount = await entitlementBySession();
+    if (byAccount) { S.ent = byAccount; log("entitlement", { kind: byAccount.kind, source: "session", at: "load" }); }
+  }
   renderEntitlement();
 }
 
@@ -581,5 +595,4 @@ $("copydiag").onclick = async () => {
 
 window.addEventListener("pagehide", () => { if (live) live.close(); });
 rememberInvite();
-restore();
-initPasses(passCtx).then(renderEntitlement);
+restore().then(() => initPasses(passCtx)).then(renderEntitlement);

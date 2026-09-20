@@ -62,10 +62,14 @@ async function post(path, body) {
 }
 
 function shape(r, hash) {
-  const trialLeft = Math.max(0, Number(r.trial.seconds_left));
-  localTrial.set(hash, Number(r.trial.total) - trialLeft);       // keep the local mirror honest
-  const base = { invite: r.invite || null, account: r.account || null, plans: r.plans || null, trialLeft, source: "server" };
+  // `trial` is absent when the person is signed in but this browser holds no
+  // Gemini key yet: then only the pass is known.
+  const hasTrial = !!(r.trial && typeof r.trial.seconds_left === "number");
+  const trialLeft = hasTrial ? Math.max(0, Number(r.trial.seconds_left)) : 0;
+  if (hasTrial && hash) localTrial.set(hash, Number(r.trial.total) - trialLeft);   // keep the local mirror honest
+  const base = { invite: r.invite || null, account: r.account || null, plans: r.plans || null, trialLeft, hasTrial, source: "server" };
   if (r.pass && r.pass.valid) return { ...base, kind: "pass", secondsLeft: Math.max(0, Number(r.pass.seconds_left)), expiresAt: r.pass.expires_at };
+  if (!hasTrial) return { ...base, kind: "none", secondsLeft: 0 };
   return { ...base, kind: trialLeft > 0 ? "trial" : "none", secondsLeft: trialLeft };
 }
 
@@ -82,6 +86,17 @@ export async function entitlement(hash) {
     const left = Math.max(0, TRIAL_SECONDS - localTrial.used(hash));
     return { kind: left > 0 ? "trial" : "none", secondsLeft: left, trialLeft: left, invite: null, account: null, plans: null, source: "local" };
   }
+}
+
+/* What the signed-in person owns, when this browser has no key to hash yet.
+ * Returns null when nobody is signed in. */
+export async function entitlementBySession() {
+  if (!session.get()) return null;
+  try {
+    const r = await post("/mock/status", { session: session.get() });
+    if (!r.account) { session.clear(); return null; }
+    return shape(r, null);
+  } catch (_) { return null; }
 }
 
 /* Book a slice of the free minutes, like the desktop app's book_free_tick. */

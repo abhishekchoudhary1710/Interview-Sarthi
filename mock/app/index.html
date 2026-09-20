@@ -153,37 +153,60 @@
     <div class="notice" id="live-notice"></div>
   </section>
 
-  <!-- Passes -->
+  <!-- Passes and account -->
   <section class="screen" id="s-pass">
-    <span class="label">Passes</span>
-    <h1>Unlimited mocks, <em>one payment.</em></h1>
-    <p class="lede">No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.</p>
+    <span class="label" id="pass-kicker">Passes</span>
+    <h1 id="pass-title">Unlimited mocks, <em>one payment.</em></h1>
+    <p class="lede" id="pass-lede">No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.</p>
     <div class="notice" id="pass-notice"></div>
     <div id="pass-body">
-      <div class="card" id="pass-live" style="display:none;margin-top:16px"><span class="label">Your pass</span><p id="pass-live-text" style="margin:8px 0 0"></p></div>
-      <div class="plans">
-        <button class="plan on" data-plan="w"><span class="label">This week</span><b>7 days</b><span class="price">Rs 99</span><small>Unlimited mocks. For the interview this week.</small></button>
-        <button class="plan" data-plan="m"><span class="label">Placement season</span><b>30 days</b><span class="price">Rs 249</span><small>Unlimited mocks. About Rs 8 a day.</small></button>
+
+      <!-- your account, once a pass is live -->
+      <div class="card account" id="account-card" style="display:none">
+        <div class="acct-top">
+          <div><span class="label">Signed in</span><p id="pass-who" style="margin:4px 0 0"></p></div>
+          <button class="linkink" id="signout">Sign out</button>
+        </div>
+        <div class="passbig"><b id="pass-days"></b><span id="pass-until"></span></div>
+        <div class="actions">
+          <button class="pill" id="go-practise">Start practising →</button>
+          <button class="pill ghost" id="extend">Extend my pass</button>
+        </div>
+        <div id="pass-stats" class="acct-stats"></div>
       </div>
-      <div class="card">
-        <div id="pass-signin">
-          <span class="label">Step 1 of 2</span>
-          <p style="margin:8px 0 14px">Sign in with Google, so your pass follows you to any phone or laptop.</p>
+
+      <!-- step 1: choose a pass -->
+      <div id="buy-block">
+        <div class="plans">
+          <button class="plan on" data-plan="w"><span class="label">This week</span><b>7 days</b><span class="price">Rs 99</span><small>Unlimited mocks. For the interview this week.</small></button>
+          <button class="plan" data-plan="m"><span class="label">Placement season</span><b>30 days</b><span class="price">Rs 249</span><small>Unlimited mocks. About Rs 8 a day.</small></button>
+        </div>
+        <div class="actions"><button class="pill wide" id="buy-cta">Buy the 7-day pass →</button></div>
+        <p class="muted" style="font-size:13.5px;margin:14px 0 0">UPI, card or netbanking through Cashfree. One payment, no auto-renew. <a href="/refunds.html" target="_blank">Refunds</a>.</p>
+      </div>
+
+      <!-- step 2: who you are, then pay -->
+      <div class="card" id="checkout" style="display:none">
+        <div class="acct-top">
+          <div><span class="label">You are buying</span><p id="checkout-plan" style="margin:4px 0 0;font-weight:600"></p></div>
+          <button class="linkink" id="checkout-back">Change</button>
+        </div>
+        <div id="pass-signin" style="margin-top:18px">
+          <p class="muted" style="margin:0 0 14px">Sign in with Google first, so your pass follows you to any phone or laptop.</p>
           <div id="gbutton"></div>
           <div id="testlogin" style="display:none;margin-top:12px">
             <span class="label">Sandbox sign-in (local preview only)</span>
             <div class="row" style="margin-top:8px"><input type="text" id="testlogin-email" placeholder="tester@example.com"><button class="pill ghost" id="testlogin-go">Test sign-in</button></div>
           </div>
         </div>
-        <div id="pass-pay" style="display:none">
-          <span class="label">Step 2 of 2</span>
-          <p class="muted" style="margin:8px 0 0"><span id="pass-who"></span> · <button class="linkink" id="signout">not you?</button></p>
+        <div id="pass-pay" style="display:none;margin-top:18px">
+          <p class="muted" style="margin:0"><span id="pass-who2"></span> · <button class="linkink" id="signout2">not you?</button></p>
           <label class="f">Mobile number, for the payment receipt</label>
           <input type="text" id="phone" inputmode="numeric" autocomplete="tel-national" placeholder="10-digit mobile number">
           <div class="actions"><button class="pill wide" id="pay">Pay Rs 99 →</button></div>
-          <p class="muted" style="font-size:13.5px;margin:12px 0 0">UPI, card or netbanking through Cashfree. One payment, no auto-renew. <a href="/refunds.html" target="_blank">Refunds</a>.</p>
         </div>
       </div>
+
       <div class="card" id="freedays" style="display:none;margin-top:16px">
         <span class="label">Free days</span>
         <p id="freedays-text" style="margin:8px 0 14px"></p>

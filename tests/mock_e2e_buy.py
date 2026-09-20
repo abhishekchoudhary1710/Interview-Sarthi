@@ -1,9 +1,11 @@
 """Buy a Prep Sarthi pass end to end against the SANDBOX worker and Cashfree sandbox.
 
 Local preview only (the page talks to the sandbox worker when served from
-127.0.0.1, and that worker accepts a made-up sign-in). Steps: CV, key, open
-passes, test sign-in, phone, pay with Cashfree's test UPI id, return, and the
-pass must show as live. Screenshots land in .seo-preview/.
+127.0.0.1, and that worker accepts a made-up sign-in). It walks the buyer's
+path in the order the screen offers it: choose a pass, press Buy, sign in,
+leave a number, pay, and land back in your own account. Then it reloads the
+page to prove a returning buyer sees their pass straight away instead of the
+free-minutes chip. Screenshots land in .seo-preview/.
 
     PS_KEY=... python tests/mock_e2e_buy.py [stop-at-checkout]
 """
@@ -28,41 +30,57 @@ def main() -> int:
     failures = []
     with sync_playwright() as p:
         browser = p.chromium.launch(args=["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"])
-        page = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True).new_page()
+        context = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True)
+        page = context.new_page()
         page.on("pageerror", lambda e: failures.append(f"pageerror: {e}"))
-        page.goto(f"{BASE}/mock/app/?ref=TESTREF", wait_until="networkidle")
+        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
         page.fill("#cv", CV)
         page.click("#to-key")
         page.fill("#key", KEY)
         page.click("#check-key")
         page.wait_for_selector("#s-live.on", timeout=20000)
-        print("chip before:", page.text_content("#entitle"))
+        print("chip before  :", page.text_content("#entitle"))
 
+        # step 1: the two passes and one Buy button. No sign-in in the way yet.
         page.click("#entitle")
         page.wait_for_selector("#s-pass.on")
+        page.wait_for_selector("#buy-block", state="visible", timeout=8000)
+        print("step 1       :", page.text_content("#buy-cta").strip(), "| checkout hidden:", not page.locator("#checkout").is_visible())
+        page.screenshot(path=str(OUT / "buy-1-plans.png"), full_page=True)
+        if page.locator("#checkout").is_visible():
+            failures.append("the sign-in step is visible before Buy is pressed")
+
+        # a different plan changes the button
+        page.click('.plan[data-plan="m"]')
+        if "30-day" not in page.text_content("#buy-cta"):
+            failures.append("choosing the 30-day plan did not change the Buy button")
+        page.click('.plan[data-plan="w"]')
+
+        # step 2: who you are, then the number
+        page.click("#buy-cta")
+        page.wait_for_selector("#checkout", state="visible", timeout=8000)
+        print("step 2       :", page.text_content("#checkout-plan"), "| buy block hidden:", not page.locator("#buy-block").is_visible())
         page.wait_for_selector("#testlogin", state="visible", timeout=8000)
-        page.screenshot(path=str(OUT / "buy-1-passes.png"), full_page=True)
+        page.screenshot(path=str(OUT / "buy-2-who.png"), full_page=True)
         page.fill("#testlogin-email", EMAIL)
         page.click("#testlogin-go")
         page.wait_for_selector("#pass-pay", state="visible", timeout=15000)
-        print("signed in :", page.text_content("#pass-who"))
-        page.click('.plan[data-plan="w"]')
+        print("signed in    :", page.text_content("#pass-who2"))
         page.fill("#phone", "9876543210")
-        page.screenshot(path=str(OUT / "buy-2-pay.png"), full_page=True)
+        page.screenshot(path=str(OUT / "buy-3-pay.png"), full_page=True)
         page.click("#pay")
         page.wait_for_url("**cashfree**", timeout=30000)
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(2500)
-        page.screenshot(path=str(OUT / "buy-3-cashfree.png"), full_page=True)
-        print("checkout  :", page.url[:80])
+        print("checkout     :", page.url[:60])
         if STOP:
             print("stopped at the Cashfree page as asked")
             browser.close()
             return 0
-        # Cashfree sandbox: the Test Wallet leads to a simulator with a Success button.
+
+        # Cashfree sandbox: Test Wallet, then its simulator (stated OTP, SUCCESS, Submit).
         page.get_by_text("Test Wallet").first.click()
         page.wait_for_timeout(3000)
-        page.screenshot(path=str(OUT / "buy-4-wallet.png"), full_page=True)
         for label in ("Pay", "Proceed", "Continue", "Pay Now"):
             try:
                 page.get_by_role("button", name=label).first.click(timeout=2500)
@@ -70,20 +88,47 @@ def main() -> int:
             except Exception:
                 pass
         page.wait_for_timeout(4000)
-        page.screenshot(path=str(OUT / "buy-5-sim.png"), full_page=True)
-        print("simulator :", page.url[:90])
-        # The simulator: its stated OTP, the SUCCESS outcome, Submit.
         page.locator("input").first.fill("111000")
         page.get_by_text("SUCCESS", exact=True).first.click(timeout=5000)
         page.get_by_role("button", name="Submit").click(timeout=5000)
         page.wait_for_url("**/mock/app/**", timeout=60000)
-        print("returned  :", page.url[:90])
+
+        # step 4: your own account, and no pay form in your face
         page.wait_for_selector("#pass-notice.ok", timeout=120000)
-        print("notice    :", page.text_content("#pass-notice"))
-        print("chip after:", page.text_content("#entitle"))
-        page.screenshot(path=str(OUT / "buy-6-done.png"), full_page=True)
+        page.wait_for_selector("#account-card", state="visible", timeout=10000)
+        print("after paying :", page.text_content("#pass-notice"))
+        print("account      :", page.text_content("#pass-who"), "|", page.text_content("#pass-days"), "|", page.text_content("#pass-until"))
+        print("chip after   :", page.text_content("#entitle"))
+        page.screenshot(path=str(OUT / "buy-4-account.png"), full_page=True)
+        if page.locator("#checkout").is_visible() or page.locator("#buy-block").is_visible():
+            failures.append("a pay form is still shown after paying")
         if "Pass" not in (page.text_content("#entitle") or ""):
             failures.append("the chip does not show a pass after paying")
+
+        # "Extend my pass" brings the plans back, on purpose
+        page.click("#extend")
+        page.wait_for_selector("#buy-block", state="visible", timeout=5000)
+        print("extend shows the plans again: ok")
+
+        # the bug he reported: reload, and the chip must already know about the pass
+        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.wait_for_function("document.getElementById('entitle').textContent.trim() !== '…'", timeout=20000)
+        chip = page.text_content("#entitle")
+        print("chip on load :", chip)
+        page.screenshot(path=str(OUT / "buy-5-reload.png"), full_page=True)
+        if "Pass" not in (chip or ""):
+            failures.append(f"after a reload the chip says {chip!r} instead of the pass")
+        page.click("#entitle")
+        page.wait_for_selector("#account-card", state="visible", timeout=8000)
+        print("reload panel :", page.text_content("#pass-days"))
+
+        # and with the key forgotten, the pass must still be known from the account
+        page.evaluate("localStorage.removeItem('ps_gemini_key')")
+        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.wait_for_function("document.getElementById('entitle').textContent.trim() !== '…'", timeout=20000)
+        print("chip, no key :", page.text_content("#entitle"))
+        if "Pass" not in (page.text_content("#entitle") or ""):
+            failures.append("with no key in the browser, a signed-in buyer loses sight of their pass")
         browser.close()
     for f in failures:
         print("FAIL:", f)
