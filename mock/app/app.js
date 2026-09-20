@@ -18,6 +18,7 @@ import { computeMetrics } from "./metrics.js";
 import { generateReport } from "./report.js";
 import { keyHash, entitlement, tick } from "./billing.js";
 import { Wheel } from "../wheel.js";
+import { VoiceGate, MIC_HELP } from "./miccheck.js";
 
 const $ = (id) => document.getElementById(id);
 const store = {
@@ -30,11 +31,16 @@ const nowS = () => performance.now() / 1000;
 const TICK_SECONDS = 30;
 const VOICE_RMS = 0.005;
 const BAR_SHAPE = [0.55, 1, 0.75, 0.95, 0.5];
+const MIC_MUTED_RMS = 0.00002;   // exact digital silence: a mute key or a dead input
 
 const S = { cv: "", jd: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null };
 let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, wrapSent = false, ending = false;
 let voiceLog = [], lastTickAt = 0, bookedSeconds = 0, trialLeftAtStart = 0;
 let speaking = false, lastVoiceAt = 0, heardSinceShe = false, linkState = "idle";
+let phase = "idle";               // idle | miccheck | call
+let gate = new VoiceGate(), micHelpTimer = null, micStats = { chunks: 0, voiced: 0, maxRms: 0 };
+let sheStoppedAt = 0, quietMax = 0, micWarned = false;
+let youClearTimer = null;
 const bubbles = new Map();
 const logLines = [];
 const wheel = new Wheel($("wheel"));
@@ -152,7 +158,7 @@ function setCaption(hint, line, dim = false) {
   $("caption").classList.toggle("dim", dim);
 }
 
-/* Only her current thought fits on a call screen: the last sentence or two. */
+/* Only the current thought fits on a call screen: the last sentence or two. */
 function lastLines(text, max = 190) {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= max) return clean;
@@ -172,10 +178,43 @@ function setLink(state, label) {
   tag.className = "live" + (state === "live" ? " on" : state === "busy" ? " busy" : "");
 }
 
+// ---- microphone help: shown when the mic check fails, or the mic dies mid-call
+
+async function showMicFix(text, { allowAnyway }) {
+  $("micfix-text").textContent = text;
+  $("micfix-anyway").style.display = allowAnyway ? "flex" : "none";
+  const mics = await AudioIO.listMics();
+  $("micselect").innerHTML = mics.map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.label)}</option>`).join("");
+  if (audio && audio.micId) $("micselect").value = audio.micId;
+  $("micfix").style.display = "block";
+}
+function hideMicFix() { $("micfix").style.display = "none"; }
+
+$("micselect").onchange = async () => {
+  if (!audio) return;
+  try {
+    const info = await audio.useMic($("micselect").value);
+    gate = new VoiceGate();
+    log("mic_switched", { label: info.label });
+    $("micfix-text").textContent = `Switched to ${info.label || "the other microphone"}. Say hello.`;
+  } catch (err) {
+    $("micfix-text").textContent = "That microphone could not be opened: " + err.message;
+  }
+};
+$("anyway").onclick = () => {
+  if (phase !== "miccheck") return;
+  log("mic_check_skipped", { verdict: gate.verdict, maxRms: +gate.maxRms.toFixed(5) });
+  track("mock_mic_check", { result: "skipped", verdict: gate.verdict });
+  clearTimeout(micHelpTimer); hideMicFix();
+  startCall();
+};
+
 function preLive() {
+  phase = "idle";
   show("s-live");
   wheel.start(); wheel.setState("idle"); wheel.setLevel(0); wheel.setMic(0);
   $("pre-live").style.display = "grid"; $("youbar").style.display = "none";
+  hideMicFix(); $("youline").textContent = "";
   $("transcript").innerHTML = ""; bubbles.clear();
   $("clock").textContent = fmt(S.minutes * 60); $("clock").classList.remove("low");
   setLink("idle", "Ready");
@@ -191,7 +230,9 @@ function preLive() {
   }
 }
 
-/* The transcript is kept (hidden, under Diagnostics) and drives the caption. */
+/* The transcript is kept (hidden, under Diagnostics) and drives the captions:
+ * her current line in large type, your own words in a small line beneath, so
+ * you can see you are being heard. */
 function onTranscript(u, done) {
   let el = bubbles.get(u);
   if (!el) {
@@ -201,55 +242,118 @@ function onTranscript(u, done) {
     $("transcript").appendChild(el); bubbles.set(u, el);
   }
   el.querySelector("span").textContent = u.text + (u.interrupted ? " …" : "");
-  if (u.who === "interviewer") setCaption("Interviewer", lastLines(u.text) + (u.interrupted ? " …" : ""), false);
+  if (u.who === "interviewer") {
+    // Google sends your words in one batch when your turn ends, so they land
+    // just as she starts to reply. Leave them up for a few seconds: it reads as
+    // "this is what she heard", then it fades.
+    if (!youClearTimer && $("youline").textContent) youClearTimer = setTimeout(() => { $("youline").textContent = ""; youClearTimer = null; }, 6000);
+    setCaption("Interviewer", lastLines(u.text) + (u.interrupted ? " …" : ""), false);
+  } else {
+    clearTimeout(youClearTimer); youClearTimer = null;
+    $("youline").innerHTML = "<b>She heard</b>" + escapeHtml(lastLines(u.text, 120));
+  }
 }
 
 function refreshWheel() {
-  if (!live) return;
+  if (phase !== "call" || !live) return;
   if (linkState === "busy" && !speaking) { wheel.setState("reconnecting"); return; }
   if (speaking) { wheel.setState("speaking"); return; }
+  if (micWarned) { wheel.setState("listening"); return; }
   const quietFor = nowS() - lastVoiceAt;
   if (heardSinceShe && quietFor > 0.9) { wheel.setState("thinking"); setCaption("Thinking", null, true); }
   else { wheel.setState("listening"); setCaption(heardSinceShe ? "Listening" : "Your turn", null, heardSinceShe); }
+}
+
+function wireAudio() {
+  const bars = [...$("bars").children];
+  audio.onPlaying = (playing) => {
+    speaking = playing;
+    if (playing) heardSinceShe = false;
+    else { sheStoppedAt = nowS(); quietMax = 0; }
+    refreshWheel();
+  };
+  audio.onLevel = (level) => wheel.setLevel(level * 5);
+  audio.onChunk = (pcm, rms) => {
+    const t = nowS();
+    const voiced = rms >= VOICE_RMS;
+    micStats.chunks++; if (voiced) micStats.voiced++; if (rms > micStats.maxRms) micStats.maxRms = rms;
+    const lvl = Math.min(1, rms * 9);
+    wheel.setMic(lvl);
+    bars.forEach((b, i) => { b.style.transform = `scaleY(${Math.max(0.12, Math.min(1, lvl * BAR_SHAPE[i] * 1.6)).toFixed(2)})`; });
+    if (phase === "miccheck") { if (gate.feed(rms, t)) micCheckPassed(); return; }
+    if (phase !== "call") return;
+    voiceLog.push([t, voiced]);
+    if (rms > quietMax) quietMax = rms;
+    if (voiced && !speaking) {
+      lastVoiceAt = t; heardSinceShe = true;
+      if (micWarned) { micWarned = false; hideMicFix(); log("mic_back", {}); }
+    }
+    if (live) live.sendAudio(pcm, rms);
+    refreshWheel();
+  };
 }
 
 $("start").onclick = async () => {
   $("start").disabled = true;
   notice("live-notice", "");
   audio = new AudioIO();
+  audio.onMicMuted = (muted) => {
+    log("mic_track_muted", { muted });
+    if (muted && phase !== "idle") showMicFix("Your system reports the microphone as muted. Unmute it, then say hello.", { allowAnyway: phase === "miccheck" });
+  };
   try { await audio.start(); }
   catch (err) {
     notice("live-notice", "Microphone not available: " + err.message + ". Allow the mic for this site and try again.", "bad");
     log("mic_error", { error: String(err) }); $("start").disabled = false; audio = null; return;
   }
+  log("mic", { label: audio.micLabel, deviceRate: audio.sampleRate });
   $("pre-live").style.display = "none"; $("youbar").style.display = "flex"; $("end").disabled = false;
+  micStats = { chunks: 0, voiced: 0, maxRms: 0 };
+  wireAudio();
+
+  // The interview, and the free minutes, only start once a voice really arrives.
+  phase = "miccheck";
+  gate = new VoiceGate();
+  setLink("idle", "Mic check");
+  setCaption("Mic check", "Say hello, so I know I can hear you.", false);
+  $("left").textContent = "Your time has not started";
+  wheel.setState("listening");
+  clearTimeout(micHelpTimer);
+  micHelpTimer = setTimeout(() => {
+    if (phase !== "miccheck") return;
+    const verdict = gate.verdict;
+    log("mic_check_help", { verdict, maxRms: +gate.maxRms.toFixed(5), chunks: gate.chunks });
+    track("mock_mic_check", { result: "help", verdict });
+    setCaption("Mic check", "I can't hear you yet.", false);
+    showMicFix(MIC_HELP[verdict] || MIC_HELP.silent, { allowAnyway: true });
+  }, 6000);
+};
+
+function micCheckPassed() {
+  clearTimeout(micHelpTimer); hideMicFix();
+  log("mic_check_ok", { maxRms: +gate.maxRms.toFixed(4), chunks: gate.chunks });
+  track("mock_mic_check", { result: "ok" });
+  startCall();
+}
+
+async function cancelMicCheck() {
+  clearTimeout(micHelpTimer);
+  phase = "idle";
+  if (audio) { await audio.stop(); audio = null; }
+  preLive();
+}
+
+function startCall() {
+  phase = "call";
   startedAt = nowS(); voiceLog = []; wrapSent = false; ending = false; lastTickAt = startedAt; bookedSeconds = 0;
-  speaking = false; heardSinceShe = false; lastVoiceAt = 0;
+  speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
   trialLeftAtStart = S.ent.secondsLeft;
   plannedSeconds = Math.min(S.minutes * 60, S.ent.kind === "trial" ? S.ent.secondsLeft : Infinity);
-  log("audio_ready", { deviceRate: audio.sampleRate, planned: plannedSeconds });
+  log("call_start", { planned: plannedSeconds });
   setLink("busy", "Connecting");
-  setCaption("Connecting", "Calling your interviewer…", true);
+  setCaption("I can hear you", "Calling your interviewer…", true);
+  $("left").textContent = "You're on";
   wheel.setState("reconnecting");
-
-  const bars = [...$("bars").children];
-  audio.onPlaying = (playing) => {
-    speaking = playing;
-    if (playing) heardSinceShe = false;
-    refreshWheel();
-  };
-  audio.onLevel = (level) => wheel.setLevel(level * 5);
-  audio.onChunk = (pcm, rms) => {
-    const voiced = rms >= VOICE_RMS;
-    const t = nowS();
-    voiceLog.push([t, voiced]);
-    if (voiced && !speaking) { lastVoiceAt = t; heardSinceShe = true; }
-    const lvl = Math.min(1, rms * 9);
-    wheel.setMic(lvl);
-    bars.forEach((b, i) => { b.style.transform = `scaleY(${Math.max(0.12, Math.min(1, lvl * BAR_SHAPE[i] * 1.6)).toFixed(2)})`; });
-    if (live) live.sendAudio(pcm, rms);
-    refreshWheel();
-  };
 
   const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, minutes: Math.round(plannedSeconds / 60) };
   live = new GeminiLive({
@@ -261,8 +365,10 @@ $("start").onclick = async () => {
     onTranscript,
     onStatus: (s) => {
       if (s === "live") setLink("live", "Live");
-      else if (s === "connecting" || s === "reconnecting") { setLink("busy", s === "connecting" ? "Connecting" : "Reconnecting"); setCaption("One moment", "The line dropped for a second. Reconnecting, your time and answers are kept.", true); }
-      else if (s === "failed") endInterview("failed");
+      else if (s === "connecting" || s === "reconnecting") {
+        setLink("busy", s === "connecting" ? "Connecting" : "Reconnecting");
+        if (s === "reconnecting") setCaption("One moment", "The line dropped for a second. Reconnecting, your time and answers are kept.", true);
+      } else if (s === "failed") endInterview("failed");
       refreshWheel();
     },
     onNotice: (m) => { notice("live-notice", m); log("notice", { m }); },
@@ -271,7 +377,7 @@ $("start").onclick = async () => {
   live.start();
   track("mock_start", { minutes: Math.round(plannedSeconds / 60), language: S.language, entitlement: S.ent.kind });
   timer = setInterval(onSecond, 1000);
-};
+}
 
 async function onSecond() {
   if (!live || ending) return;
@@ -282,6 +388,18 @@ async function onSecond() {
   if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
   if (!wrapSent && remaining <= 60) { wrapSent = true; live.sendText(NOTES.wrapUp); log("wrap_up_sent", {}); }
   if (remaining <= 0) { endInterview("time"); return; }
+
+  // She asked, and the microphone has delivered exact digital silence ever
+  // since: that is a mute key or a dead input, not someone thinking.
+  if (!micWarned && linkState === "live" && !speaking && sheStoppedAt && !heardSinceShe
+      && nowS() - sheStoppedAt > 10 && quietMax < MIC_MUTED_RMS) {
+    micWarned = true;
+    log("mic_silent_in_call", { quietMax: +quietMax.toFixed(6) });
+    track("mock_mic_silent", {});
+    setCaption("Can't hear you", null, true);
+    showMicFix("Your microphone has gone completely silent. Is it muted? She is waiting for your answer.", { allowAnyway: false });
+  }
+
   // Book used time against the trial, like the desktop app's 30-second slices.
   if (S.ent.kind === "trial" && nowS() - lastTickAt >= TICK_SECONDS) {
     const slice = Math.round(nowS() - lastTickAt); lastTickAt = nowS(); bookedSeconds += slice;
@@ -292,7 +410,10 @@ async function onSecond() {
   }
 }
 
-$("end").onclick = () => { if (confirm("End the interview now and get your report?")) endInterview("user"); };
+$("end").onclick = () => {
+  if (phase === "miccheck") { cancelMicCheck(); return; }
+  if (confirm("End the interview now and get your report?")) endInterview("user");
+};
 
 async function endInterview(reason) {
   if (ending) return;
@@ -301,11 +422,13 @@ async function endInterview(reason) {
   $("end").disabled = true;
   const elapsed = Math.round(nowS() - startedAt);
   log("interview_end", { reason, elapsed });
+  log("mic_stats", { chunks: micStats.chunks, voicedChunks: micStats.voiced, maxRms: +micStats.maxRms.toFixed(5), label: audio ? audio.micLabel : "" });
   track("mock_end", { reason, seconds: elapsed });
   const turns = live ? live.transcript.turns.map((u) => ({ ...u })) : [];
   const usage = live ? { ...live.usage } : {};
   if (live) { live.close(); live = null; }
   if (audio) { await audio.stop(); audio = null; }
+  phase = "idle";
   wheel.setState("idle"); wheel.setLevel(0); wheel.setMic(0);
   // Book the tail of the session.
   if (S.ent.kind === "trial") {
@@ -322,7 +445,10 @@ async function endInterview(reason) {
   }
   if (turns.filter((u) => u.who === "candidate").length === 0) {
     ending = false; preLive();
-    notice("live-notice", "The interview ended before you answered anything, so there is nothing to score. Try again.", "bad");
+    const deaf = micStats.maxRms < 0.002;
+    notice("live-notice", deaf
+      ? "Your microphone sent only silence for the whole call, so there is nothing to score. It was muted, or the browser used the wrong one. Check it and try again."
+      : "Google did not pick up any of your answers, so there is nothing to score. Try again, and if it repeats, open Diagnostics below, tap Copy, and send it to support@interviewsarthi.com.", "bad");
     return;
   }
   wheel.stop();
@@ -420,6 +546,16 @@ $("download").onclick = () => {
   lines.push("Transcript:", ...(r.transcript || r.turns || []).map((u) => `${u.who === "interviewer" ? "Interviewer" : "You"}: ${u.text}`));
   const blob = new Blob([lines.join("\n")], { type: "text/plain" });
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "prep-sarthi-report.txt"; a.click();
+};
+
+$("copydiag").onclick = async () => {
+  const text = [`Prep Sarthi diagnostics ${new Date().toISOString()}`, navigator.userAgent, `page ${location.host}${location.pathname}`, "", ...logLines].join("\n");
+  try { await navigator.clipboard.writeText(text); $("copydiag-note").textContent = "Copied. Paste it in an email or chat."; }
+  catch (_) {
+    const area = document.createElement("textarea"); area.value = text; area.style.cssText = "width:100%;height:160px;margin-top:10px";
+    $("copydiag").parentElement.appendChild(area); area.select();
+    $("copydiag-note").textContent = "Select all and copy.";
+  }
 };
 
 window.addEventListener("pagehide", () => { if (live) live.close(); });

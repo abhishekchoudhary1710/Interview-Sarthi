@@ -124,6 +124,18 @@
       <div class="top"><span class="live" id="livetag">Ready</span><span class="clock" id="clock">12:00</span></div>
       <div class="wheelwrap" id="wheel"></div>
       <p class="caption" id="caption"><span class="hint" id="hint">Your interviewer</span><span id="line">She speaks first. Answer out loud, like a real call.</span></p>
+      <p class="youline" id="youline"></p>
+      <div class="micfix" id="micfix" style="display:none">
+        <p id="micfix-text">I can't hear your microphone.</p>
+        <span class="mini">Microphone</span>
+        <select id="micselect" style="margin-top:6px"></select>
+        <ul>
+          <li>Check the mute key on your laptop or keyboard, and the mute switch on your headset.</li>
+          <li>If you have more than one microphone, pick another one above.</li>
+          <li>Then just say hello. It starts by itself once it hears you.</li>
+        </ul>
+        <div class="row2" id="micfix-anyway"><button class="linkbtn" id="anyway">Start anyway</button></div>
+      </div>
       <div class="prestart" id="pre-live">
         <ul>
           <li>Use earphones if you can. From a loud speaker she can hear herself.</li>
@@ -156,7 +168,7 @@
     <p class="muted" style="margin-top:22px;font-size:14.5px">Real interview coming up? <a href="/" target="_blank">Interview Sarthi</a> gives you live help on the call itself.</p>
   </section>
 
-  <details class="diag"><summary>Diagnostics</summary><div id="transcript"></div><div id="log"></div></details>
+  <details class="diag"><summary>Diagnostics</summary><p style="margin:10px 0 0"><button class="pill small ghost" id="copydiag">Copy diagnostics</button> <span id="copydiag-note"></span></p><div id="transcript"></div><div id="log"></div></details>
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>

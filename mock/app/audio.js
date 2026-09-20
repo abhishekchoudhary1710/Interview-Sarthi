@@ -12,6 +12,10 @@
  *
  * Everything must be created inside a user gesture (Start button): iOS Safari
  * keeps an AudioContext suspended otherwise.
+ *
+ * The microphone can be swapped while everything runs (useMic), because the
+ * most common failure on a real device is the browser picking a muted or
+ * wrong input.
  */
 
 const CAPTURE_RATE = 16000;
@@ -124,31 +128,39 @@ export class AudioIO {
   constructor() {
     this.ctx = null;
     this.stream = null;
+    this.source = null;
     this.capture = null;
     this.playback = null;
     this.onChunk = null;       // (Int16Array pcm16k, rms) => void
     this.onPlaying = null;     // (bool) => void
     this.onLevel = null;       // (rms 0..1 of the interviewer's voice right now) => void
+    this.onMicMuted = null;    // (bool) => void   the browser reports the track as muted
     this.speaking = false;
+    this.micLabel = "";
+    this.micId = "";
     this._muted = false;
   }
 
   get sampleRate() { return this.ctx ? this.ctx.sampleRate : 0; }
 
+  /* Microphones the browser knows about. Labels only appear after the user has
+   * granted the mic once, so call this after start(). */
+  static async listMics() {
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      return all.filter((d) => d.kind === "audioinput").map((d, i) => ({ id: d.deviceId, label: d.label || `Microphone ${i + 1}` }));
+    } catch (_) { return []; }
+  }
+
   /* Call from a click/tap handler. Asks for the mic and wires both worklets. */
-  async start() {
+  async start(deviceId) {
     if (this.ctx) return;
     const Ctx = window.AudioContext || window.webkitAudioContext;
     this.ctx = new Ctx({ latencyHint: "interactive" });
     if (this.ctx.state !== "running") await this.ctx.resume();
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      video: false,
-    });
     await this.ctx.audioWorklet.addModule(workletUrl(CAPTURE_WORKLET));
     await this.ctx.audioWorklet.addModule(workletUrl(PLAYBACK_WORKLET));
 
-    const source = this.ctx.createMediaStreamSource(this.stream);
     this.capture = new AudioWorkletNode(this.ctx, "sarthi-capture", { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
     this.capture.port.onmessage = (e) => {
       if (this._muted || !this.onChunk) return;
@@ -158,7 +170,7 @@ export class AudioIO {
     // the mic out of the speakers.
     const sink = this.ctx.createGain();
     sink.gain.value = 0;
-    source.connect(this.capture).connect(sink).connect(this.ctx.destination);
+    this.capture.connect(sink).connect(this.ctx.destination);
 
     this.playback = new AudioWorkletNode(this.ctx, "sarthi-playback", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [1] });
     this.playback.port.onmessage = (e) => {
@@ -169,6 +181,32 @@ export class AudioIO {
       if (typeof e.data.level === "number" && this.onLevel) this.onLevel(e.data.level);
     };
     this.playback.connect(this.ctx.destination);
+
+    await this.useMic(deviceId);
+  }
+
+  /* Open a microphone (the default one when no id is given) and feed it to the
+   * capture worklet. Safe to call again mid-call to switch microphones: the
+   * new one is opened first, so a refusal leaves the old one running. */
+  async useMic(deviceId) {
+    const audio = { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+    if (deviceId) audio.deviceId = { exact: deviceId };
+    const stream = await navigator.mediaDevices.getUserMedia({ audio, video: false });
+    if (this.source) { try { this.source.disconnect(); } catch (_) { /* already gone */ } }
+    if (this.stream) for (const t of this.stream.getTracks()) t.stop();
+    this.stream = stream;
+    this.source = this.ctx.createMediaStreamSource(stream);
+    this.source.connect(this.capture);
+    const track = stream.getAudioTracks()[0];
+    const settings = track && track.getSettings ? track.getSettings() : {};
+    this.micLabel = (track && track.label) || "";
+    this.micId = settings.deviceId || deviceId || "";
+    if (track) {
+      track.onmute = () => this.onMicMuted && this.onMicMuted(true);
+      track.onunmute = () => this.onMicMuted && this.onMicMuted(false);
+      if (track.muted && this.onMicMuted) this.onMicMuted(true);
+    }
+    return { label: this.micLabel, id: this.micId, settings };
   }
 
   /* Gemini's audio parts are 24 kHz Int16 PCM. */
@@ -190,7 +228,7 @@ export class AudioIO {
   async stop() {
     if (this.stream) for (const t of this.stream.getTracks()) t.stop();
     if (this.ctx) { try { await this.ctx.close(); } catch (_) { /* already closed */ } }
-    this.ctx = null; this.stream = null; this.capture = null; this.playback = null;
+    this.ctx = null; this.stream = null; this.source = null; this.capture = null; this.playback = null;
     this.speaking = false;
   }
 }

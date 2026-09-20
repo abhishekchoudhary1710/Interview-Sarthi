@@ -140,3 +140,36 @@ test("cv helpers tidy text and guess a first name", () => {
   assert.equal(guessName("Riya Sharma\nBackend Engineer\n"), "Riya");
   assert.equal(guessName("CURRICULUM VITAE\n"), "");
 });
+
+import { VoiceGate, MIC_HELP } from "../mock/app/miccheck.js";
+
+test("mic check: a muted mic never passes and is called silent", () => {
+  const g = new VoiceGate();
+  for (let i = 0; i < 80; i++) assert.equal(g.feed(0, i * 0.1), false);
+  assert.equal(g.passed, false);
+  assert.equal(g.verdict, "silent");
+  assert.match(MIC_HELP[g.verdict], /muted/);
+});
+
+test("mic check: room hiss alone does not pass, a voice does, and only once", () => {
+  const g = new VoiceGate();
+  for (let i = 0; i < 30; i++) assert.equal(g.feed(0.004, i * 0.1), false);   // hiss
+  assert.equal(g.verdict, "quiet");
+  assert.equal(g.feed(0.09, 3.0), false);
+  assert.equal(g.feed(0.12, 3.1), false);
+  assert.equal(g.feed(0.08, 3.2), true);      // third loud chunk inside the window
+  assert.equal(g.feed(0.2, 3.3), false);      // passes once
+  assert.equal(g.verdict, "ok");
+});
+
+test("mic check: isolated clicks far apart do not count as a voice", () => {
+  const g = new VoiceGate();
+  assert.equal(g.feed(0.3, 0), false);
+  assert.equal(g.feed(0.3, 2), false);
+  assert.equal(g.feed(0.3, 4), false);
+  assert.equal(g.passed, false);
+});
+
+test("mic check: nothing delivered at all is reported as no audio", () => {
+  assert.equal(new VoiceGate().verdict, "no-audio");
+});

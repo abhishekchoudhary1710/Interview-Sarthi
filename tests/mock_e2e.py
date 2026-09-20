@@ -63,12 +63,18 @@ def main() -> int:
         page.click("#start")
         page.wait_for_selector("#livetag.on", timeout=25000)
         t0 = time.time()
+        heard_lines = set()
         while time.time() - t0 < SECONDS:
-            time.sleep(5)
+            for _ in range(5):
+                time.sleep(1)
+                you = (page.text_content('#youline') or '').strip()
+                if you and you not in heard_lines:
+                    heard_lines.add(you)
+                    print(f"  {int(time.time() - t0):3d}s  YOU-LINE shown: {you[:90]!r}")
             n_i = page.locator(".bubble.interviewer").count()
             n_c = page.locator(".bubble.candidate").count()
             wheel = page.evaluate("(() => { const w = document.querySelector('#wheel svg'); return w.dataset.state + ' ' + (w.querySelector('.spin').style.transform || ''); })()")
-            print(f"  {int(time.time() - t0):3d}s  interviewer {n_i}  candidate {n_c}  clock {page.text_content('#clock')}  wheel {wheel}  hint {page.text_content('#hint')!r}")
+            print(f"  {int(time.time() - t0):3d}s  interviewer {n_i}  candidate {n_c}  clock {page.text_content('#clock')}  wheel {wheel}  hint {page.text_content('#hint')!r}  you {(page.text_content('#youline') or '')[:50]!r}")
             if int(time.time() - t0) in range(18, 24):
                 page.screenshot(path=str(OUT / "mock-2-live.png"))
         interviewer_lines = page.locator(".bubble.interviewer span").all_text_contents()
@@ -81,6 +87,8 @@ def main() -> int:
             failures.append("interviewer never spoke")
         if not candidate_lines:
             failures.append("candidate speech was never transcribed")
+        if not heard_lines:
+            failures.append("the 'She heard' line never appeared on the call screen")
 
         page.click("#end")
         page.wait_for_selector("#s-report.on", timeout=10000)

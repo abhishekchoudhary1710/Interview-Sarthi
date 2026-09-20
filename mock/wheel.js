@@ -70,7 +70,9 @@ export class Wheel {
     let target = 0;
     if (this.state === "speaking") target = 70 + this.level * 300;   // ~0.2 to ~1 turn a second
     else if (this.state === "reconnecting") target = 40;
-    if (this._still) target = Math.min(target, 25);
+    // "Reduce motion" (common on Windows with animations off) slows the wheel
+    // but never freezes it: the turning is how you know she is talking.
+    if (this._still) target = Math.min(target, 140);
     // Spin up quickly, coast down slowly: a wheel has weight.
     const rate = target > this.speed ? 6 : 1.6;
     this.speed += (target - this.speed) * Math.min(1, rate * dt);
@@ -78,17 +80,22 @@ export class Wheel {
     this.angle = (this.angle + this.speed * dt) % 360;
 
     let shown = this.angle;
-    if (this.state === "thinking" && !this._still) {
+    if (this.state === "thinking") {
       // rock a quarter-turn around wherever the wheel came to rest
-      shown += Math.sin((t - this._thinkStart) / 520) * 22;
+      shown += Math.sin((t - this._thinkStart) / 520) * (this._still ? 9 : 22);
     }
     this.spin.style.transform = `rotate(${shown.toFixed(2)}deg)`;
 
-    const breathe = this.state === "listening" ? 1 + this.mic * 0.09 : 1;
-    this.ring.style.transform = `scale(${breathe.toFixed(3)})`;
-    this.ring.style.strokeWidth = (2.5 + (this.state === "listening" ? this.mic * 7 : 0)).toFixed(2);
+    // While you speak the ring swells and brightens with your voice, so the
+    // screen never looks frozen during an answer.
+    const hearing = this.state === "listening";
+    this._ringLevel = (this._ringLevel || 0) + ((hearing ? this.mic : 0) - (this._ringLevel || 0)) * Math.min(1, 14 * dt);
+    const r = this._ringLevel;
+    this.ring.style.transform = `scale(${(1 + r * 0.17).toFixed(3)})`;
+    this.ring.style.strokeWidth = (3 + r * 12).toFixed(2);
+    this.ring.style.stroke = r > 0.12 ? "#B4C3FF" : "#8FA6FF";
 
-    const glow = this.state === "speaking" ? 0.45 + this.level * 0.5 : this.state === "listening" ? 0.3 : 0.18;
+    const glow = this.state === "speaking" ? 0.45 + this.level * 0.5 : hearing ? 0.22 + r * 0.6 : 0.18;
     this.host.style.setProperty("--glow", glow.toFixed(2));
   }
 }

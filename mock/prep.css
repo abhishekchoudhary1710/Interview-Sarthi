@@ -76,6 +76,17 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
 .caption{font-family:var(--display);font-size:24px;line-height:1.22;text-align:center;margin:0 6px 20px;min-height:3.6em;transition:opacity .3s}
 .caption.dim{opacity:.5}
 .caption .hint{display:block;font:500 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dark-muted);margin-bottom:10px}
+.youline{font:400 13.5px/1.45 var(--mono);color:var(--dark-muted);text-align:center;margin:-8px 10px 16px;min-height:2.9em;transition:opacity .3s}
+.youline b{font-weight:500;color:#B4C3FF;letter-spacing:.06em;text-transform:uppercase;font-size:11px;margin-right:6px}
+.youline:empty{opacity:0}
+.micfix{background:rgba(251,247,240,.07);border:1px solid var(--dark-line);border-radius:16px;padding:16px;margin-bottom:14px;font-size:14.5px;color:var(--dark-ink)}
+.micfix p{margin:0 0 10px}
+.micfix ul{margin:10px 0 0;padding-left:18px;color:var(--dark-muted);font-size:13.5px}
+.micfix li{margin:4px 0}
+.micfix select{background:#221D16;color:var(--dark-ink);border-color:var(--dark-line);font-size:14.5px;padding:11px 12px}
+.micfix .row2{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.micfix .mini{font:500 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dark-muted)}
+.linkbtn{background:none;border:0;padding:0;color:#B4C3FF;font:inherit;font-size:13.5px;text-decoration:underline;cursor:pointer}
 .you{display:flex;align-items:center;gap:12px;background:rgba(251,247,240,.08);border-radius:16px;padding:12px 14px}
 .you small{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--dark-muted)}
 .bars{display:flex;gap:3px;align-items:center;height:22px}
