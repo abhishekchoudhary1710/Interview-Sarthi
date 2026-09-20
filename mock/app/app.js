@@ -16,7 +16,8 @@ import { buildInterviewerInstructions, NOTES } from "./interviewer.js";
 import { readCvFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
 import { generateReport } from "./report.js";
-import { keyHash, entitlement, tick } from "./billing.js";
+import { keyHash, entitlement, tick, rememberInvite } from "./billing.js";
+import { initPasses, openPasses, renderInvite } from "./pass.js";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
 
@@ -33,7 +34,8 @@ const VOICE_RMS = 0.005;
 const BAR_SHAPE = [0.55, 1, 0.75, 0.95, 0.5];
 const MIC_MUTED_RMS = 0.00002;   // exact digital silence: a mute key or a dead input
 
-const S = { cv: "", jd: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null };
+const S = { cv: "", jd: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "w" };
+let lastScreen = "s-cv";
 let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, wrapSent = false, ending = false;
 let voiceLog = [], lastTickAt = 0, bookedSeconds = 0, trialLeftAtStart = 0;
 let speaking = false, lastVoiceAt = 0, heardSinceShe = false, linkState = "idle";
@@ -49,6 +51,7 @@ const waitWheel = new Wheel($("wheel-wait"));
 // ------------------------------------------------------------------ helpers
 
 function show(id) {
+  if (id !== "s-pass" && id !== "s-invite") lastScreen = id;
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   window.scrollTo({ top: 0 });
 }
@@ -75,8 +78,16 @@ function renderEntitlement() {
   if (!e) { el.textContent = "20 min free"; el.className = "chip"; return; }
   if (e.kind === "pass") { el.textContent = `Pass · ${fmtLong(e.secondsLeft)} left`; el.className = "chip ok"; }
   else if (e.kind === "trial") { el.textContent = `Free · ${fmtLong(e.secondsLeft)} left`; el.className = "chip"; }
-  else { el.textContent = "Free minutes used"; el.className = "chip warn"; }
+  else { el.textContent = passCtx.passesOn ? "Get a pass" : "Free minutes used"; el.className = "chip warn"; }
 }
+
+/* What the pass screen and the invite card need from this page. */
+const passCtx = {
+  state: S, passesOn: false, show, track, log,
+  setEntitlement(ent) { S.ent = ent; renderEntitlement(); },
+  refresh: () => entitlement(S.hash),
+  resume() { $("pass-back").textContent = "Back"; if (S.key && S.ent && lastScreen === "s-live") preLive(); else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen); },
+};
 function currentLanguage() {
   const v = $("language").value;
   return v === "other" ? ($("language-other").value.trim() || "auto") : v;
@@ -220,13 +231,15 @@ function preLive() {
   setLink("idle", "Ready");
   setCaption("Your interviewer", "She speaks first. Answer out loud, like a real call.");
   if (S.ent.kind === "none") {
-    notice("live-notice", "Your free minutes are used up. Passes are coming soon. Write to support@interviewsarthi.com if you want one now.", "bad");
     $("start").disabled = true;
+    if (passCtx.passesOn) { openPasses("Your free minutes are used up. A pass gives you unlimited mocks, or invite a friend for 20 more free minutes."); return; }
+    notice("live-notice", "Your free minutes are used up. Passes open in a few days. Until then, tap Invite at the top: you and a friend both get 20 free minutes.", "bad");
   } else {
     $("start").disabled = false;
     const cap = Math.min(S.minutes * 60, S.ent.secondsLeft);
     $("clock").textContent = fmt(cap);
-    notice("live-notice", cap < S.minutes * 60 ? `You have ${fmtLong(S.ent.secondsLeft)} free left, so this interview will be ${fmtLong(cap)}.` : "");
+    const why = S.ent.kind === "pass" ? `Your pass ends in ${fmtLong(S.ent.secondsLeft)}` : `You have ${fmtLong(S.ent.secondsLeft)} free left`;
+    notice("live-notice", cap < S.minutes * 60 ? `${why}, so this interview will be ${fmtLong(cap)}.` : "");
   }
 }
 
@@ -348,7 +361,7 @@ function startCall() {
   startedAt = nowS(); voiceLog = []; wrapSent = false; ending = false; lastTickAt = startedAt; bookedSeconds = 0;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
   trialLeftAtStart = S.ent.secondsLeft;
-  plannedSeconds = Math.min(S.minutes * 60, S.ent.kind === "trial" ? S.ent.secondsLeft : Infinity);
+  plannedSeconds = Math.min(S.minutes * 60, S.ent.secondsLeft);   // free minutes and passes both stop on the second
   log("call_start", { planned: plannedSeconds });
   setLink("busy", "Connecting");
   setCaption("I can hear you", "Calling your interviewer…", true);
@@ -386,6 +399,7 @@ async function onSecond() {
   $("clock").textContent = fmt(remaining);
   $("clock").classList.toggle("low", remaining <= 60);
   if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
+  else if (S.ent.kind === "pass") $("left").textContent = `Pass · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
   if (!wrapSent && remaining <= 60) { wrapSent = true; live.sendText(NOTES.wrapUp); log("wrap_up_sent", {}); }
   if (remaining <= 0) { endInterview("time"); return; }
 
@@ -406,6 +420,11 @@ async function onSecond() {
     const r = await tick(S.hash, slice);
     S.ent.secondsLeft = r.secondsLeft;
     log("trial_tick", { slice, left: r.secondsLeft, source: r.source });
+    if (r.reward) {
+      trialLeftAtStart += r.reward.seconds;
+      notice("live-notice", `You and the friend who invited you both just earned ${Math.round(r.reward.seconds / 60)} free minutes.`, "ok");
+      track("mock_invite_reward", { seconds: r.reward.seconds });
+    }
     if (r.secondsLeft <= 0) endInterview("trial");
   }
 }
@@ -476,6 +495,8 @@ async function writeReport(turns, elapsed, usage) {
   window.__lastReport = record;
   saveHistory(record);
   renderReport(record);
+  if (S.ent.kind !== "pass") { const fresh = await entitlement(S.hash); if (fresh.source === "server") { S.ent = fresh; renderEntitlement(); } }
+  renderInvite($("invite-report"), result.report.overall_score);
   track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
 }
 
@@ -559,4 +580,6 @@ $("copydiag").onclick = async () => {
 };
 
 window.addEventListener("pagehide", () => { if (live) live.close(); });
+rememberInvite();
 restore();
+initPasses(passCtx).then(renderEntitlement);

@@ -179,6 +179,7 @@
   <details><summary>What does it cost?</summary><p>The first 20 minutes are free, with no card and no sign-up. The interviewer runs on your own Gemini key, which Google offers free within its limits. Passes for more practice time are coming, and their prices are not set yet.</p></details>
   <details><summary>Does it work on a phone?</summary><p>Yes. It is a web page, not an app to install. It needs a browser with a microphone. Earphones help, because from a loud speaker the interviewer can hear her own voice.</p></details>
   <details><summary>Which languages can the interview be in?</summary><p>English, Hinglish and Hindi are one tap. Type any other language, or choose "match whatever I speak" and she follows you.</p></details>
+  <details><summary>How do I get more free minutes?</summary><p>Invite a friend from inside the app. When they do their first mock through your link, you both get 20 more free minutes, for your first 5 friends. Your score is never part of the invite message unless you choose to add it.</p></details>
   <details><summary>Can I get a second free trial in another browser?</summary><p>No. The free minutes belong to your Gemini key, not to the browser, so they are the same everywhere you use that key.</p></details>
   <details><summary>She stopped talking for a few seconds. Is it broken?</summary><p>Google's free tier sometimes goes quiet mid-call. Prep Sarthi notices, reconnects by itself and carries on from the same question. Your transcript and timer are kept.</p></details>
   <details><summary>My PDF did not read properly.</summary><p>A scanned CV is a picture, so there is no text to read. Paste the text into the box instead. It works just as well.</p></details>
@@ -208,6 +209,10 @@
   &copy; 2026 Interview Sarthi &middot; <a href="../">Home</a> &middot; <a href="../help.html">Help</a> &middot; <a href="../terms.html">Terms</a> &middot; <a href="../privacy.html">Privacy</a> &middot; <a href="../refunds.html">Refunds</a>
 </footer></div>
 
+<script>
+  // An invite link lands here first: keep the code for the app (first one wins).
+  try { var r = new URLSearchParams(location.search).get("ref"); if (r && /^[A-Za-z0-9]{7}$/.test(r) && !localStorage.getItem("ps_ref")) localStorage.setItem("ps_ref", r.toUpperCase()); } catch (e) {}
+</script>
 <script type="module">
   // The hero card is the product on a loop: she asks, you answer, she thinks, she pushes back.
   import { Wheel } from "./wheel.js";

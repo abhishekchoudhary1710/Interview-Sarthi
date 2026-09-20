@@ -57,7 +57,7 @@
 <div class="narrow">
   <div class="nav">
     <a class="wm" href="/mock/"><img src="/assets/mark.svg" alt="">Prep <i>Sarthi</i></a>
-    <span id="entitle" class="chip">…</span>
+    <span class="navright"><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button></span>
   </div>
 
   <!-- 1. CV -->
@@ -153,6 +153,54 @@
     <div class="notice" id="live-notice"></div>
   </section>
 
+  <!-- Passes -->
+  <section class="screen" id="s-pass">
+    <span class="label">Passes</span>
+    <h1>Unlimited mocks, <em>one payment.</em></h1>
+    <p class="lede">No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.</p>
+    <div class="notice" id="pass-notice"></div>
+    <div id="pass-body">
+      <div class="card" id="pass-live" style="display:none;margin-top:16px"><span class="label">Your pass</span><p id="pass-live-text" style="margin:8px 0 0"></p></div>
+      <div class="plans">
+        <button class="plan on" data-plan="w"><span class="label">This week</span><b>7 days</b><span class="price">Rs 99</span><small>Unlimited mocks. For the interview this week.</small></button>
+        <button class="plan" data-plan="m"><span class="label">Placement season</span><b>30 days</b><span class="price">Rs 249</span><small>Unlimited mocks. About Rs 8 a day.</small></button>
+      </div>
+      <div class="card">
+        <div id="pass-signin">
+          <span class="label">Step 1 of 2</span>
+          <p style="margin:8px 0 14px">Sign in with Google, so your pass follows you to any phone or laptop.</p>
+          <div id="gbutton"></div>
+          <div id="testlogin" style="display:none;margin-top:12px">
+            <span class="label">Sandbox sign-in (local preview only)</span>
+            <div class="row" style="margin-top:8px"><input type="text" id="testlogin-email" placeholder="tester@example.com"><button class="pill ghost" id="testlogin-go">Test sign-in</button></div>
+          </div>
+        </div>
+        <div id="pass-pay" style="display:none">
+          <span class="label">Step 2 of 2</span>
+          <p class="muted" style="margin:8px 0 0"><span id="pass-who"></span> · <button class="linkink" id="signout">not you?</button></p>
+          <label class="f">Mobile number, for the payment receipt</label>
+          <input type="text" id="phone" inputmode="numeric" autocomplete="tel-national" placeholder="10-digit mobile number">
+          <div class="actions"><button class="pill wide" id="pay">Pay Rs 99 →</button></div>
+          <p class="muted" style="font-size:13.5px;margin:12px 0 0">UPI, card or netbanking through Cashfree. One payment, no auto-renew. <a href="/refunds.html" target="_blank">Refunds</a>.</p>
+        </div>
+      </div>
+      <div class="card" id="freedays" style="display:none;margin-top:16px">
+        <span class="label">Free days</span>
+        <p id="freedays-text" style="margin:8px 0 14px"></p>
+        <button class="pill" id="start-days">Start my free days</button>
+      </div>
+    </div>
+    <div class="actions"><button class="pill ghost" id="pass-back">Back</button></div>
+  </section>
+
+  <!-- Invite -->
+  <section class="screen" id="s-invite">
+    <span class="label">Invite</span>
+    <h1>Practise more, <em>for free.</em></h1>
+    <div id="invite-full" style="margin-top:18px"></div>
+    <div class="actions"><button class="pill ghost" id="invite-back">Back</button></div>
+  </section>
+
   <!-- 4. Report -->
   <section class="screen" id="s-report">
     <div class="card writing" id="report-wait">
@@ -161,6 +209,7 @@
       <p class="muted" id="report-status">Scoring every answer against your CV. About twenty seconds.</p>
     </div>
     <div id="report" class="stack"></div>
+    <div id="invite-report" style="margin-top:16px"></div>
     <div class="actions">
       <button class="pill" id="again">Practise again</button>
       <button class="pill ghost" id="download">Download report</button>
