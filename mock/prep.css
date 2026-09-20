@@ -23,9 +23,9 @@ h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:-.01em;margin
 
 /* top bar */
 .nav{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:20px 0}
-.wm{display:inline-flex;align-items:center;gap:9px;font:600 17px var(--body);letter-spacing:-.02em;color:var(--ink);text-decoration:none}
-.wm i{font-style:normal;color:var(--accent)}
-.wm img{width:26px;height:26px;border-radius:7px}
+.wm{display:inline-flex;align-items:baseline;gap:8px;font:600 18px var(--body);letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.wm .mark{width:19px;height:19px;color:var(--accent);flex:0 0 auto;align-self:center}
+.wm i{font-family:var(--display);font-style:italic;font-weight:400;font-size:21px;letter-spacing:0;color:var(--accent)}
 .nav .links{display:flex;gap:20px;align-items:center;font-size:14.5px}
 .nav .links a{color:var(--muted);text-decoration:none}
 .nav .links a:hover{color:var(--ink)}

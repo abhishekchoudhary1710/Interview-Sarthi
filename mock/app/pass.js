@@ -21,18 +21,26 @@ const SCORE_WORTH_SHARING = 70;
 
 let ctx = null;          // { state, setEntitlement, show, track, log, resume, practise }
 let cfg = null;
-let googleReady = false;
+let googleReady = null;   // the one in-flight or finished attempt to draw Google's button
 let step = "choose";     // choose | checkout | signin (a buyer on a new device, not buying)
 const PHONE = "ps_phone";
 let extendOpen = false;
 
+/* One load per address, and the promise only settles when the script has
+ * really run. Two callers asking at once share the same wait, instead of the
+ * second racing ahead and finding nothing loaded yet. */
+const scripts = new Map();
 function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) return resolve();
-    const s = document.createElement("script");
-    s.src = src; s.async = true; s.onload = resolve; s.onerror = () => reject(new Error("could not load " + src));
-    document.head.appendChild(s);
-  });
+  if (!scripts.has(src)) {
+    scripts.set(src, new Promise((resolve, reject) => {
+      const el = document.createElement("script");
+      el.src = src; el.async = true;
+      el.onload = resolve;
+      el.onerror = () => { scripts.delete(src); el.remove(); reject(new Error("could not load " + src)); };
+      document.head.appendChild(el);
+    }));
+  }
+  return scripts.get(src);
 }
 function say(text, cls = "") { const el = $("pass-notice"); el.textContent = text || ""; el.className = "notice " + cls; }
 function when(isoTime) { return new Date(isoTime).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
@@ -122,14 +130,24 @@ export async function openPasses(message, opts = {}) {
   await showGoogleButton();
 }
 
-async function showGoogleButton() {
-  if (!cfg || !cfg.google_client_id || googleReady || $("checkout").style.display === "none") return;
-  try {
-    await loadScript("https://accounts.google.com/gsi/client");
+const BLOCKED = "Google sign-in did not load. An ad blocker or Brave Shields usually causes this: allow accounts.google.com for this site, or open it in another browser, then try again.";
+
+/* Draw Google's button once. Every caller shares one attempt, so a second
+ * call can never report a failure the first one is still working through. */
+function showGoogleButton() {
+  if (!cfg || !cfg.google_client_id) return Promise.resolve();
+  if (googleReady) return googleReady;
+  googleReady = loadScript("https://accounts.google.com/gsi/client").then(() => {
+    if (!window.google || !window.google.accounts) throw new Error("blocked");
     window.google.accounts.id.initialize({ client_id: cfg.google_client_id, callback: (r) => onGoogle(r.credential), ux_mode: "popup" });
     window.google.accounts.id.renderButton($("gbutton"), { theme: "filled_black", size: "large", shape: "pill", text: "continue_with", width: 300 });
-    googleReady = true;
-  } catch (_) { say("Google sign-in could not load. Check your connection and try again.", "bad"); }
+    // A blocker can let the script through and still stop the button drawing.
+    setTimeout(() => { if (!$("gbutton").childElementCount) say(BLOCKED, "bad"); }, 1500);
+  }).catch(() => {
+    googleReady = null;            // let a later visit try again
+    say(BLOCKED, "bad");
+  });
+  return googleReady;
 }
 
 function paint() {
