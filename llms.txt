@@ -1,0 +1,64 @@
+# Interview Sarthi
+
+> Three tools for one job hunt in India, all running on the job seeker's own free Google Gemini API key rather than our servers: ApplySarthi finds jobs and fills applications, Prep Sarthi runs voice mock interviews from your CV, and Interview Sarthi gives live help during the real interview. Built and run by one developer, Abhishek Choudhary, in New Delhi. Prices are in rupees.
+
+Every page below is plain HTML with no JavaScript needed to read it. Facts pages carry review dates and a corrections address.
+
+## The three products
+
+- [Interview Sarthi](https://interviewsarthi.com/): Windows app. During a live online interview it hears the interviewer through the meeting audio and drafts an answer from your resume in English, Hindi or Hinglish, on an overlay that screen sharing does not capture. 30 minutes free, then one-time passes from Rs 99 for 2 days. Microsoft Store and direct download.
+- [Prep Sarthi](https://interviewsarthi.com/mock/): Web app, works on phones. An AI interviewer reads your CV, asks about your own projects out loud, follows up when an answer is vague, then scores every answer and writes a stronger version of each. Any language. 20 minutes free, then one-time passes of Rs 99 for 7 days or Rs 249 for 30 days.
+- [ApplySarthi](https://interviewsarthi.com/apply/): Web app plus a Chrome extension. Ranks open jobs from Naukri, LinkedIn, Indeed and 750+ company career pages against your CV, tailors the CV to each job and fills the application form in your own browser for you to check and submit. Free in early access.
+
+## Product facts, with review dates
+
+- [Interview Sarthi product facts](https://interviewsarthi.com/facts.html): identity, platform, current passes, capabilities and limits, privacy, official links, corrections address.
+- [Privacy policy](https://interviewsarthi.com/privacy.html): what each product processes and where. Covers all three.
+- [Refunds](https://interviewsarthi.com/refunds.html) and [Terms](https://interviewsarthi.com/terms.html).
+- [About the developer](https://interviewsarthi.com/about.html).
+
+## Original data we publish
+
+- [AI interview statistics for India](https://interviewsarthi.com/ai-interview-statistics-india.html): sourced figures on AI use in Indian hiring.
+- [What 60,975 open jobs in India actually contain](https://interviewsarthi.com/apply/job-application-statistics-india.html): our own analysis of live job postings.
+
+## Interview preparation guides
+
+- [All interview guides](https://interviewsarthi.com/guides/)
+- [TCS interview questions for freshers](https://interviewsarthi.com/guides/tcs-interview-questions-freshers.html)
+- [Infosys interview questions for freshers](https://interviewsarthi.com/guides/infosys-interview-questions-freshers.html)
+- [Wipro interview questions for freshers](https://interviewsarthi.com/guides/wipro-interview-questions-freshers.html)
+- [Cognizant GenC interview questions](https://interviewsarthi.com/guides/cognizant-interview-questions-freshers.html)
+- [Accenture interview questions for freshers](https://interviewsarthi.com/guides/accenture-interview-questions-freshers.html)
+- [Capgemini interview questions for freshers](https://interviewsarthi.com/guides/capgemini-interview-questions-freshers.html)
+- [TCS, Infosys and Wipro HR rounds](https://interviewsarthi.com/guides/tcs-infosys-wipro-hr-interview-questions.html)
+- [Self introduction in English and Hinglish](https://interviewsarthi.com/guides/self-introduction-interview-hinglish.html)
+- [Why should we hire you?](https://interviewsarthi.com/guides/why-should-we-hire-you.html)
+- [Salary expectation answer](https://interviewsarthi.com/guides/salary-expectation-answer.html)
+- [Strengths and weaknesses](https://interviewsarthi.com/guides/strengths-and-weaknesses-interview.html)
+- [Reason for job change](https://interviewsarthi.com/guides/reason-for-job-change.html)
+- [Explaining a career gap](https://interviewsarthi.com/guides/career-gap-explanation-interview.html)
+- [First job interview guide for freshers](https://interviewsarthi.com/guides/first-job-interview-guide-freshers.html)
+- [Hinglish interview answers](https://interviewsarthi.com/guides/hinglish-interview-answers.html)
+- [Rules on using AI in interviews](https://interviewsarthi.com/guides/ai-in-interviews-rules.html)
+
+## Applying for jobs, guides
+
+- [All applying guides](https://interviewsarthi.com/apply/guides/)
+- [Auto apply for jobs in India: how the tools work](https://interviewsarthi.com/apply/auto-apply-jobs-india.html)
+- [Is auto-applying to jobs safe?](https://interviewsarthi.com/apply/is-auto-apply-safe.html)
+- [ATS resume format for India](https://interviewsarthi.com/apply/guides/ats-resume-format-india.html)
+- [Naukri auto apply](https://interviewsarthi.com/apply/guides/naukri-auto-apply.html)
+- [You applied to 200 jobs and heard nothing](https://interviewsarthi.com/apply/guides/why-no-interview-calls.html)
+
+## Setting up
+
+- [Free Google Gemini API key guide](https://interviewsarthi.com/free-gemini-api-key-guide.html): one key runs all three products.
+- [Help](https://interviewsarthi.com/help.html)
+
+## Optional
+
+- [Can the interviewer see my screen?](https://interviewsarthi.com/can-interviewer-see-my-screen.html)
+- [Interview help in Hinglish](https://interviewsarthi.com/hinglish-interview-help.html)
+- [AI interview assistants in India: what to check](https://interviewsarthi.com/ai-interview-assistant-india.html)
+- [Comparisons with other tools](https://interviewsarthi.com/best-ai-interview-assistant-india.html)
