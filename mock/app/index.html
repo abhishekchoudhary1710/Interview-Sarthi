@@ -20,10 +20,10 @@
   (function () {
     try {
       var q = new URLSearchParams(location.search);
-      var buy = q.get("buy"), order = q.get("order_id");
+      var buy = q.get("buy"), order = q.get("order_id"), payment = q.get("payment_id");
       if (buy !== "w" && buy !== "m") buy = null;
       if (!buy && !order) return;
-      window.__ps = { buy: buy, order: order || null };
+      window.__ps = { buy: buy, order: order || null, payment: payment || null };
       var c = document.documentElement.classList;
       c.add("ps-pass");
       if (buy) c.add("ps-checkout");
@@ -200,7 +200,7 @@
       })();
     </script>
     <div class="offer warn" id="pass-running" style="display:none">
-      <p>Your interview is still running in the background. Paying opens Cashfree and would end it without a report. Finish it first, then buy.</p>
+      <p>Your interview is still running in the background. Paying opens the payment page and would end it without a report. Finish it first, then buy.</p>
       <button class="pill small" id="pass-running-back">Back to my interview</button>
     </div>
     <div id="pass-body">
@@ -226,7 +226,7 @@
           <button class="plan" data-plan="m"><span class="label">Placement season</span><b>30 days</b><span class="price">Rs 249</span><small>Unlimited mocks. About Rs 8 a day.</small></button>
         </div>
         <div class="actions"><button class="pill wide" id="buy-cta">Buy the 7-day pass →</button></div>
-        <p class="muted" style="font-size:13.5px;margin:14px 0 0">UPI, card or netbanking through Cashfree. One payment, no auto-renew. <a href="/refunds.html" target="_blank">Refunds</a>.</p>
+        <p class="muted" style="font-size:13.5px;margin:14px 0 0"><span id="pay-methods">UPI, card or netbanking through Cashfree.</span> One payment, no auto-renew. <a href="/refunds.html" target="_blank">Refunds</a>.</p>
         <p class="muted" id="have-pass-row" style="font-size:14.5px;margin:14px 0 0">Already bought a pass? <button class="linkink" id="have-pass">Sign in to use it here</button></p>
       </div>
 

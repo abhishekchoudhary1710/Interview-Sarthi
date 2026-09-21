@@ -124,8 +124,10 @@ export async function signIn(idToken, hash) {
 
 export const startOrder = (plan, phone) => post("/mock/buy", { session: session.get(), plan, phone });
 
-export async function orderStatus(orderId, hash) {
-  const r = await post("/mock/order", { session: session.get(), order_id: orderId, hash });
+/* payment_id is Dodo's, handed to us on the return URL. Cashfree orders do not
+ * have one and the worker never looks at it for them. */
+export async function orderStatus(orderId, hash, paymentId) {
+  const r = await post("/mock/order", { session: session.get(), order_id: orderId, hash, payment_id: paymentId || undefined });
   return r.status === "paid" ? { status: "paid", plan: r.plan, entitlement: shape(r, hash) } : { status: r.status };
 }
 

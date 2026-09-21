@@ -123,7 +123,7 @@
       <h1>Practice a real interview,<br>from your own <em>CV.</em></h1>
       <p class="lead">Upload your CV and talk. The interviewer asks about your own projects, asks more when an answer is thin, and scores every answer at the end.</p>
       <div class="ctas"><a class="pill" href="app/">Start a free mock interview &rarr;</a><a class="pill ghost" href="#report">See a sample report</a></div>
-      <p class="trust">Works on your phone, in any language. 20 minutes free, no sign-up. Then unlimited mocks from <a href="#pricing">Rs 99 a week</a>.</p>
+      <p class="trust">Works on your phone, in any language. 20 minutes free, no sign-up. Then unlimited mocks from <a href="#pricing"><span data-usd="$4.99 a week">Rs 99 a week</span></a>.</p>
     </div>
     <div class="call" aria-label="What the interview screen looks like">
       <div class="top"><span class="live on">Live</span><span id="demo-clock">07:42</span></div>
@@ -193,7 +193,7 @@
 
 <section class="band" id="pricing"><div class="wrap">
   <span class="label">What it costs</span>
-  <h2>Free to start. Then Rs 99 a week.</h2>
+  <h2>Free to start. Then <span data-usd="$4.99 a week">Rs 99 a week</span>.</h2>
   <div class="prices">
     <div class="pricecard">
       <span class="label">Try it</span>
@@ -209,7 +209,7 @@
     <div class="pricecard best">
       <span class="label">This week</span>
       <b>7 days</b>
-      <p class="amount">Rs 99</p>
+      <p class="amount" data-usd="$4.99">Rs 99</p>
       <ul>
         <li>Unlimited mock interviews</li>
         <li>Every report, in any language</li>
@@ -220,16 +220,16 @@
     <div class="pricecard">
       <span class="label">Placement season</span>
       <b>30 days</b>
-      <p class="amount">Rs 249</p>
+      <p class="amount" data-usd="$9.99">Rs 249</p>
       <ul>
         <li>Unlimited mock interviews</li>
-        <li>About Rs 8 a day</li>
+        <li><span data-usd="About 33 cents a day">About Rs 8 a day</span></li>
         <li>One payment. Never renews by itself</li>
       </ul>
       <a class="pill ghost" href="app/?buy=m">Get the 30-day pass &rarr;</a>
     </div>
   </div>
-  <p class="muted" style="margin-top:20px;max-width:52em">Pay by UPI, card or netbanking through Cashfree. The clock starts when you pay and the pass ends exactly on time. The interviewer always runs on your own free Google Gemini key, so nobody else's usage can slow you down.</p>
+  <p class="muted" style="margin-top:20px;max-width:52em"><span data-usd="Pay by card through Dodo Payments.">Pay by UPI, card or netbanking through Cashfree.</span> The clock starts when you pay and the pass ends exactly on time. The interviewer always runs on your own free Google Gemini key, so nobody else's usage can slow you down.</p>
 </div></section>
 
 <section class="band faq"><div class="wrap">
@@ -316,6 +316,29 @@
     bars.forEach((b, k) => { b.style.transform = "scaleY(" + Math.max(0.12, mic * SHAPE[k] * (0.7 + 0.6 * Math.abs(Math.sin(t * (6 + k))))).toFixed(2) + ")"; });
   }, 90);
   setInterval(() => { left = left > 0 ? left - 1 : 7 * 60 + 42; clock.textContent = String(Math.floor(left / 60)).padStart(2, "0") + ":" + String(left % 60).padStart(2, "0"); }, 1000);
+</script>
+
+<script>
+(function () {
+  var marked = document.querySelectorAll("[data-usd]");
+  if (!marked.length) return;
+  try {
+    var seen = sessionStorage.getItem("ps_geo");
+    if (seen) return show(seen);
+  } catch (e) { /* private mode */ }
+  fetch("https://license.interviewsarthi.com/geo")
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var c = String((d && d.country) || "IN").toUpperCase();
+      try { sessionStorage.setItem("ps_geo", c); } catch (e) { /* ignore */ }
+      show(c);
+    })
+    .catch(function () { /* no answer: the rupee prices stay, which is the safe default */ });
+  function show(country) {
+    if (country === "IN" || !country) return;
+    for (var i = 0; i < marked.length; i++) marked[i].textContent = marked[i].getAttribute("data-usd");
+  }
+})();
 </script>
 </body>
 </html>

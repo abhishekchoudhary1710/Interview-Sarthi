@@ -53,6 +53,17 @@ function daysLeft(seconds) {
   return `${Math.max(1, Math.floor(seconds / 60))} min left`;
 }
 
+/* Cashfree collects only in India; everyone else is sent to Dodo, which charges
+ * in dollars. The worker decides which from the visitor's country and says so in
+ * /mock/config, so the app never has to guess. Rupees are the safe default: if
+ * the config call failed we are almost certainly talking to an Indian reader. */
+function intl() { return !!(cfg && cfg.region && cfg.region !== "in"); }
+
+function money(plan) {
+  if (!plan) return "";
+  return intl() ? "$" + (Number(plan.usd || 0) / 100).toFixed(2) : "Rs " + plan.amount;
+}
+
 export async function initPasses(context) {
   ctx = context;
   try { cfg = await config(); } catch (_) { cfg = null; }
@@ -61,8 +72,19 @@ export async function initPasses(context) {
   if (cfg && cfg.plans) {
     for (const [id, p] of Object.entries(cfg.plans)) {
       const el = document.querySelector(`.plan[data-plan="${id}"]`);
-      if (el) el.querySelector(".price").textContent = "Rs " + p.amount;
+      if (el) el.querySelector(".price").textContent = money(p);
     }
+  }
+  // Dodo asks for whatever it needs on its own page, so an international buyer
+  // is never shown a field demanding a 10-digit Indian mobile number.
+  if (intl()) {
+    const methods = document.getElementById("pay-methods");
+    if (methods) methods.textContent = "Card through Dodo Payments.";
+    const phone = $("phone");
+    phone.style.display = "none";
+    phone.required = false;
+    const label = phone.previousElementSibling;
+    if (label) label.style.display = "none";
   }
   $("entitle").onclick = () => openPasses();
   $("open-invite").onclick = () => openInvite();
@@ -107,8 +129,8 @@ function choosePlan(id) {
   const p = planOf(id);
   if (p) {
     $("buy-cta").textContent = `Buy the ${p.label.replace("-Day Pass", "-day pass")} →`;
-    $("pay").textContent = `Pay Rs ${p.amount} →`;
-    $("checkout-plan").textContent = `${p.label} · Rs ${p.amount}`;
+    $("pay").textContent = `Pay ${money(p)} →`;
+    $("checkout-plan").textContent = `${p.label} · ${money(p)}`;
   }
 }
 
@@ -228,17 +250,24 @@ async function onGoogle(credential) {
 }
 
 async function pay() {
+  const abroad = intl();
   const phone = $("phone").value.replace(/\D/g, "");
-  if (phone.length < 10) { say("Enter your 10-digit mobile number. Cashfree needs it for the receipt.", "bad"); return; }
+  if (!abroad && phone.length < 10) { say("Enter your 10-digit mobile number. Cashfree needs it for the receipt.", "bad"); return; }
   $("pay").disabled = true;
   say("Opening secure checkout…");
   try {
-    const order = await startOrder(ctx.state.plan || "w", phone);
+    const order = await startOrder(ctx.state.plan || "w", abroad ? "" : phone);
     try {
       localStorage.setItem(PENDING, JSON.stringify({ order_id: order.order_id, hash: ctx.state.hash || null, at: Date.now() }));
-      localStorage.setItem(PHONE, phone.slice(-10));
+      if (!abroad) localStorage.setItem(PHONE, phone.slice(-10));
     } catch (_) { /* private mode */ }
-    ctx.track("begin_checkout", { product: "prep-sarthi", plan: ctx.state.plan || "w", value: order.amount, currency: "INR" });
+    ctx.track("begin_checkout", {
+      product: "prep-sarthi", plan: ctx.state.plan || "w",
+      value: order.amount, currency: order.currency || "INR",
+    });
+    // Dodo hosts its own checkout page, so there is no SDK to load: leaving the
+    // site IS the checkout, and the return URL brings the payment back with it.
+    if (order.checkout_url) { window.location.href = order.checkout_url; return; }
     await loadScript("https://sdk.cashfree.com/js/v3/cashfree.js");
     window.Cashfree({ mode: order.mode }).checkout({ paymentSessionId: order.payment_session_id, redirectTarget: "_self" });
   } catch (err) {
@@ -253,7 +282,17 @@ async function resumePendingOrder() {
   let pending = null;
   try { pending = JSON.parse(localStorage.getItem(PENDING) || "null"); } catch (_) { /* corrupt */ }
   const fromUrl = (window.__ps || {}).order;
-  if (fromUrl) pending = { order_id: fromUrl, hash: (pending && pending.hash) || null, at: (pending && pending.at) || Date.now() };
+  const paymentId = (window.__ps || {}).payment;
+  if (fromUrl) {
+    pending = {
+      order_id: fromUrl, hash: (pending && pending.hash) || null,
+      at: (pending && pending.at) || Date.now(),
+      payment_id: paymentId || (pending && pending.payment_id) || null,
+    };
+    // Written back because Dodo's payment_id lives only in the URL, and the head
+    // script clears the URL: a reload would otherwise lose the reference.
+    try { localStorage.setItem(PENDING, JSON.stringify(pending)); } catch (_) { /* private mode */ }
+  }
   if (!pending || !session.get() || Date.now() - (pending.at || 0) > 3600_000) {
     document.documentElement.classList.remove("ps-pass", "ps-confirm");
     if (fromUrl) { ctx.show("s-pass"); $("pass-body").style.display = "block"; say("That payment could not be matched to this browser. If money left your account, sign in below with the same Google account and your pass will be there.", ""); return true; }
@@ -269,7 +308,7 @@ async function resumePendingOrder() {
   say(cameBackByHand ? "Checking whether a payment went through…" : "Confirming your payment… keep this page open.");
   for (let i = 0; i < (cameBackByHand ? 3 : 40); i++) {
     let r;
-    try { r = await orderStatus(pending.order_id, pending.hash); } catch (_) { r = { status: "pending" }; }
+    try { r = await orderStatus(pending.order_id, pending.hash, pending.payment_id); } catch (_) { r = { status: "pending" }; }
     if (r.status === "paid") {
       try { localStorage.removeItem(PENDING); } catch (_) { /* ignore */ }
       ctx.setEntitlement(r.entitlement);
