@@ -258,7 +258,10 @@ async function pay() {
   try {
     const order = await startOrder(ctx.state.plan || "w", abroad ? "" : phone);
     try {
-      localStorage.setItem(PENDING, JSON.stringify({ order_id: order.order_id, hash: ctx.state.hash || null, at: Date.now() }));
+      localStorage.setItem(PENDING, JSON.stringify({
+        order_id: order.order_id, hash: ctx.state.hash || null,
+        gateway: order.gateway || "cashfree", at: Date.now(),
+      }));
       if (!abroad) localStorage.setItem(PHONE, phone.slice(-10));
     } catch (_) { /* private mode */ }
     ctx.track("begin_checkout", {
@@ -271,6 +274,12 @@ async function pay() {
     await loadScript("https://sdk.cashfree.com/js/v3/cashfree.js");
     window.Cashfree({ mode: order.mode }).checkout({ paymentSessionId: order.payment_session_id, redirectTarget: "_self" });
   } catch (err) {
+    if (/mobile number/i.test(String(err.message || ""))) {
+      const phoneEl = $("phone");
+      phoneEl.style.display = "";
+      const label = phoneEl.previousElementSibling;
+      if (label) label.style.display = "";
+    }
     say(err.status === 401 ? "Your sign-in expired. Sign in again." : err.message, "bad");
     if (err.status === 401) { session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null }); paint(); }
     $("pay").disabled = false;
@@ -287,6 +296,7 @@ async function resumePendingOrder() {
     pending = {
       order_id: fromUrl, hash: (pending && pending.hash) || null,
       at: (pending && pending.at) || Date.now(),
+      gateway: (pending && pending.gateway) || null,
       payment_id: paymentId || (pending && pending.payment_id) || null,
     };
     // Written back because Dodo's payment_id lives only in the URL, and the head
@@ -332,7 +342,9 @@ async function resumePendingOrder() {
     try { localStorage.removeItem(PENDING); } catch (_) { /* ignore */ }
     step = "checkout";
     $("pass-body").style.display = "block"; paint();
-    say("That payment was not completed, and nothing was charged. You can pay whenever you are ready.", "");
+    say(pending.gateway === "dodo"
+      ? "We could not confirm a payment for that order. If money did leave your account, your pass will appear here within a few minutes; nothing else is needed from you."
+      : "That payment was not completed, and nothing was charged. You can pay whenever you are ready.", "");
     return true;
   }
   $("pass-body").style.display = "block"; paint();
