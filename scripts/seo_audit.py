@@ -31,6 +31,7 @@ class Page(HTMLParser):
         self.titles, self.descriptions, self.canonicals = [], [], []
         self.robots, self.links, self.images, self.schemas, self.json_errors = [], [], [], [], []
         self.ids, self.h1, self.meta, self.visible = set(), 0, {}, []
+        self.refresh = None
         self._title, self._script, self._hidden = None, None, 0
         self.feed(source)
 
@@ -44,6 +45,8 @@ class Page(HTMLParser):
             self._hidden += 1
         if tag == 'script' and a.get('type', '').lower() == 'application/ld+json':
             self._script = ''
+        if tag == 'meta' and a.get('http-equiv', '').lower() == 'refresh':
+            self.refresh = a.get('content', '')
         if tag == 'meta':
             key = a.get('name', a.get('property', '')).lower()
             self.meta[key] = a.get('content', '')
@@ -87,11 +90,21 @@ class Page(HTMLParser):
     def indexable(self):
         return not any(re.search(r'\b(noindex|none)\b', x) for x in self.robots)
 
+    @property
+    def is_redirect(self):
+        """A stub left at a moved URL. GitHub Pages cannot serve a 301, so a renamed page leaves
+        behind a meta-refresh that points at its new home. It is routing, not a page: it has no H1
+        and no description on purpose, and its canonical belongs to the destination."""
+        return bool(self.refresh)
+
 
 def public_pages(root=ROOT):
-    return {p.relative_to(root).as_posix(): Page(p.read_text(encoding='utf-8'))
-            for p in sorted(root.rglob('*.html'))
-            if not any(part.startswith('.') for part in p.relative_to(root).parts)}
+    """Every real page. Redirect stubs are left out -- auditing them reports the absence of things
+    a redirect is not supposed to have, and their canonical always names another URL."""
+    pages = {p.relative_to(root).as_posix(): Page(p.read_text(encoding='utf-8'))
+             for p in sorted(root.rglob('*.html'))
+             if not any(part.startswith('.') for part in p.relative_to(root).parts)}
+    return {path: page for path, page in pages.items() if not page.is_redirect}
 
 
 def canonical_for(path):

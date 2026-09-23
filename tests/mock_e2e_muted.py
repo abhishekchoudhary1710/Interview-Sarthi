@@ -33,7 +33,7 @@ def main() -> int:
         page.on("pageerror", lambda e: failures.append(f"pageerror: {e}"))
         sockets = []
         page.on("websocket", lambda ws: sockets.append(ws.url))
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.fill("#cv", CV)
         page.click("#to-key")
         page.fill("#key", KEY)

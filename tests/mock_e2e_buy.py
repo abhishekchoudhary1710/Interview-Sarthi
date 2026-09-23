@@ -33,7 +33,7 @@ def main() -> int:
         context = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True)
         page = context.new_page()
         page.on("pageerror", lambda e: failures.append(f"pageerror: {e}"))
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.fill("#cv", CV)
         page.click("#to-key")
         page.fill("#key", KEY)
@@ -91,7 +91,7 @@ def main() -> int:
         page.locator("input").first.fill("111000")
         page.get_by_text("SUCCESS", exact=True).first.click(timeout=5000)
         page.get_by_role("button", name="Submit").click(timeout=5000)
-        page.wait_for_url("**/mock/app/**", timeout=60000)
+        page.wait_for_url("**/prep/app/**", timeout=60000)
 
         # step 4: your own account, and no pay form in your face
         page.wait_for_selector("#pass-notice.ok", timeout=120000)
@@ -111,7 +111,7 @@ def main() -> int:
         print("extend shows the plans again: ok")
 
         # the bug he reported: reload, and the chip must already know about the pass
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.wait_for_function("document.getElementById('entitle').textContent.trim() !== '…'", timeout=20000)
         chip = page.text_content("#entitle")
         print("chip on load :", chip)
@@ -124,7 +124,7 @@ def main() -> int:
 
         # and with the key forgotten, the pass must still be known from the account
         page.evaluate("localStorage.removeItem('ps_gemini_key')")
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.wait_for_function("document.getElementById('entitle').textContent.trim() !== '…'", timeout=20000)
         print("chip, no key :", page.text_content("#entitle"))
         if "Pass" not in (page.text_content("#entitle") or ""):

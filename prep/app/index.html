@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <script>if (location.protocol === "http:" && /interviewsarthi\.com$/.test(location.hostname)) { location.replace("https://" + location.host + location.pathname + location.search + location.hash); }</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Prep Sarthi: mock interview</title>
+  <meta name="description" content="The Prep Sarthi app: a voice mock interview from your CV, on your own Gemini key.">
+  <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
+  <meta name="theme-color" content="#FBF7F0">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+  /* Which screen the visitor asked for, decided before anything is painted.
+   * app.js is a module and runs only after the page is parsed, by which time
+   * the browser has already drawn the first screen; this is what stops the CV
+   * step flashing past on the way to a pass. The app confirms it all a moment
+   * later from the server, and clears these classes as it takes over. */
+  (function () {
+    try {
+      var q = new URLSearchParams(location.search);
+      var buy = q.get("buy"), order = q.get("order_id"), payment = q.get("payment_id");
+      if (buy !== "w" && buy !== "m") buy = null;
+      if (!buy && !order) return;
+      window.__ps = { buy: buy, order: order || null, payment: payment || null };
+      var c = document.documentElement.classList;
+      c.add("ps-pass");
+      if (buy) c.add("ps-checkout");
+      if (order) c.add("ps-confirm");
+      // The address bar should not keep an instruction that has been carried out.
+      history.replaceState(null, "", location.pathname);
+    } catch (e) { /* any trouble: the app sorts it out as usual */ }
+  })();
+  </script>
+  <link rel="stylesheet" href="../prep.css">
+  <style>
+    .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
+    /* the first paint, before app.js has loaded */
+    html.ps-pass #s-cv{display:none}
+    html.ps-pass #s-pass{display:block}
+    html.ps-checkout #buy-block{display:none}
+    html.ps-checkout #checkout{display:block}
+    html.ps-confirm #pass-body{display:none}
+    .screen h1{font-size:clamp(34px,6vw,50px);margin:10px 0 12px}
+    .screen h1 em{font-style:italic;color:var(--accent)}
+    .lede{color:var(--muted);font-size:16.5px;margin:0 0 8px;max-width:36em}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
+    .actions .pill{flex:1 1 auto}
+    ol.how{margin:14px 0 0;padding:0;list-style:none;counter-reset:k}
+    ol.how li{counter-increment:k;padding:12px 0 12px 44px;border-top:1px solid var(--line);position:relative;color:var(--muted)}
+    ol.how li::before{content:"0" counter(k);position:absolute;left:0;top:14px;font:500 12.5px var(--mono);color:var(--accent);letter-spacing:.08em}
+    .check{display:flex;gap:10px;align-items:center;margin-top:14px;color:var(--muted);font-size:14.5px}
+    .check input{width:18px;height:18px;accent-color:var(--accent)}
+    /* the call */
+    .call.big{padding:24px 22px 22px;min-height:min(640px,calc(100dvh - 150px));display:flex;flex-direction:column}
+    .call.big .wheelwrap{flex:1;min-height:240px}
+    .call.big .clock{font:500 15px var(--mono);letter-spacing:.06em;color:var(--dark-ink)}
+    .call.big .clock.low{color:#ff7a70}
+    .prestart{display:grid;gap:14px}
+    .prestart ul{margin:0;padding:0;list-style:none;color:var(--dark-muted);font-size:14.5px}
+    .prestart li{padding:8px 0;border-top:1px solid var(--dark-line)}
+    .prestart li:first-child{border-top:0}
+    .prestart .pill{background:var(--dark-ink);color:var(--dark)}
+    /* report */
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:700px){.two{grid-template-columns:1fr}}
+    .stack{display:grid;gap:16px}
+    .delivery p{margin:0;padding:12px 0;border-top:1px solid var(--line)} .delivery p:first-of-type{border-top:0}
+    .delivery b{font:500 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+    ol.next{margin:8px 0 0;padding:0;list-style:none;counter-reset:n}
+    ol.next li{counter-increment:n;padding:14px 0 14px 44px;border-top:1px solid var(--line);position:relative}
+    ol.next li:first-child{border-top:0}
+    ol.next li::before{content:"0" counter(n);position:absolute;left:0;top:16px;font:500 12.5px var(--mono);color:var(--accent);letter-spacing:.08em}
+    .writing{text-align:center;padding:60px 20px}
+    .writing .wheelwrap{padding:0 0 18px}
+    .writing .wheelwrap::before{display:none}
+    details.diag{margin:26px 0 0;color:var(--muted);font-size:13px}
+    details.diag summary{cursor:pointer}
+    #log{font:12px/1.45 var(--mono);max-height:220px;overflow:auto;white-space:pre-wrap;margin-top:10px}
+    #transcript{display:grid;gap:6px;margin-top:10px;font-size:13.5px}
+    #transcript .bubble small{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;display:block}
+  </style>
+</head>
+<body>
+<div class="narrow">
+  <div class="nav">
+    <a class="wm" href="/prep/"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(32 32)"><circle r="25" fill="none" stroke="currentColor" stroke-width="4.6"/><g stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M0-21.2V21.2M-21.2 0H21.2M-15-15l30 30M-15 15l30-30"/></g><circle r="6" fill="currentColor"/></g></svg>Prep <i>Sarthi</i></a>
+    <span class="navright"><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button></span>
+  </div>
+
+  <!-- 1. CV -->
+  <section class="screen on" id="s-cv">
+    <span class="label">Step 1 of 3</span>
+    <h1>Your CV <em>is</em> the interview.</h1>
+    <p class="lede">A real interviewer picks lines from your CV and digs in. So does this one. Nothing here leaves your device until the interview starts, and then it goes only to Google, on your own key.</p>
+    <div class="card" style="margin-top:22px">
+      <div class="fhead" style="margin-top:0">
+        <label class="f" for="cv">CV</label>
+        <button type="button" class="chip up" id="cvpick">Add file</button>
+        <input type="file" id="cvfile" accept=".pdf,.txt,.md,application/pdf,text/plain" hidden>
+      </div>
+      <textarea id="cv" placeholder="Paste your CV here, or add a PDF with the button above."></textarea>
+      <div class="notice" id="cv-notice"></div>
+      <div class="row">
+        <div><label class="f">Your first name</label><input type="text" id="name" placeholder="Riya" autocomplete="given-name"></div>
+        <div><label class="f">Interview language</label>
+          <select id="language">
+            <option value="English">English</option>
+            <option value="Hinglish">Hinglish</option>
+            <option value="Hindi">Hindi</option>
+            <option value="auto">Match whatever I speak</option>
+            <option value="other">Another language…</option>
+          </select>
+          <input type="text" id="language-other" placeholder="e.g. Tamil, Spanish, German" style="display:none;margin-top:8px">
+        </div>
+      </div>
+      <div class="fhead">
+        <label class="f" for="jd">Job description · optional</label>
+        <button type="button" class="chip up" id="jdpick">Add file</button>
+        <input type="file" id="jdfile" accept=".pdf,.txt,.md,application/pdf,text/plain" hidden>
+      </div>
+      <textarea id="jd" style="min-height:84px" placeholder="Paste the JD, or add a PDF, and the interviewer will target that role."></textarea>
+      <div class="notice" id="jd-notice"></div>
+      <div class="row">
+        <div><label class="f">Length</label>
+          <select id="minutes"><option value="8">8 minutes · quick round</option><option value="12" selected>12 minutes</option><option value="18">18 minutes · full round</option></select></div>
+        <div><label class="f">Interviewer voice</label>
+          <select id="voice"><option value="Kore">Kore · female</option><option value="Aoede">Aoede · female</option><option value="Leda">Leda · female</option><option value="Charon">Charon · male</option><option value="Puck">Puck · male</option><option value="Fenrir">Fenrir · male</option></select></div>
+      </div>
+      <div class="actions"><button class="pill wide" id="to-key">Continue →</button></div>
+    </div>
+  </section>
+
+  <!-- 2. Key -->
+  <section class="screen" id="s-key">
+    <span class="label">Step 2 of 3</span>
+    <h1>One key, <em>yours.</em></h1>
+    <p class="lede">The interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google. If you use Interview Sarthi or ApplySarthi, it is the same key.</p>
+    <div class="card" style="margin-top:22px">
+      <ol class="how" style="margin-top:0">
+        <li style="border-top:0">Open <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>, signed in to any Google account.</li>
+        <li>Tap <b style="color:var(--ink)">Create API key</b>, then copy it.</li>
+        <li>Paste it below. Stuck? <a href="/free-gemini-api-key-guide.html" target="_blank">The guide with pictures</a>.</li>
+      </ol>
+      <label class="f">API key</label>
+      <input type="password" id="key" autocomplete="off" placeholder="Paste the key here">
+      <label class="check"><input type="checkbox" id="remember" checked> Remember on this device</label>
+      <div class="notice" id="key-notice"></div>
+      <div class="actions">
+        <button class="pill ghost" id="back-cv" style="flex:0 0 auto">Back</button>
+        <button class="pill" id="check-key">Check key and continue →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Interview -->
+  <section class="screen" id="s-live">
+    <div class="call big">
+      <div class="top"><span class="live" id="livetag">Ready</span><span class="clock" id="clock">12:00</span></div>
+      <div class="wheelwrap" id="wheel"></div>
+      <p class="caption" id="caption"><span class="hint" id="hint">Your interviewer</span><span id="line">She speaks first. Answer out loud, like a real call.</span></p>
+      <p class="youline" id="youline"></p>
+      <div class="micfix" id="micfix" style="display:none">
+        <p id="micfix-text">I can't hear your microphone.</p>
+        <span class="mini">Microphone</span>
+        <select id="micselect" style="margin-top:6px"></select>
+        <ul>
+          <li>Check the mute key on your laptop or keyboard, and the mute switch on your headset.</li>
+          <li>If you have more than one microphone, pick another one above.</li>
+          <li>Then just say hello. It starts by itself once it hears you.</li>
+        </ul>
+        <div class="row2" id="micfix-anyway"><button class="linkbtn" id="anyway">Start anyway</button></div>
+      </div>
+      <div class="prestart" id="pre-live">
+        <ul>
+          <li id="tip-speaker">Use earphones if you can. From a loud speaker she can hear herself.</li>
+          <li id="tip-interrupt">You can interrupt, and so can she.</li>
+          <li>It ends by itself when time is up, then your report appears.</li>
+        </ul>
+        <button class="pill wide" id="start">Start the interview</button>
+      </div>
+      <div class="you" id="youbar" style="display:none">
+        <div class="bars" id="bars"><i></i><i></i><i></i><i></i><i></i></div>
+        <small id="left">You're on</small>
+        <button class="pill small danger" id="end">End</button>
+      </div>
+    </div>
+    <div class="notice" id="live-notice"></div>
+    <div class="offer" id="live-offer" style="display:none">
+      <p id="live-offer-text"></p>
+      <button class="pill small" id="live-offer-go">See passes</button>
+    </div>
+  </section>
+
+  <!-- Passes and account -->
+  <section class="screen" id="s-pass">
+    <span class="label" id="pass-kicker">Passes</span>
+    <h1 id="pass-title">Unlimited mocks, <em>one payment.</em></h1>
+    <p class="lede" id="pass-lede">No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.</p>
+    <div class="notice" id="pass-notice"></div>
+    <script>
+      /* Fill in what the head decided, as these elements appear. */
+      (function () {
+        if (!window.__ps) return;
+        var n = document.getElementById("pass-notice");
+        if (window.__ps.order) { n.textContent = "Confirming your payment… keep this page open."; }
+      })();
+    </script>
+    <div class="offer warn" id="pass-running" style="display:none">
+      <p>Your interview is still running in the background. Paying opens the payment page and would end it without a report. Finish it first, then buy.</p>
+      <button class="pill small" id="pass-running-back">Back to my interview</button>
+    </div>
+    <div id="pass-body">
+
+      <!-- your account, once a pass is live -->
+      <div class="card account" id="account-card" style="display:none">
+        <div class="acct-top">
+          <div><span class="label">Signed in</span><p id="pass-who" style="margin:4px 0 0"></p></div>
+          <button class="linkink" id="signout">Sign out</button>
+        </div>
+        <div class="passbig"><b id="pass-days"></b><span id="pass-until"></span></div>
+        <div class="actions">
+          <button class="pill" id="go-practise">Start practising →</button>
+          <button class="pill ghost" id="extend">Extend my pass</button>
+        </div>
+        <div id="pass-stats" class="acct-stats"></div>
+      </div>
+
+      <!-- step 1: choose a pass -->
+      <div id="buy-block">
+        <div class="plans">
+          <button class="plan on" data-plan="w"><span class="label">This week</span><b>7 days</b><span class="price">Rs 99</span><small>Unlimited mocks. For the interview this week.</small></button>
+          <button class="plan" data-plan="m"><span class="label">Placement season</span><b>30 days</b><span class="price">Rs 249</span><small>Unlimited mocks. About Rs 8 a day.</small></button>
+        </div>
+        <div class="actions"><button class="pill wide" id="buy-cta">Buy the 7-day pass →</button></div>
+        <p class="muted" style="font-size:13.5px;margin:14px 0 0"><span id="pay-methods">UPI, card or netbanking through Cashfree.</span> One payment, no auto-renew. <a href="/refunds.html" target="_blank">Refunds</a>.</p>
+        <p class="muted" id="have-pass-row" style="font-size:14.5px;margin:14px 0 0">Already bought a pass? <button class="linkink" id="have-pass">Sign in to use it here</button></p>
+      </div>
+
+      <!-- step 2: who you are, then pay -->
+      <div class="card" id="checkout" style="display:none">
+        <div class="acct-top">
+          <div><span class="label" id="checkout-label">You are buying</span><p id="checkout-plan" style="margin:4px 0 0;font-weight:600"></p></div>
+          <script>
+            (function () {
+              var buy = window.__ps && window.__ps.buy;
+              if (buy) document.getElementById("checkout-plan").textContent = { w: "7-Day Pass · Rs 99", m: "30-Day Pass · Rs 249" }[buy];
+            })();
+          </script>
+          <button class="linkink" id="checkout-back">Change</button>
+        </div>
+        <div id="pass-signin" style="margin-top:18px">
+          <p class="muted" id="signin-why" style="margin:0 0 14px">Sign in with Google first, so your pass follows you to any phone or laptop.</p>
+          <div id="gbutton"></div>
+          <div id="testlogin" style="display:none;margin-top:12px">
+            <span class="label">Sandbox sign-in (local preview only)</span>
+            <div class="row" style="margin-top:8px"><input type="text" id="testlogin-email" placeholder="tester@example.com"><button class="pill ghost" id="testlogin-go">Test sign-in</button></div>
+          </div>
+        </div>
+        <div id="pass-pay" style="display:none;margin-top:18px">
+          <p class="muted" style="margin:0"><span id="pass-who2"></span> · <button class="linkink" id="signout2">not you?</button></p>
+          <label class="f">Mobile number, for the payment receipt</label>
+          <input type="text" id="phone" inputmode="numeric" autocomplete="tel-national" placeholder="10-digit mobile number">
+          <div class="actions"><button class="pill wide" id="pay">Pay Rs 99 →</button></div>
+        </div>
+      </div>
+
+      <div class="card" id="freedays" style="display:none;margin-top:16px">
+        <span class="label">Free days</span>
+        <p id="freedays-text" style="margin:8px 0 14px"></p>
+        <button class="pill" id="start-days">Start my free days</button>
+      </div>
+    </div>
+    <div class="actions"><button class="pill ghost" id="pass-back">Back</button></div>
+  </section>
+
+  <!-- Invite -->
+  <section class="screen" id="s-invite">
+    <span class="label">Invite</span>
+    <h1>Practise more, <em>for free.</em></h1>
+    <div id="invite-full" style="margin-top:18px"></div>
+    <div class="actions"><button class="pill ghost" id="invite-back">Back</button></div>
+  </section>
+
+  <!-- 4. Report -->
+  <section class="screen" id="s-report">
+    <div class="card writing" id="report-wait">
+      <div class="wheelwrap" id="wheel-wait"></div>
+      <h2 style="font-size:30px">Writing your report</h2>
+      <p class="muted" id="report-status">Scoring every answer against your CV. About twenty seconds.</p>
+    </div>
+    <div id="report" class="stack"></div>
+    <div class="offer" id="report-offer" style="display:none;margin-top:16px">
+      <p id="report-offer-text"></p>
+      <button class="pill small" id="report-offer-go">See passes</button>
+    </div>
+    <div id="invite-report" style="margin-top:16px"></div>
+    <div class="actions">
+      <button class="pill" id="again">Practise again</button>
+      <button class="pill ghost" id="download">Download report</button>
+    </div>
+    <p class="muted" style="margin-top:22px;font-size:14.5px">Real interview coming up? <a href="/" target="_blank">Interview Sarthi</a> gives you live help on the call itself. Still looking? <a href="/apply/" target="_blank">ApplySarthi</a> finds jobs that match your CV and fills the application for you.</p>
+  </section>
+
+  <details class="diag"><summary>Diagnostics</summary><p style="margin:10px 0 0"><button class="pill small ghost" id="copydiag">Copy diagnostics</button> <span id="copydiag-note"></span></p><div id="transcript"></div><div id="log"></div></details>
+  <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
+</div>
+<script src="/assets/analytics.js" defer></script>
+<script type="module" src="./app.js"></script>
+</body>
+</html>

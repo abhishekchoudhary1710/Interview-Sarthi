@@ -27,7 +27,7 @@ def main() -> int:
         # ---- normal browser: the button draws, and nothing complains
         page = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True).new_page()
         page.on("pageerror", lambda e: failures.append(f"pageerror: {e}"))
-        page.goto(f"{BASE}/mock/app/?buy=w", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/?buy=w", wait_until="networkidle")
         page.wait_for_selector("#checkout", state="visible", timeout=20000)
         page.wait_for_selector("#gbutton iframe", timeout=20000)
         page.wait_for_timeout(3000)                      # past the blocked-button check
@@ -54,7 +54,7 @@ def main() -> int:
         ctx = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True)
         ctx.route("**/gsi/client*", lambda route: route.abort())
         blocked = ctx.new_page()
-        blocked.goto(f"{BASE}/mock/app/?buy=w", wait_until="networkidle")
+        blocked.goto(f"{BASE}/prep/app/?buy=w", wait_until="networkidle")
         blocked.wait_for_selector("#checkout", state="visible", timeout=20000)
         blocked.wait_for_selector("#pass-notice.bad", timeout=20000)
         msg = blocked.text_content("#pass-notice")

@@ -35,9 +35,9 @@ def main() -> int:
         page = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True).new_page()
         page.on("pageerror", lambda e: failures.append(f"pageerror: {e}"))
         page.on("dialog", lambda d: d.accept())
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.evaluate("localStorage.removeItem('ps_session')")          # a free user, not a buyer
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.fill("#cv", CV)
         page.click("#to-key")
         page.fill("#key", KEY)

@@ -132,7 +132,7 @@ test("a male voice gets a male interviewer in the brief, and the CV screen offer
   assert.match(female, /You are Priya Nair, a female senior hiring manager/);
   // Every voice in the picker has to be one the persona knows, or the page
   // would say "she" over a male voice again.
-  const html = readFileSync(new URL("../mock/app/index.html", import.meta.url), "utf8");
+  const html = readFileSync(new URL("../prep/app/index.html", import.meta.url), "utf8");
   const picker = html.match(/<select id="voice">([\s\S]*?)<\/select>/)[1];
   const offered = [...picker.matchAll(/value="([^"]+)"[^>]*>[^·]*· (\w+)/g)];
   assert.ok(offered.length >= 6);

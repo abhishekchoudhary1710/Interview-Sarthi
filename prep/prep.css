@@ -1,6 +1,6 @@
 /* Prep Sarthi: "Paper & Ink".
  * Warm paper, a serif display face, near-black ink, and Sarthi blue used only
- * where it matters. Shared by the landing page (/mock/) and the app (/mock/app/).
+ * where it matters. Shared by the landing page (/prep/) and the app (/prep/app/).
  */
 :root{
   --bg:#FBF7F0; --bg2:#F3EDE2; --card:#FFFDF9; --ink:#17130E; --muted:#6B6359; --line:#E4DBCC;

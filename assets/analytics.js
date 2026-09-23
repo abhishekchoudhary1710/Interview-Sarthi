@@ -54,8 +54,12 @@
   /* Receipt content can include a license key; never record that page.
    * The Prep Sarthi app shows interview captions and the report, which are the
    * visitor's own CV and words; session recording never runs there either. */
-  var inMockApp = location.pathname.indexOf("/mock/app") === 0;
-  if (clarityOn && !privateReturn && !inMockApp && location.pathname !== "/thanks.html") {
+  /* The app moved from /mock/app to /prep/app on 23 Sep 2026. Both are still checked:
+   * the old path keeps a redirect stub, and a visitor sitting on it for the moment
+   * before the redirect fires must not be recorded either. */
+  var inPrepApp = location.pathname.indexOf("/prep/app") === 0 ||
+                  location.pathname.indexOf("/mock/app") === 0;
+  if (clarityOn && !privateReturn && !inPrepApp && location.pathname !== "/thanks.html") {
     (function (c, l, a, r, i, t, y) {
       c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
       t = l.createElement(r); t.async = 1;

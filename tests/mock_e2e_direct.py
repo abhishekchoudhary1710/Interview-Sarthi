@@ -40,7 +40,7 @@ def pay_in_simulator(page):
     page.locator("input").first.fill("111000")
     page.get_by_text("SUCCESS", exact=True).first.click(timeout=5000)
     page.get_by_role("button", name="Submit").click(timeout=5000)
-    page.wait_for_url("**/mock/app/**", timeout=60000)
+    page.wait_for_url("**/prep/app/**", timeout=60000)
 
 
 def main() -> int:
@@ -58,7 +58,7 @@ def main() -> int:
         # The very first paint must already be the pass screen: no flash of the
         # CV step on the way there.
         first = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True).new_page()
-        first.goto(f"{BASE}/mock/app/?buy=w", wait_until="commit")
+        first.goto(f"{BASE}/prep/app/?buy=w", wait_until="commit")
         first.wait_for_selector(".screen.on", timeout=10000)
         shown = first.evaluate("document.querySelector('.screen.on').id + '|' + (document.getElementById('checkout-plan')||{}).textContent")
         print("   first paint           :", shown)
@@ -92,7 +92,7 @@ def main() -> int:
         ctx = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True)
         page = ctx.new_page()
         page.on("pageerror", lambda e: failures.append(f"pageerror: {e}"))
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.wait_for_function("document.getElementById('entitle').textContent.trim() !== '…'", timeout=15000)
         print("2. new device chip       :", repr(page.text_content("#entitle")))
         page.click("#entitle")
@@ -116,7 +116,7 @@ def main() -> int:
         page.wait_for_url("**cashfree**", timeout=30000)
         page.wait_for_timeout(2500)
         t0 = time.time()
-        page.goto(f"{BASE}/mock/app/", wait_until="networkidle")          # the Back button, in effect
+        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")          # the Back button, in effect
         page.wait_for_function("/not completed/.test(document.getElementById('pass-notice').textContent)", timeout=40000)
         print(f"3. backed out of Cashfree: told in {time.time() - t0:.0f}s ->", page.text_content("#pass-notice"))
         page.screenshot(path=str(OUT / "direct-3-abandoned.png"), full_page=True)

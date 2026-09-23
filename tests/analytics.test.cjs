@@ -67,7 +67,10 @@ test('a Cashfree order reports the purchase once, valued by the plan label, with
   assert.ok(!JSON.stringify(r.events).includes('IS-TEST-KEY'));
 });
 test('Clarity never loads inside the Prep Sarthi app, but does on its landing page',()=>{
+  assert.ok(!run('https://interviewsarthi.com/prep/app/').scripts.some(s=>s.includes('clarity.ms')));
+  assert.ok(run('https://interviewsarthi.com/prep/app/').scripts.some(s=>s.includes('googletagmanager')));
+  assert.ok(run('https://interviewsarthi.com/prep/').scripts.some(s=>s.includes('clarity.ms')));
+});
+test('the old /mock/app path is still excluded from Clarity while its stub redirects',()=>{
   assert.ok(!run('https://interviewsarthi.com/mock/app/').scripts.some(s=>s.includes('clarity.ms')));
-  assert.ok(run('https://interviewsarthi.com/mock/app/').scripts.some(s=>s.includes('googletagmanager')));
-  assert.ok(run('https://interviewsarthi.com/mock/').scripts.some(s=>s.includes('clarity.ms')));
 });
