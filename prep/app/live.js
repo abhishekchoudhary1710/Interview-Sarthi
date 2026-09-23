@@ -19,6 +19,8 @@
  * Google.
  */
 
+import { NOTES } from "./interviewer.js";
+
 // The desktop app's proven model first; the non-preview one if Google retires it.
 export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
 export const DEFAULT_MODEL = LIVE_MODELS[0];
@@ -373,9 +375,7 @@ export class GeminiLive {
           if (this._replyPendingAt !== null) this._replyPendingAt = t;
         } else {
           const resumed = this.transcript.turns.length > 0;
-          this.sendText(resumed
-            ? "(The call reconnected. Continue the interview from exactly where it stopped: no greeting, no recap. If the candidate's last answer is incomplete, ask them to repeat the missing part.)"
-            : "(The candidate has just joined the call. Greet them briefly and begin.)");
+          this.sendText(resumed ? NOTES.reconnect : NOTES.opening);
         }
       }
       return;

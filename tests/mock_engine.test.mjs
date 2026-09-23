@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { GeminiLive, Transcript } from "../prep/app/live.js";
-import { buildInterviewerInstructions, interviewerPersona, languageNote } from "../prep/app/interviewer.js";
+import { buildInterviewerInstructions, interviewerPersona, languageNote, NOTES } from "../prep/app/interviewer.js";
 
 function engine(extra = {}) {
   const seen = { transcript: [], events: [], audio: 0, interrupted: 0, status: [] };
@@ -30,6 +30,8 @@ test("setupComplete marks live and nudges the interviewer to speak first", () =>
   assert.deepEqual(seen.status, ["live"]);
   assert.equal(sent.length, 1);
   assert.match(sent[0].clientContent.turns[0].parts[0].text, /just joined/);
+  assert.equal(sent[0].clientContent.turns[0].parts[0].text, NOTES.opening);
+  assert.match(NOTES.opening, /Ask only for a brief self-introduction, then stop and wait/);
   assert.equal(sent[0].clientContent.turnComplete, true);
 });
 
@@ -69,6 +71,7 @@ test("reconnect nudge asks to continue, not to greet, and carries the transcript
   live._handle({ setupComplete: {} });        // fresh session
   assert.equal(live.sessions, 2);
   assert.match(sent.at(-1).clientContent.turns[0].parts[0].text, /reconnected/);
+  assert.equal(sent.at(-1).clientContent.turns[0].parts[0].text, NOTES.reconnect);
   const setup = live._setupMessage().setup;
   assert.match(setup.systemInstruction.parts[0].text, /^SYS[\s\S]*INTERVIEW SO FAR[\s\S]*tell me about yourself/);
   assert.deepEqual(setup.generationConfig.responseModalities, ["AUDIO"]);
@@ -355,6 +358,41 @@ test("interviewer brief states the persona, the CV and the language", () => {
   assert.match(languageNote(""), /Begin in English/);
 });
 
+test("fresh calls preserve introduction and project stages across CVs and session lengths", () => {
+  for (const minutes of [2, 5, 12, 30]) {
+    for (const cv of ["", "Student with no work experience.", "Principal engineer; led distributed systems at scale."]) {
+      const brief = buildInterviewerInstructions({ cv, minutes });
+      const stages = ["1. Welcome and introduction", "2. Project or experience walkthrough", "3. Role-related exploration", "4. Behavioural discussion", "5. Candidate questions and close"];
+      const positions = stages.map(stage => brief.indexOf(stage));
+      assert.ok(positions.every((position, i) => position >= 0 && (!i || position > positions[i - 1])));
+      assert.match(brief, /FIRST question must invite a brief self-introduction/);
+      assert.match(brief, /Wait for the overview before asking about their personal contribution/);
+      assert.match(brief, /If they have no project, use a coursework task/);
+      assert.match(brief, /If they struggle or say they do not know, simplify/);
+      assert.match(brief, /For a short session, keep the introduction/);
+      assert.match(brief, /If they explicitly ask to skip it, respect that/);
+    }
+  }
+});
+
+test("startup recovery before any speech still requests an introduction", () => {
+  const { live, sent } = engine();
+  live._handle({ setupComplete: {} });
+  live._disconnect();
+  live._handle({ setupComplete: {} });
+  assert.equal(sent.at(-1).clientContent.turns[0].parts[0].text, NOTES.opening);
+  live.close();
+});
+
+test("wrap-up invites candidate questions instead of another assessment topic", () => {
+  const { live, sent } = engine();
+  live._handle({ setupComplete: {} });
+  live.sendText(NOTES.wrapUp);
+  assert.match(sent.at(-1).clientContent.turns[0].parts[0].text, /ask what questions the candidate has for you and wait/);
+  assert.match(NOTES.wrapUp, /Do not start another assessment topic/);
+  live.close();
+});
+
 test("the interviewer's gender follows the chosen voice", () => {
   const male = interviewerPersona("Charon");
   assert.deepEqual([male.gender, male.they, male.them, male.their, male.themself], ["male", "he", "him", "his", "himself"]);
@@ -381,6 +419,23 @@ test("a male voice gets a male interviewer in the brief, and the CV screen offer
 
 import { computeMetrics, describeMetrics } from "../prep/app/metrics.js";
 import { tidy, guessName } from "../prep/app/cv.js";
+import { generateReport } from "../prep/app/report.js";
+
+test("report evaluates an introduction on its own merits and acknowledges untested skills", async (ctx) => {
+  let request;
+  ctx.mock.method(globalThis, "fetch", async (_url, options) => {
+    request = JSON.parse(options.body);
+    return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"overall_score":70}' }] } }] }) };
+  });
+  await generateReport({ apiKey: "test", cv: "Student", language: "English", minutes: 2,
+    transcript: [{ who: "interviewer", text: "Tell me about yourself." }, { who: "candidate", text: "I am studying commerce." }],
+    metrics: computeMetrics([], []),
+  });
+  const prompt = request.systemInstruction.parts[0].text;
+  assert.match(prompt, /do not require numbers or technical depth in an introduction/);
+  assert.match(prompt, /Do not penalize skills or stages that were never assessed/);
+  assert.match(prompt, /explicitly describe the assessment as limited/);
+});
 
 test("metrics: response delay, pace, fillers and pauses from timing plus the mic log", () => {
   const turns = [
