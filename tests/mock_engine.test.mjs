@@ -3,8 +3,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { GeminiLive, Transcript } from "../mock/app/live.js";
-import { buildInterviewerInstructions, interviewerPersona, languageNote } from "../mock/app/interviewer.js";
+import { GeminiLive, Transcript } from "../prep/app/live.js";
+import { buildInterviewerInstructions, interviewerPersona, languageNote } from "../prep/app/interviewer.js";
 
 function engine(extra = {}) {
   const seen = { transcript: [], events: [], audio: 0, interrupted: 0, status: [] };
@@ -139,8 +139,8 @@ test("a male voice gets a male interviewer in the brief, and the CV screen offer
   for (const [, voice, gender] of offered) assert.equal(interviewerPersona(voice).gender, gender, voice);
 });
 
-import { computeMetrics, describeMetrics } from "../mock/app/metrics.js";
-import { tidy, guessName } from "../mock/app/cv.js";
+import { computeMetrics, describeMetrics } from "../prep/app/metrics.js";
+import { tidy, guessName } from "../prep/app/cv.js";
 
 test("metrics: response delay, pace, fillers and pauses from timing plus the mic log", () => {
   const turns = [
@@ -166,7 +166,7 @@ test("cv helpers tidy text and guess a first name", () => {
   assert.equal(guessName("CURRICULUM VITAE\n"), "");
 });
 
-import { VoiceGate, MIC_HELP } from "../mock/app/miccheck.js";
+import { VoiceGate, MIC_HELP } from "../prep/app/miccheck.js";
 
 test("mic check: a muted mic never passes and is called silent", () => {
   const g = new VoiceGate();
