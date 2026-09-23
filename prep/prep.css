@@ -53,7 +53,10 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
 @media(max-width:600px){.row{grid-template-columns:1fr}}
 /* A field's label, with its "add a file" button sitting at the end of the row. */
 .fhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 6px}
-.fhead label.f{margin:0}
+.fhead label.f{margin:0;min-width:0}
+/* On a phone the label and its button share a narrow row: tighten the tracking
+   and drop the "optional" rather than let the label wrap under the button. */
+@media(max-width:470px){.fhead label.f{letter-spacing:.05em}.fhead .opt{display:none}}
 .chip.up{flex:none;white-space:nowrap;transition:background .15s,color .15s}
 .chip.up::after{content:none}                       /* it opens a file dialog, it does not go anywhere */
 .chip.up:hover{background:var(--accent);color:var(--btn-ink)}
