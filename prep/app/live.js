@@ -19,7 +19,7 @@
  * Google.
  */
 
-import { NOTES } from "./interviewer.js?v=20260923-pacing";
+import { NOTES } from "./interviewer.js?v=20260923-jd-plan";
 
 // The desktop app's proven model first; the non-preview one if Google retires it.
 export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
@@ -228,7 +228,13 @@ export class GeminiLive {
     };
     if (this.getInterviewProgress) setup.tools = [{ functionDeclarations: [{
       name: "get_interview_progress",
-      description: "Read the actual app clock before EVERY spoken turn. Only canWrapUp=true allows the closing stage, unless the candidate explicitly wants to stop. No arguments.",
+      description: "Read the actual clock and requirement coverage before EVERY spoken turn. Optionally attach exact candidate answer quotes to plan requirements. Only canWrapUp=true allows closing, unless the candidate explicitly wants to stop. Choose the next question dynamically; plan questions are examples.",
+      parameters: { type: "OBJECT", properties: { updates: { type: "ARRAY", items: {
+        type: "OBJECT", properties: {
+          requirement_id: { type: "STRING" }, answer_quote: { type: "STRING" },
+          status: { type: "STRING", enum: ["covered", "needs_followup"] },
+        }, required: ["requirement_id", "answer_quote", "status"],
+      } } } },
     }] }];
     if (this.voice) {
       setup.generationConfig.speechConfig = { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } };
@@ -378,7 +384,7 @@ export class GeminiLive {
       const functionResponses = (message.toolCall.functionCalls || []).filter(call => !cancelled.has(call.id)).map(call => ({
         id: call.id, name: call.name,
         response: call.name === "get_interview_progress" && this.getInterviewProgress
-          ? this.getInterviewProgress() : { error: "Unknown tool. Continue the interview without claiming time is up." },
+          ? this.getInterviewProgress(call.args || {}) : { error: "Unknown tool. Continue the interview without claiming time is up." },
       }));
       if (functionResponses.length && this._sendJson({ toolResponse: { functionResponses } })) this._replyPendingAt = t;
       return;

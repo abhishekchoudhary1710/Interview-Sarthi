@@ -12,13 +12,15 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20260923-pacing";
-import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260923-pacing";
+import { GeminiLive } from "./live.js?v=20260923-jd-plan";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260923-jd-plan";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { generateReport } from "./report.js?v=20260923-pacing";
+import { generateReport } from "./report.js?v=20260923-jd-plan";
 import { interviewProgress } from "./assessment.js";
-import { assessmentHtml, assessmentText } from "./assessment-view.js";
+import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
+import { generateInterviewPlan } from "./plan-request.js";
+import { PlanCoverage, interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite } from "./billing.js";
 import { initPasses, openPasses, renderInvite } from "./pass.js";
 import { Wheel } from "../wheel.js";
@@ -38,12 +40,13 @@ const BAR_SHAPE = [0.55, 1, 0.75, 0.95, 0.5];
 const MIC_MUTED_RMS = 0.00002;   // exact digital silence: a mute key or a dead input
 const LOW_FREE_SECONDS = 5 * 60;      // when the pass offer appears during a free interview
 
-const S = { cv: "", jd: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "w" };
+const S = { cv: "", jd: "", practiceFocus: "role", targetRole: "", targetLevel: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "w" };
 let lastScreen = "s-cv";
+let assessmentPlan = null, planCoverage = null, planController = null;
 let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, ending = false;
 let voiceLog = [], bookedSeconds = 0, trialLeftAtStart = 0, tickPending = null;
 let speaking = false, lastVoiceAt = 0, heardSinceShe = false, linkState = "idle";
-let phase = "idle";               // idle | miccheck | call
+let phase = "idle";               // idle | miccheck | preparing | call
 let gate = new VoiceGate(), micHelpTimer = null, micStats = { chunks: 0, voiced: 0, maxRms: 0 };
 let sheStoppedAt = 0, quietMax = 0, micWarned = false;
 let youClearTimer = null;
@@ -98,16 +101,16 @@ const passCtx = {
   refresh: () => entitlement(S.hash),
   // An interview keeps running while someone looks at passes; coming back must
   // return to it, never reset it.
-  running: () => phase === "call" || phase === "miccheck",
+  running: () => ["call", "miccheck", "preparing"].includes(phase),
   resume() {
     $("pass-back").textContent = "Back";
-    if (phase === "call" || phase === "miccheck") { show("s-live"); return; }
+    if (["call", "miccheck", "preparing"].includes(phase)) { show("s-live"); return; }
     if (S.key && S.ent && lastScreen === "s-live") preLive();
     else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen);
   },
   practise() {
     $("pass-back").textContent = "Back";
-    if (phase === "call" || phase === "miccheck") { show("s-live"); return; }
+    if (["call", "miccheck", "preparing"].includes(phase)) { show("s-live"); return; }
     if (S.key && S.ent) preLive(); else show(S.cv || $("cv").value ? "s-key" : "s-cv");
   },
 };
@@ -124,6 +127,10 @@ function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&
 
 async function restore() {
   $("cv").value = store.get("ps_cv"); $("jd").value = store.get("ps_jd"); $("name").value = store.get("ps_name");
+  $("practice-focus").value = store.get("ps_practice_focus", "role");
+  $("target-role").value = store.get("ps_target_role");
+  $("target-level").value = store.get("ps_target_level");
+  updateNoJdOptions();
   const lang = store.get("ps_language", "English");
   if ([...$("language").options].some((o) => o.value === lang)) $("language").value = lang;
   else { $("language").value = "other"; $("language-other").value = lang; $("language-other").style.display = "block"; }
@@ -180,15 +187,32 @@ wirePicker({
   pick: "cvpick", input: "cvfile", area: "cv", noticeId: "cv-notice", label: "CV", minChars: 80,
   onText: (text) => { if (!$("name").value) $("name").value = guessName(text); },
 });
-wirePicker({ pick: "jdpick", input: "jdfile", area: "jd", noticeId: "jd-notice", label: "JD", minChars: 40 });
+wirePicker({ pick: "jdpick", input: "jdfile", area: "jd", noticeId: "jd-notice", label: "JD", minChars: 40, onText: updateNoJdOptions });
+
+function updateNoJdOptions() {
+  const noJd = !$("jd").value.trim();
+  const general = $("practice-focus").value === "general_cv";
+  $("no-jd-options").hidden = !noJd;
+  $("target-details").style.display = general ? "none" : "";
+  $("no-jd-help").textContent = general
+    ? "Practise discussing your experience and skills. This mode does not assess suitability for a specific job."
+    : "We’ll practise common skills for this role and level. The report won’t claim a match to a specific employer.";
+}
+$("jd").oninput = updateNoJdOptions;
+$("practice-focus").onchange = updateNoJdOptions;
 
 function readForm() {
   S.cv = tidy($("cv").value); S.jd = tidy($("jd").value); S.name = $("name").value.trim();
+  S.practiceFocus = $("practice-focus").value; S.targetRole = $("target-role").value.trim(); S.targetLevel = $("target-level").value;
   S.language = currentLanguage(); S.minutes = Number($("minutes").value) || 12; S.voice = $("voice").value;
 }
 $("to-key").onclick = () => {
   readForm();
   if (S.cv.length < 80) { notice("cv-notice", "Add your CV first: a file or pasted text.", "bad"); return; }
+  try { interviewContext(S); }
+  catch (err) { notice("jd-notice", err.message, "bad"); return; }
+  notice("jd-notice", "");
+  store.set("ps_practice_focus", S.practiceFocus); store.set("ps_target_role", S.targetRole); store.set("ps_target_level", S.targetLevel);
   store.set("ps_cv", S.cv); store.set("ps_jd", S.jd); store.set("ps_name", S.name); store.set("ps_language", S.language); store.set("ps_voice", S.voice);
   track("mock_cv_ready", { words: S.cv.split(/\s+/).length, jd: !!S.jd, language: S.language });
   show("s-key");
@@ -377,6 +401,8 @@ function wireAudio() {
 }
 
 $("start").onclick = async () => {
+  try { interviewContext(S); }
+  catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   $("start").disabled = true;
   notice("live-notice", "");
   audio = new AudioIO();
@@ -421,13 +447,39 @@ function micCheckPassed() {
 }
 
 async function cancelMicCheck() {
+  planController?.abort(); planController = null;
   clearTimeout(micHelpTimer);
   phase = "idle";
   if (audio) { await audio.stop(); audio = null; }
   preLive();
 }
 
-function startCall() {
+async function startCall() {
+  if (phase === "preparing" || phase === "call") return;
+  phase = "preparing";
+  const controller = new AbortController();
+  planController = controller;
+  assessmentPlan = null; planCoverage = null;
+  setLink("busy", "Preparing");
+  setCaption("Preparing your interview", "Reviewing your CV and the role. Your interview timer has not started.", true);
+  $("left").textContent = "Your time has not started";
+  try {
+    const plan = await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
+      minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal });
+    if (controller.signal.aborted || planController !== controller) return;
+    // Refresh after preparation: a pass can expire while the plan is being made.
+    const fresh = await entitlement(S.hash);
+    if (controller.signal.aborted || planController !== controller) return;
+    S.ent = fresh;
+    if (S.ent.secondsLeft <= 0) throw new Error("Your practice time has expired. Get a pass or more free minutes before starting.");
+    assessmentPlan = plan; planCoverage = new PlanCoverage(plan);
+  } catch (err) {
+    if (controller.signal.aborted || planController !== controller) return;
+    await cancelMicCheck();
+    notice("live-notice", `Interview preparation failed: ${err.message} Your interview timer did not start. Please retry.`, "bad");
+    return;
+  }
+  planController = null;
   phase = "call";
   startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
@@ -439,7 +491,7 @@ function startCall() {
   $("left").textContent = "You're on";
   wheel.setState("reconnecting");
 
-  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60 };
+  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60, assessmentPlan };
   live = new GeminiLive({
     apiKey: S.key,
     voice: S.voice,
@@ -468,9 +520,14 @@ function startCall() {
   timer = setInterval(onSecond, 1000);
 }
 
-function currentProgress() {
-  return interviewProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0,
+function currentProgress(args = {}) {
+  const progress = interviewProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0,
     entitlementSeconds: S.ent.kind === "pass" ? trialLeftAtStart - (nowS() - startedAt) : Infinity });
+  if (!planCoverage) return progress;
+  const turns = live ? live.transcript.turns : [];
+  planCoverage.update(args.updates, turns);
+  return { ...progress, coverage: planCoverage.snapshot(progress),
+    recent_answers: turns.map((u, i) => ({ turn: i + 1, who: u.who, text: u.text.slice(0, 2000) })).filter(u => u.who === "candidate").slice(-3) };
 }
 
 async function onSecond() {
@@ -520,7 +577,7 @@ async function onSecond() {
 }
 
 $("end").onclick = () => {
-  if (phase === "miccheck") { cancelMicCheck(); return; }
+  if (phase === "miccheck" || phase === "preparing") { cancelMicCheck(); return; }
   if (confirm("End the interview now and get your report?")) endInterview("user");
 };
 
@@ -574,7 +631,7 @@ async function writeReport(turns, elapsed, usage) {
   const metrics = computeMetrics(turns, voiceLog);
   let result;
   try {
-    result = await generateReport({ apiKey: S.key, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60) });
+    result = await generateReport({ apiKey: S.key, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan });
   } catch (err) {
     waitWheel.stop(); $("report-wait").style.display = "none";
     $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">The report could not be written</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Your transcript is safe. Download it below and try again later.</p></div>`;
@@ -681,6 +738,6 @@ $("copydiag").onclick = async () => {
 $("live-offer-go").onclick = () => { track("mock_offer_click", { where: "interview" }); openPasses(); };
 $("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses(); };
 
-window.addEventListener("pagehide", () => { if (live) live.close(); });
+window.addEventListener("pagehide", () => { planController?.abort(); if (live) live.close(); });
 rememberInvite();
 restore().then(() => initPasses(passCtx)).then(renderEntitlement);

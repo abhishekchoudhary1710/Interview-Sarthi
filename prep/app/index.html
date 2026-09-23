@@ -91,8 +91,8 @@
   <!-- 1. CV -->
   <section class="screen on" id="s-cv">
     <span class="label">Step 1 of 3</span>
-    <h1>Your CV <em>is</em> the interview.</h1>
-    <p class="lede">A real interviewer picks lines from your CV and digs in. So does this one. Nothing here leaves your device until the interview starts, and then it goes only to Google, on your own key.</p>
+    <h1>Practise for <em>your</em> next role.</h1>
+    <p class="lede">Add your CV and an optional job description. Your interviewer adapts questions to your experience, answers and chosen role. When you start, your documents go only to Google on your own key to prepare and run the interview. Preparation does not use your practice minutes.</p>
     <div class="card" style="margin-top:22px">
       <div class="fhead" style="margin-top:0">
         <label class="f" for="cv">CV</label>
@@ -121,6 +121,15 @@
       </div>
       <textarea id="jd" style="min-height:84px" placeholder="Paste the JD, or add a PDF, and the interviewer will target that role."></textarea>
       <div class="notice" id="jd-notice"></div>
+      <div id="no-jd-options">
+        <label class="f" for="practice-focus">Without a job description</label>
+        <select id="practice-focus"><option value="role">Practise for a role</option><option value="general_cv">General CV practice</option></select>
+        <div class="row" id="target-details">
+          <div><label class="f" for="target-role">Target role</label><input id="target-role" type="text" maxlength="150" placeholder="e.g. Backend developer, accountant, sales associate"></div>
+          <div><label class="f" for="target-level">Target level</label><select id="target-level"><option value="">Choose the role level</option><option>Entry-level / fresher</option><option>Individual contributor</option><option>Senior individual contributor</option><option>Lead / manager</option></select></div>
+        </div>
+        <p class="muted" id="no-jd-help">We’ll practise common skills for this role and level. The report won’t claim a match to a specific employer.</p>
+      </div>
       <div class="row">
         <div><label class="f">Length</label>
           <select id="minutes"><option value="8">8 minutes · quick round</option><option value="10">10 minutes</option><option value="12" selected>12 minutes</option><option value="18">18 minutes · full round</option></select></div>
@@ -306,6 +315,6 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20260923-pacing"></script>
+<script type="module" src="./app.js?v=20260923-jd-plan"></script>
 </body>
 </html>

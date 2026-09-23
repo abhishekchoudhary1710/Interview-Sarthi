@@ -39,13 +39,14 @@ def main() -> int:
         page.evaluate("localStorage.removeItem('ps_session')")          # a free user, not a buyer
         page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.fill("#cv", CV)
+        page.select_option("#practice-focus", "general_cv")
         page.click("#to-key")
         page.fill("#key", KEY)
         page.click("#check-key")
         page.wait_for_selector("#s-live.on", timeout=20000)
         print("chip         :", page.text_content("#entitle"))
         page.click("#start")
-        page.wait_for_selector("#livetag.on", timeout=30000)
+        page.wait_for_selector("#livetag.on", timeout=120000)
 
         page.wait_for_selector("#live-offer", state="visible", timeout=90000)
         print("offer        :", page.text_content("#live-offer-text"))

@@ -48,6 +48,7 @@ def main() -> int:
         page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
 
         page.fill("#cv", CV)
+        page.select_option("#practice-focus", "general_cv")
         page.fill("#name", "Abhishek")
         page.select_option("#minutes", "8")
         page.click("#to-key")
@@ -61,7 +62,7 @@ def main() -> int:
         print("entitlement pill:", entitle)
 
         page.click("#start")
-        page.wait_for_selector("#livetag.on", timeout=25000)
+        page.wait_for_selector("#livetag.on", timeout=120000)
         t0 = time.time()
         heard_lines = set()
         while time.time() - t0 < SECONDS:

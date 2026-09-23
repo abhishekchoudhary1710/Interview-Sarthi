@@ -35,6 +35,7 @@ def main() -> int:
         page.on("websocket", lambda ws: sockets.append(ws.url))
         page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
         page.fill("#cv", CV)
+        page.select_option("#practice-focus", "general_cv")
         page.click("#to-key")
         page.fill("#key", KEY)
         page.click("#check-key")
