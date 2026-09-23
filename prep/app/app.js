@@ -12,11 +12,13 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20260923-recovery";
-import { buildInterviewerInstructions, interviewerPersona, NOTES } from "./interviewer.js";
+import { GeminiLive } from "./live.js?v=20260923-pacing";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260923-pacing";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { generateReport } from "./report.js";
+import { generateReport } from "./report.js?v=20260923-pacing";
+import { interviewProgress } from "./assessment.js";
+import { assessmentHtml, assessmentText } from "./assessment-view.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite } from "./billing.js";
 import { initPasses, openPasses, renderInvite } from "./pass.js";
 import { Wheel } from "../wheel.js";
@@ -38,7 +40,7 @@ const LOW_FREE_SECONDS = 5 * 60;      // when the pass offer appears during a fr
 
 const S = { cv: "", jd: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "w" };
 let lastScreen = "s-cv";
-let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, wrapSent = false, ending = false;
+let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, ending = false;
 let voiceLog = [], bookedSeconds = 0, trialLeftAtStart = 0, tickPending = null;
 let speaking = false, lastVoiceAt = 0, heardSinceShe = false, linkState = "idle";
 let phase = "idle";               // idle | miccheck | call
@@ -427,7 +429,7 @@ async function cancelMicCheck() {
 
 function startCall() {
   phase = "call";
-  startedAt = nowS(); voiceLog = []; wrapSent = false; ending = false; bookedSeconds = 0; tickPending = null;
+  startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
   trialLeftAtStart = S.ent.secondsLeft;
   plannedSeconds = Math.min(S.minutes * 60, S.ent.secondsLeft);   // free minutes and passes both stop on the second
@@ -437,11 +439,12 @@ function startCall() {
   $("left").textContent = "You're on";
   wheel.setState("reconnecting");
 
-  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: Math.round(plannedSeconds / 60) };
+  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60 };
   live = new GeminiLive({
     apiKey: S.key,
     voice: S.voice,
     instructions: () => buildInterviewerInstructions(brief),
+    getInterviewProgress: currentProgress,
     onAudio: (pcm) => audio && audio.play(pcm),
     onInterrupted: () => audio && audio.clear(),
     onTranscript,
@@ -465,17 +468,21 @@ function startCall() {
   timer = setInterval(onSecond, 1000);
 }
 
+function currentProgress() {
+  return interviewProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0,
+    entitlementSeconds: S.ent.kind === "pass" ? trialLeftAtStart - (nowS() - startedAt) : Infinity });
+}
+
 async function onSecond() {
   if (!live || ending) return;
   const elapsed = live.activeSeconds;
   // Pass expiry remains real clock time; only practice minutes pause.
   const passLeft = trialLeftAtStart - (nowS() - startedAt);
-  const remaining = Math.min(plannedSeconds - elapsed, S.ent.kind === "pass" ? passLeft : Infinity);
+  const remaining = currentProgress().remainingSeconds;
   $("clock").textContent = fmt(remaining);
   $("clock").classList.toggle("low", remaining <= 60);
   if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
   else if (S.ent.kind === "pass") $("left").textContent = `Pass · ${fmtLong(Math.max(0, passLeft))} left`;
-  if (!wrapSent && remaining <= 60 && live.sendText(NOTES.wrapUp)) { wrapSent = true; log("wrap_up_sent", {}); }
   // Free time is nearly gone: this is the moment someone decides to buy.
   if (S.ent.kind === "trial" && passCtx.passesOn && !offerShown && trialLeftAtStart - elapsed <= LOW_FREE_SECONDS) {
     offerShown = true;
@@ -616,11 +623,12 @@ function renderReport(r) {
   const d = rep.delivery || {};
   $("report").innerHTML = `
     <div class="card">
-      <span class="label">Overall</span>
-      <div class="score"><b>${escapeHtml(rep.overall_score)}</b><span>out of 100</span></div>
+      <span class="label">Practice score · assessed areas</span>
+      <div class="score"><b>${rep.overall_score === null ? "—" : escapeHtml(rep.overall_score)}</b><span>${rep.overall_score === null ? "Not enough evidence" : "out of 100"}</span></div>
       <p class="verdict">${escapeHtml(rep.verdict)}</p>
       <div class="tiles">${tiles}</div>
     </div>
+    ${assessmentHtml(rep, r.transcript)}
     <div class="two">
       <div class="card"><span class="label">What worked</span><ul class="clean">${li(rep.strengths)}</ul></div>
       <div class="card"><span class="label">What hurt</span><ul class="clean bad">${li(rep.weaknesses)}</ul></div>
@@ -651,7 +659,7 @@ $("download").onclick = () => {
   if (!r) return;
   const lines = [`Prep Sarthi report, ${new Date(r.at || Date.now()).toLocaleString()}`, ""];
   if (r.report) {
-    lines.push(`Score: ${r.report.overall_score}/100`, r.report.verdict, "", "What worked:", ...(r.report.strengths || []).map((x) => "- " + x), "", "What hurt:", ...(r.report.weaknesses || []).map((x) => "- " + x), "");
+    lines.push(`Practice score: ${r.report.overall_score === null ? "Not enough evidence" : `${r.report.overall_score}/100`}`, r.report.verdict, "", assessmentText(r.report), "", "What worked:", ...(r.report.strengths || []).map((x) => "- " + x), "", "What hurt:", ...(r.report.weaknesses || []).map((x) => "- " + x), "");
     for (const q of r.report.questions || []) lines.push(`Q: ${q.question}`, `  Score ${q.score}/10. You said: ${q.answer_gist}`, `  Missing: ${q.what_was_missing}`, `  Stronger: ${q.better_answer}`, "");
     lines.push("Practise next:", ...(r.report.practice_next || []).map((x, i) => `${i + 1}. ${x}`), "");
   }

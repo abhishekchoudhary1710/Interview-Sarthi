@@ -19,7 +19,7 @@
  * Google.
  */
 
-import { NOTES } from "./interviewer.js";
+import { NOTES } from "./interviewer.js?v=20260923-pacing";
 
 // The desktop app's proven model first; the non-preview one if Google retires it.
 export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
@@ -82,6 +82,7 @@ export class GeminiLive {
    * @param {object} o
    * @param {string} o.apiKey            the candidate's own Gemini key
    * @param {function} o.instructions    () => system instruction text (called on every connect)
+   * @param {function} [o.getInterviewProgress] () => trusted app-clock snapshot for the read-only pacing tool
    * @param {string} [o.model]
    * @param {string} [o.voice]           prebuilt voice name (Puck, Charon, Kore, Fenrir, Aoede, Leda, Orus, Zephyr)
    * @param {number} [o.temperature]
@@ -95,6 +96,7 @@ export class GeminiLive {
   constructor(o) {
     this.apiKey = o.apiKey;
     this.instructions = o.instructions;
+    this.getInterviewProgress = o.getInterviewProgress;
     this.model = o.model || DEFAULT_MODEL;
     this.voice = o.voice || "";
     this.temperature = o.temperature ?? 0.6;
@@ -200,6 +202,7 @@ export class GeminiLive {
     let text = this.instructions();
     const context = this._resumeHandle ? "" : this.transcript.asContext();
     if (context) text += "\n\n" + context;
+    if (this.getInterviewProgress) text += "\n\nCURRENT APP CLOCK:\n" + JSON.stringify(this.getInterviewProgress());
     const setup = {
       model: `models/${this.model}`,
       generationConfig: {
@@ -223,6 +226,10 @@ export class GeminiLive {
         },
       },
     };
+    if (this.getInterviewProgress) setup.tools = [{ functionDeclarations: [{
+      name: "get_interview_progress",
+      description: "Read the actual app clock before EVERY spoken turn. Only canWrapUp=true allows the closing stage, unless the candidate explicitly wants to stop. No arguments.",
+    }] }];
     if (this.voice) {
       setup.generationConfig.speechConfig = { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } };
     }
@@ -365,6 +372,17 @@ export class GeminiLive {
   _handle(message) {
     const t = this._now();
     this._lastServer = t;
+    if (message.toolCall) {
+      if (!this.healthy) return;
+      const cancelled = new Set(message.toolCallCancellation?.ids || []);
+      const functionResponses = (message.toolCall.functionCalls || []).filter(call => !cancelled.has(call.id)).map(call => ({
+        id: call.id, name: call.name,
+        response: call.name === "get_interview_progress" && this.getInterviewProgress
+          ? this.getInterviewProgress() : { error: "Unknown tool. Continue the interview without claiming time is up." },
+      }));
+      if (functionResponses.length && this._sendJson({ toolResponse: { functionResponses } })) this._replyPendingAt = t;
+      return;
+    }
     if (message.sessionResumptionUpdate) {
       const update = message.sessionResumptionUpdate;
       this._resumeHandle = update.resumable && update.newHandle ? update.newHandle : null;

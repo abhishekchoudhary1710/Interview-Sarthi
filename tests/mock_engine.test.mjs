@@ -5,6 +5,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { GeminiLive, Transcript } from "../prep/app/live.js";
 import { buildInterviewerInstructions, interviewerPersona, languageNote, NOTES } from "../prep/app/interviewer.js";
+import { interviewProgress, normalizeAssessment, COMPETENCIES } from "../prep/app/assessment.js";
+import { assessmentHtml, assessmentText } from "../prep/app/assessment-view.js";
 
 function engine(extra = {}) {
   const seen = { transcript: [], events: [], audio: 0, interrupted: 0, status: [] };
@@ -22,6 +24,135 @@ function engine(extra = {}) {
   live._sendJson = (p) => sent.push(p);
   return { live, seen, sent };
 }
+
+test("ten-minute interviews only permit closing in the final minute", () => {
+  for (let seconds = 0; seconds < 540; seconds++) {
+    const progress = interviewProgress({ plannedSeconds: 600, elapsedSeconds: seconds });
+    assert.equal(progress.canWrapUp, false, `must keep assessing at ${seconds}s`);
+    assert.equal(progress.remainingSeconds, 600 - seconds);
+  }
+  const closing = interviewProgress({ plannedSeconds: 600, elapsedSeconds: 540 });
+  assert.equal(closing.canWrapUp, true);
+  assert.equal(closing.focus, "candidate_questions");
+  assert.equal(interviewProgress({ plannedSeconds: 600, elapsedSeconds: 600 }).focus, "end");
+  assert.equal(interviewProgress({ plannedSeconds: 600, elapsedSeconds: 601 }).remainingSeconds, 0);
+});
+
+test("closing windows scale down for short trials and respect pass expiration", () => {
+  for (const plannedSeconds of [30, 120, 480, 600, 720, 1080]) {
+    const closing = Math.min(60, plannedSeconds * 0.1);
+    assert.equal(interviewProgress({ plannedSeconds, elapsedSeconds: plannedSeconds - closing - 1 }).canWrapUp, false);
+    assert.equal(interviewProgress({ plannedSeconds, elapsedSeconds: plannedSeconds - closing }).canWrapUp, true);
+  }
+  const expired = interviewProgress({ plannedSeconds: 600, elapsedSeconds: 10, entitlementSeconds: -1 });
+  assert.equal(expired.remainingSeconds, 0);
+  assert.equal(expired.focus, "end");
+});
+
+test("every duration offered by the picker drives its own assessment and closing window", () => {
+  const html = readFileSync(new URL("../prep/app/index.html", import.meta.url), "utf8");
+  const picker = html.match(/<select id="minutes">([\s\S]*?)<\/select>/)[1];
+  const durations = [...picker.matchAll(/value="(\d+)"/g)].map(m => Number(m[1]) * 60);
+  assert.ok(durations.length >= 3);
+  for (const plannedSeconds of durations) {
+    const start = interviewProgress({ plannedSeconds, elapsedSeconds: 0 });
+    assert.equal(start.remainingSeconds, plannedSeconds);
+    assert.equal(start.focus, "introduction");
+    assert.equal(interviewProgress({ plannedSeconds, elapsedSeconds: plannedSeconds * 0.5 }).focus, "role_knowledge_and_problem_solving");
+    assert.equal(interviewProgress({ plannedSeconds, elapsedSeconds: plannedSeconds - start.closingSeconds - 1 }).canWrapUp, false);
+    assert.equal(interviewProgress({ plannedSeconds, elapsedSeconds: plannedSeconds - start.closingSeconds }).canWrapUp, true);
+  }
+});
+
+test("clock tools report actual active time through reconnects without injecting user turns", () => {
+  let t = 100;
+  let live;
+  const result = engine({ now: () => t, getInterviewProgress: () => interviewProgress({ plannedSeconds: 600, elapsedSeconds: live?.activeSeconds || 0 }) });
+  live = result.live;
+  const setup = live._setupMessage().setup;
+  assert.equal(setup.tools[0].functionDeclarations[0].name, "get_interview_progress");
+  assert.match(setup.systemInstruction.parts[0].text, /CURRENT APP CLOCK/);
+  live._handle({ setupComplete: {} });
+  live._handle(audioReply);
+  t += 300;
+  const userTurns = result.sent.filter(p => p.clientContent).length;
+  live._handle({ toolCall: { functionCalls: [{ name: "get_interview_progress", id: "clock-1", args: { remainingSeconds: 0 } }] } });
+  let response = result.sent.at(-1).toolResponse.functionResponses[0];
+  assert.equal(response.id, "clock-1");
+  assert.equal(response.response.remainingSeconds, 300); // model arguments cannot override the clock
+  assert.equal(response.response.canWrapUp, false);
+  assert.equal(result.sent.filter(p => p.clientContent).length, userTurns);
+  live._disconnect();
+  t += 90;
+  assert.equal(live.activeSeconds, 300);
+  live._handle({ setupComplete: {} });
+  live._handle(audioReply);
+  t += 240;
+  live._handle({ toolCall: { functionCalls: [{ name: "get_interview_progress", id: "clock-2" }] } });
+  response = result.sent.at(-1).toolResponse.functionResponses[0];
+  assert.equal(response.response.remainingSeconds, 60);
+  assert.equal(response.response.canWrapUp, true);
+  live.close();
+});
+
+test("cancelled clock requests and requests after close produce no response", () => {
+  const { live, sent } = engine({ getInterviewProgress: () => ({ canWrapUp: false }) });
+  live._handle({ setupComplete: {} });
+  const count = sent.length;
+  const toolCall = { functionCalls: [{ name: "get_interview_progress", id: "cancelled" }] };
+  live._handle({ toolCall, toolCallCancellation: { ids: ["cancelled"] } });
+  assert.equal(sent.length, count);
+  live.close();
+  live._handle({ toolCall });
+  assert.equal(sent.length, count);
+});
+
+test("coverage scoring excludes unsupported areas rather than giving zeros", () => {
+  const transcript = [{ who: "interviewer", text: "Introduce yourself." }, { who: "candidate", text: "I study commerce." }];
+  const report = normalizeAssessment({ overall_score: 99, competencies: [
+    { id: "communication", status: "assessed", score: 8, evidence_turns: [2, 2], explanation: "Clear background." },
+    { id: "role_knowledge", status: "assessed", score: 10, evidence_turns: [1, 999] },
+  ] }, transcript);
+  assert.equal(report.overall_score, 80);
+  assert.equal(report.competencies.length, 6);
+  assert.deepEqual(report.competencies[0].evidence_turns, [2]);
+  assert.equal(report.competencies[2].score, null);
+  assert.match(report.coverage, /1 of 6/);
+  assert.match(report.assessment_scope, /Partial assessment/);
+});
+
+test("empty, invalid and cut-off evidence never manufactures a practice score", () => {
+  const transcript = [{ who: "candidate", text: "I was", interrupted: true }];
+  for (const score of [null, "8", NaN, -1, 11, 8]) {
+    const report = normalizeAssessment({ competencies: [{ id: "communication", status: "assessed", score, evidence_turns: [1] }] }, transcript);
+    assert.equal(report.overall_score, null);
+    assert.ok(report.competencies.every(c => c.status === "not_assessed"));
+  }
+  assert.equal(normalizeAssessment({}, []).overall_score, null);
+});
+
+test("all sampled areas still carry scope limits; limited evidence is visible", () => {
+  const transcript = [{ who: "candidate", text: "Example answer." }];
+  const rows = COMPETENCIES.map(c => ({ id: c.id, status: "assessed", score: 7, evidence_turns: [1] }));
+  const complete = normalizeAssessment({ competencies: rows }, transcript);
+  assert.equal(complete.overall_score, 70);
+  assert.match(complete.assessment_scope, /not a complete skills assessment/);
+  rows[0].status = "limited";
+  assert.match(normalizeAssessment({ competencies: rows }, transcript).assessment_scope, /Partial assessment/);
+});
+
+test("coverage display and downloaded text show missing areas and escape candidate input", () => {
+  const transcript = [{ who: "candidate", text: '<img src=x onerror="alert(1)">' }];
+  const report = normalizeAssessment({ competencies: [{ id: "communication", status: "limited", score: 5, evidence_turns: [1], explanation: "Some detail." }] }, transcript);
+  const html = assessmentHtml(report, transcript);
+  assert.match(html, /Limited evidence/);
+  assert.match(html, /Not assessed/);
+  assert.match(html, /&lt;img/);
+  assert.doesNotMatch(html, /<img/);
+  assert.match(assessmentText(report), /Evidence: transcript turns 1/);
+  assert.match(assessmentText(report), /Role knowledge: Not assessed/);
+  assert.equal(assessmentHtml({}), "");
+});
 
 test("setupComplete marks live and nudges the interviewer to speak first", () => {
   const { live, seen, sent } = engine();
@@ -463,6 +594,24 @@ test("report evaluates an introduction on its own merits and acknowledges untest
   assert.match(prompt, /do not require numbers or technical depth in an introduction/);
   assert.match(prompt, /Do not penalize skills or stages that were never assessed/);
   assert.match(prompt, /explicitly describe the assessment as limited/);
+  assert.ok(request.generationConfig.responseSchema.required.includes("competencies"));
+  assert.match(request.contents[0].parts[0].text, /\[2\] CANDIDATE: I am studying commerce/);
+});
+
+test("generated report uses evidence-based competency average instead of model overall score", async (ctx) => {
+  ctx.mock.method(globalThis, "fetch", async () => ({ ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({
+    overall_score: 99, competencies: [
+      { id: "communication", status: "assessed", score: 8, evidence_turns: [2] },
+      { id: "ownership", status: "limited", score: 6, evidence_turns: [2] },
+    ],
+  }) }] } }] }) }));
+  const result = await generateReport({ apiKey: "test", minutes: 1,
+    transcript: [{ who: "interviewer", text: "What did you do?" }, { who: "candidate", text: "I wrote the report for our team." }],
+    metrics: computeMetrics([], []),
+  });
+  assert.equal(result.report.overall_score, 70);
+  assert.match(result.report.coverage, /2 of 6/);
+  assert.equal(result.report.competencies.find(c => c.id === "problem_solving").score, null);
 });
 
 test("metrics: response delay, pace, fillers and pauses from timing plus the mic log", () => {

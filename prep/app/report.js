@@ -6,6 +6,7 @@
  */
 
 import { describeMetrics } from "./metrics.js";
+import { COMPETENCIES, ASSESSMENT_BRIEF, normalizeAssessment } from "./assessment.js";
 
 export const REPORT_MODELS = ["gemini-3.6-flash", "gemini-3.1-flash-lite"];
 const URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
@@ -13,7 +14,16 @@ const URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:gen
 const SCHEMA = {
   type: "OBJECT",
   properties: {
-    overall_score: { type: "INTEGER", description: "0-100, how hireable this performance was" },
+    overall_score: { type: "INTEGER", nullable: true, description: "Provisional practice score; the app recomputes the average of evidenced competency scores." },
+    competencies: { type: "ARRAY", items: {
+      type: "OBJECT", properties: {
+        id: { type: "STRING", enum: COMPETENCIES.map(c => c.id) },
+        status: { type: "STRING", enum: ["assessed", "limited", "not_assessed"] },
+        score: { type: "NUMBER", nullable: true, description: "0-10 for relevant observed evidence, null when not assessed" },
+        evidence_turns: { type: "ARRAY", items: { type: "INTEGER" }, description: "1-based candidate turn numbers from the original transcript that support this assessment" },
+        explanation: { type: "STRING", description: "Brief evidence-based reason for this score, or why evidence is missing" },
+      }, required: ["id", "status", "score", "evidence_turns", "explanation"],
+    } },
     verdict: { type: "STRING", description: "one sentence, honest, specific" },
     strengths: { type: "ARRAY", items: { type: "STRING" } },
     weaknesses: { type: "ARRAY", items: { type: "STRING" } },
@@ -40,7 +50,7 @@ const SCHEMA = {
     },
     practice_next: { type: "ARRAY", items: { type: "STRING" }, description: "exactly three concrete drills for the next mock" },
   },
-  required: ["overall_score", "verdict", "strengths", "weaknesses", "questions", "delivery", "practice_next"],
+  required: ["overall_score", "competencies", "verdict", "strengths", "weaknesses", "questions", "delivery", "practice_next"],
 };
 
 function systemPrompt(language) {
@@ -48,18 +58,19 @@ function systemPrompt(language) {
 }
 
 export async function generateReport({ apiKey, cv, jd, language, transcript, metrics, minutes }) {
-  const lines = transcript.map((u) => `${u.who === "interviewer" ? "INTERVIEWER" : "CANDIDATE"}: ${u.text}${u.interrupted ? " [cut off]" : ""}`);
+  const lines = transcript.map((u, i) => `[${i + 1}] ${u.who === "interviewer" ? "INTERVIEWER" : "CANDIDATE"}: ${u.text}${u.interrupted ? " [cut off]" : ""}`);
   const user = [
     `Mock interview length: ${minutes} minutes. ${jd ? "The role:\n" + jd + "\n" : ""}`,
     `CANDIDATE CV:\n${cv || "(none)"}`,
     `DELIVERY METRICS (measured from the microphone):\n${describeMetrics(metrics).join("\n")}`,
     `TRANSCRIPT:\n${lines.join("\n")}`,
+    `ASSESSMENT AREAS:\n${ASSESSMENT_BRIEF}\nReturn exactly one competencies entry per area. Mark assessed only with a relevant substantive answer, limited for thin but relevant evidence, and not_assessed with score=null and no evidence_turns when it was not meaningfully tested. A CV claim alone, a greeting, an unanswered question or interviewer speech is not answer evidence. Link only candidate turn numbers that actually demonstrate the area; do not reuse an introduction as evidence of technical ability. Score the evidence using common anchors: 0-2 fundamentally incorrect or no relevant substance in an attempted answer; 3-4 partial understanding with major gaps; 5-6 adequate approach with missing detail; 7-8 clear, sound reasoning with a specific example; 9-10 strong depth, justified decisions and appropriate verification or reflection. Apply these to the role and question, without demanding numeric achievements. Do not infer confidence, competence or personality from accent, language choice or speaking speed. The overall score is an equal-weight mean of scored areas only, not a hiring prediction. State coverage limits in the verdict. Recommend unassessed important JD skills for a later round, including a work sample or coding task when a voice interview cannot test them.`,
     "Produce the debrief as JSON matching the schema. One entry in `questions` per real interviewer question that got an answer (skip greetings and small talk).",
   ].join("\n\n");
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemPrompt(language) }] },
     contents: [{ role: "user", parts: [{ text: user }] }],
-    generationConfig: { temperature: 0.3, maxOutputTokens: 4000, responseMimeType: "application/json", responseSchema: SCHEMA },
+    generationConfig: { temperature: 0.3, maxOutputTokens: 7000, responseMimeType: "application/json", responseSchema: SCHEMA },
   });
   let last = "no model answered";
   for (const model of REPORT_MODELS) {
@@ -79,7 +90,7 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
     const payload = await res.json();
     const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
     if (!text) { last = "Gemini returned no report"; continue; }
-    try { return { model, report: JSON.parse(text) }; }
+    try { return { model, report: normalizeAssessment(JSON.parse(text), transcript) }; }
     catch { last = "Gemini returned malformed JSON"; continue; }
   }
   throw new Error(last);
