@@ -82,20 +82,260 @@ test("usage totals accumulate across messages", () => {
   assert.deepEqual(live.usage, { promptTokenCount: 11, responseTokenCount: 6, totalTokenCount: 17 });
 });
 
-test("stall watchdog fires only when connected, past grace, voiced recently and server silent", () => {
-  const { live, seen } = engine();
+test("a short answer followed by silence recovers even when metadata still arrives", () => {
+  let t = 100;
+  const { live, seen } = engine({ now: () => t });
   let closed = 0;
   live.ws = { close: () => closed++ };
   live._handle({ setupComplete: {} });
-  const t = performance.now() / 1000;
-  live._connectedAt = t - 60; live._lastVoiced = t - 2; live._lastServer = t - 30;
+  live.sendAudio(new Int16Array(1600), 0.1);
+  t += 16;
+  live._handle({ usageMetadata: {} });
   live._checkStall();
   assert.equal(closed, 1);
   assert.ok(seen.events.some(([n]) => n === "stall_detected"));
-  // Not while the server answered recently.
-  live.connected = true; closed = 0; live._lastServer = t - 5;
+  live.close();
+});
+
+const audioReply = { serverContent: { modelTurn: { parts: [{ inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAAA" } }] } } };
+
+test("long candidate answers and queued interviewer audio do not cause false reconnects", () => {
+  let t = 100;
+  const { live, seen } = engine({ now: () => t });
+  live._handle({ setupComplete: {} });
+  live._handle(audioReply);
+  live._handle({ serverContent: { turnComplete: true } });
+  for (let i = 0; i < 120; i++) {
+    t++;
+    live.sendAudio(new Int16Array(1600), 0.1);
+    live._checkStall();
+  }
+  assert.equal(live.connected, true);
+  live._handle(audioReply);
+  live.setPlaying(true);
+  t += 30;
   live._checkStall();
-  assert.equal(closed, 0);
+  assert.equal(live.connected, true);
+  live.setPlaying(false);
+  live._checkStall();
+  assert.equal(live.connected, false);
+  assert.ok(seen.events.some(([n]) => n === "stall_detected"));
+  live.close();
+});
+
+test("practice clock excludes startup and reconnection, then stays frozen on close", () => {
+  let t = 100;
+  const { live } = engine({ now: () => t });
+  live._handle({ setupComplete: {} });
+  t += 8;
+  assert.equal(live.activeSeconds, 0);
+  live._handle(audioReply);
+  t += 30;
+  live._disconnect();
+  t += 20;
+  assert.equal(live.activeSeconds, 30);
+  live._handle({ setupComplete: {} });
+  t += 4;
+  assert.equal(live.activeSeconds, 30);
+  live._handle(audioReply);
+  t += 10;
+  live.close();
+  t += 100;
+  assert.equal(live.activeSeconds, 40);
+});
+
+test("native session resumption uses the handle without injecting another user turn", () => {
+  let t = 100;
+  const { live, sent } = engine({ now: () => t });
+  live._handle({ setupComplete: {} });
+  live._handle(audioReply);
+  live._handle({ serverContent: { outputTranscription: { text: "Tell me about yourself." }, turnComplete: true } });
+  live._handle({ sessionResumptionUpdate: { resumable: true, newHandle: "private-handle" } });
+  const setup = live._setupMessage().setup;
+  assert.deepEqual(setup.sessionResumption, { handle: "private-handle" });
+  assert.equal(setup.systemInstruction.parts[0].text, "SYS");
+  assert.deepEqual(setup.contextWindowCompression, { slidingWindow: {} });
+  live._disconnect();
+  live._resuming = true;
+  const before = sent.length;
+  t += 10;
+  live._handle({ setupComplete: {} });
+  assert.equal(sent.length, before);
+  t += 5;
+  assert.equal(live.activeSeconds, 5);
+  live._handle({ sessionResumptionUpdate: { resumable: false } });
+  assert.deepEqual(live._setupMessage().setup.sessionResumption, {});
+  assert.match(live._setupMessage().setup.systemInstruction.parts[0].text, /INTERVIEW SO FAR/);
+  live.close();
+});
+
+test("GoAway refresh waits for speech to finish, with a deadline before server shutdown", (ctx) => {
+  ctx.mock.timers.enable({ apis: ["setTimeout"] });
+  let t = 100;
+  const { live, seen } = engine({ now: () => t });
+  live._handle({ setupComplete: {} });
+  live._handle(audioReply);
+  live.setPlaying(true);
+  live._handle({ goAway: { timeLeft: "30s" } });
+  live._checkStall();
+  assert.equal(live.connected, true);
+  ctx.mock.timers.tick(28000);
+  assert.equal(live.connected, false);
+  assert.ok(seen.events.some(([n, d]) => n === "reconnect" && d.reason === "connection_deadline"));
+  live.close();
+});
+
+test("GoAway refreshes between turns before the deadline", () => {
+  const { live, seen } = engine({ now: () => 100 });
+  live._handle({ setupComplete: {} });
+  live._handle(audioReply);
+  live._handle({ serverContent: { turnComplete: true } });
+  live._handle({ goAway: { timeLeft: "30s" } });
+  live._checkStall();
+  assert.equal(live.connected, false);
+  assert.ok(seen.events.some(([n, d]) => n === "reconnect" && d.reason === "scheduled_refresh"));
+  live.close();
+});
+
+test("stopping microphone input flushes it once, and PCM slices send only their own bytes", () => {
+  let t = 100;
+  const { live, sent } = engine({ now: () => t });
+  live._handle({ setupComplete: {} });
+  const full = new Int16Array([111, 222, 333]);
+  live.sendAudio(full.subarray(1, 2), 0);
+  assert.equal(Buffer.from(sent.at(-1).realtimeInput.audio.data, "base64").length, 2);
+  t += 2;
+  live._checkStall(); live._checkStall();
+  assert.equal(sent.filter(p => p.realtimeInput?.audioStreamEnd).length, 1);
+  live.sendAudio(full, 0);
+  t += 2;
+  live._checkStall();
+  assert.equal(sent.filter(p => p.realtimeInput?.audioStreamEnd).length, 2);
+  live.close();
+});
+
+class FakeSocket {
+  static OPEN = 1;
+  static instances = [];
+  constructor() { this.readyState = 1; this.bufferedAmount = 0; this.sent = []; FakeSocket.instances.push(this); }
+  send(data) { this.sent.push(JSON.parse(data)); }
+  close() { this.readyState = 3; this.onclose?.({ code: 1000, reason: "" }); }
+  open() { this.onopen?.(); }
+  message(message) { this.onmessage?.({ data: JSON.stringify(message) }); }
+}
+
+function transport(ctx) {
+  const original = globalThis.WebSocket;
+  globalThis.WebSocket = FakeSocket;
+  FakeSocket.instances = [];
+  ctx.mock.timers.enable({ apis: ["setTimeout", "setInterval"] });
+  let t = 100;
+  const notices = [];
+  const live = new GeminiLive({ apiKey: "test", instructions: () => "SYS", now: () => t, onNotice: m => notices.push(m) });
+  ctx.after(() => { live.close(); globalThis.WebSocket = original; });
+  return { live, notices, advance: seconds => { t += seconds; ctx.mock.timers.tick(seconds * 1000); } };
+}
+
+test("setup that never completes times out, retries, and ignores a retired socket", (ctx) => {
+  const { live, advance } = transport(ctx);
+  live.start();
+  const old = live.ws;
+  old.open();
+  advance(12);
+  assert.equal(live.ws, null);
+  advance(1);
+  const next = live.ws;
+  assert.notEqual(next, old);
+  next.open(); next.message({ setupComplete: {} });
+  old.onclose({ code: 1006, reason: "late close" });
+  old.message({ serverContent: { inputTranscription: { text: "stale" } } });
+  assert.equal(live.connected, true);
+  assert.equal(live.transcript.turns.length, 0);
+});
+
+test("closing during backoff cancels the queued reconnect", (ctx) => {
+  const { live, advance } = transport(ctx);
+  live.start();
+  live.ws.close();
+  live.close();
+  advance(60);
+  assert.equal(FakeSocket.instances.length, 1);
+});
+
+test("an expired resumption handle falls back to the saved transcript", (ctx) => {
+  const { live, advance } = transport(ctx);
+  live.transcript.append("candidate", "I built the API.", 90);
+  live._resumeHandle = "expired";
+  live.start();
+  live.ws.open();
+  assert.equal(live.ws.sent[0].setup.sessionResumption.handle, "expired");
+  live.ws.onclose({ code: 1008, reason: "Session resumption handle expired" });
+  advance(1);
+  live.ws.open();
+  assert.deepEqual(live.ws.sent[0].setup.sessionResumption, {});
+  assert.match(live.ws.sent[0].setup.systemInstruction.parts[0].text, /I built the API/);
+  live.ws.message({ setupComplete: {} });
+  assert.equal(live.connected, true);
+});
+
+test("a greeting that never arrives triggers recovery without consuming practice time", (ctx) => {
+  const { live, advance } = transport(ctx);
+  live.start(); live.ws.open(); live.ws.message({ setupComplete: {} });
+  advance(15);
+  assert.equal(live.connected, false);
+  assert.equal(live.activeSeconds, 0);
+});
+
+test("a delayed Blob from a retired socket cannot update the new session", async () => {
+  const { live } = engine();
+  const old = {}, replacement = {};
+  live.ws = old;
+  let release;
+  const blob = new Blob();
+  blob.text = () => new Promise(resolve => { release = resolve; });
+  const pending = live._onRaw(blob, old);
+  live.ws = replacement;
+  release(JSON.stringify({ setupComplete: {} }));
+  await pending;
+  assert.equal(live.connected, false);
+  live.close();
+});
+
+test("transient initial failures retry but quota failures stop immediately", (ctx) => {
+  const { live, advance, notices } = transport(ctx);
+  live.start();
+  live.ws.onclose({ code: 1011, reason: "temporary internal error" });
+  assert.equal(live.stopped, false);
+  advance(1);
+  live.ws.onclose({ code: 1008, reason: "RESOURCE_EXHAUSTED quota" });
+  assert.equal(live.stopped, true);
+  assert.match(notices.at(-1), /usage limit/);
+  advance(60);
+  assert.equal(FakeSocket.instances.length, 2);
+});
+
+test("repeated startup failures terminate instead of retrying forever", (ctx) => {
+  const { live, advance } = transport(ctx);
+  live.start();
+  for (let i = 0; i < 6; i++) {
+    live.ws.onclose({ code: 1011, reason: "temporary internal error" });
+    if (!live.stopped) advance(8);
+  }
+  assert.equal(live.stopped, true);
+  assert.equal(FakeSocket.instances.length, 6);
+});
+
+test("socket backpressure recovers without queuing more stale audio", (ctx) => {
+  const { live } = transport(ctx);
+  live.start();
+  const ws = live.ws;
+  ws.open(); ws.message({ setupComplete: {} });
+  ws.bufferedAmount = 200000;
+  const count = ws.sent.length;
+  assert.equal(live.sendAudio(new Int16Array(1600), 0.1), false);
+  assert.equal(ws.sent.length, count);
+  assert.equal(live.connected, false);
+  assert.equal(live.sendText("wrap up"), false);
 });
 
 test("Transcript.asContext caps size by dropping the oldest lines", () => {

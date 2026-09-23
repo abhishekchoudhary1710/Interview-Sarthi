@@ -12,7 +12,7 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js";
+import { GeminiLive } from "./live.js?v=20260923-recovery";
 import { buildInterviewerInstructions, interviewerPersona, NOTES } from "./interviewer.js";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
@@ -39,7 +39,7 @@ const LOW_FREE_SECONDS = 5 * 60;      // when the pass offer appears during a fr
 const S = { cv: "", jd: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "w" };
 let lastScreen = "s-cv";
 let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, wrapSent = false, ending = false;
-let voiceLog = [], lastTickAt = 0, bookedSeconds = 0, trialLeftAtStart = 0;
+let voiceLog = [], bookedSeconds = 0, trialLeftAtStart = 0, tickPending = null;
 let speaking = false, lastVoiceAt = 0, heardSinceShe = false, linkState = "idle";
 let phase = "idle";               // idle | miccheck | call
 let gate = new VoiceGate(), micHelpTimer = null, micStats = { chunks: 0, voiced: 0, maxRms: 0 };
@@ -348,6 +348,7 @@ function wireAudio() {
   const bars = [...$("bars").children];
   audio.onPlaying = (playing) => {
     speaking = playing;
+    if (live) live.setPlaying(playing);
     if (playing) heardSinceShe = false;
     else { sheStoppedAt = nowS(); quietMax = 0; }
     refreshWheel();
@@ -384,7 +385,8 @@ $("start").onclick = async () => {
   try { await audio.start(); }
   catch (err) {
     notice("live-notice", "Microphone not available: " + err.message + ". Allow the mic for this site and try again.", "bad");
-    log("mic_error", { error: String(err) }); $("start").disabled = false; audio = null; return;
+    log("mic_error", { error: String(err) });
+    await audio.stop(); $("start").disabled = false; audio = null; return;
   }
   log("mic", { label: audio.micLabel, deviceRate: audio.sampleRate });
   $("pre-live").style.display = "none"; $("youbar").style.display = "flex"; $("end").disabled = false;
@@ -425,7 +427,7 @@ async function cancelMicCheck() {
 
 function startCall() {
   phase = "call";
-  startedAt = nowS(); voiceLog = []; wrapSent = false; ending = false; lastTickAt = startedAt; bookedSeconds = 0;
+  startedAt = nowS(); voiceLog = []; wrapSent = false; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
   trialLeftAtStart = S.ent.secondsLeft;
   plannedSeconds = Math.min(S.minutes * 60, S.ent.secondsLeft);   // free minutes and passes both stop on the second
@@ -444,10 +446,14 @@ function startCall() {
     onInterrupted: () => audio && audio.clear(),
     onTranscript,
     onStatus: (s) => {
-      if (s === "live") setLink("live", "Live");
+      if (s === "live") {
+        setLink("live", "Live");
+        notice("live-notice", "");
+        setCaption("Connected", "Your interviewer is here. You can continue.");
+      }
       else if (s === "connecting" || s === "reconnecting") {
         setLink("busy", s === "connecting" ? "Connecting" : "Reconnecting");
-        if (s === "reconnecting") setCaption("One moment", "The line dropped for a second. Reconnecting, your time and answers are kept.", true);
+        if (s === "reconnecting") setCaption("One moment", "Reconnecting. Your practice timer is paused and your answers are kept.", true);
       } else if (s === "failed") endInterview("failed");
       refreshWheel();
     },
@@ -461,13 +467,15 @@ function startCall() {
 
 async function onSecond() {
   if (!live || ending) return;
-  const elapsed = nowS() - startedAt;
-  const remaining = plannedSeconds - elapsed;
+  const elapsed = live.activeSeconds;
+  // Pass expiry remains real clock time; only practice minutes pause.
+  const passLeft = trialLeftAtStart - (nowS() - startedAt);
+  const remaining = Math.min(plannedSeconds - elapsed, S.ent.kind === "pass" ? passLeft : Infinity);
   $("clock").textContent = fmt(remaining);
   $("clock").classList.toggle("low", remaining <= 60);
   if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
-  else if (S.ent.kind === "pass") $("left").textContent = `Pass · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
-  if (!wrapSent && remaining <= 60) { wrapSent = true; live.sendText(NOTES.wrapUp); log("wrap_up_sent", {}); }
+  else if (S.ent.kind === "pass") $("left").textContent = `Pass · ${fmtLong(Math.max(0, passLeft))} left`;
+  if (!wrapSent && remaining <= 60 && live.sendText(NOTES.wrapUp)) { wrapSent = true; log("wrap_up_sent", {}); }
   // Free time is nearly gone: this is the moment someone decides to buy.
   if (S.ent.kind === "trial" && passCtx.passesOn && !offerShown && trialLeftAtStart - elapsed <= LOW_FREE_SECONDS) {
     offerShown = true;
@@ -488,9 +496,11 @@ async function onSecond() {
   }
 
   // Book used time against the trial, like the desktop app's 30-second slices.
-  if (S.ent.kind === "trial" && nowS() - lastTickAt >= TICK_SECONDS) {
-    const slice = Math.round(nowS() - lastTickAt); lastTickAt = nowS(); bookedSeconds += slice;
-    const r = await tick(S.hash, slice);
+  if (S.ent.kind === "trial" && !tickPending && Math.floor(elapsed) - bookedSeconds >= TICK_SECONDS) {
+    const slice = Math.floor(elapsed) - bookedSeconds; bookedSeconds += slice;
+    tickPending = tick(S.hash, slice);
+    const r = await tickPending;
+    tickPending = null;
     S.ent.secondsLeft = r.secondsLeft;
     log("trial_tick", { slice, left: r.secondsLeft, source: r.source });
     if (r.reward) {
@@ -498,7 +508,7 @@ async function onSecond() {
       notice("live-notice", `You and the friend who invited you both just earned ${Math.round(r.reward.seconds / 60)} free minutes.`, "ok");
       track("mock_invite_reward", { seconds: r.reward.seconds });
     }
-    if (r.secondsLeft <= 0) endInterview("trial");
+    if (!ending && r.secondsLeft <= 0) endInterview("trial");
   }
 }
 
@@ -512,7 +522,7 @@ async function endInterview(reason) {
   ending = true;
   clearInterval(timer);
   $("end").disabled = true;
-  const elapsed = Math.round(nowS() - startedAt);
+  const elapsed = Math.round(live ? live.activeSeconds : 0);
   log("interview_end", { reason, elapsed });
   log("mic_stats", { chunks: micStats.chunks, voicedChunks: micStats.voiced, maxRms: +micStats.maxRms.toFixed(5), label: audio ? audio.micLabel : "" });
   track("mock_end", { reason, seconds: elapsed });
@@ -524,7 +534,8 @@ async function endInterview(reason) {
   wheel.setState("idle"); wheel.setLevel(0); wheel.setMic(0);
   // Book the tail of the session.
   if (S.ent.kind === "trial") {
-    const slice = Math.max(0, Math.round(nowS() - lastTickAt));
+    if (tickPending) await tickPending;
+    const slice = Math.max(0, elapsed - bookedSeconds);
     if (slice) { const r = await tick(S.hash, slice); S.ent.secondsLeft = r.secondsLeft; }
     if (S.ent.secondsLeft <= 0) S.ent.kind = "none";
     renderEntitlement();

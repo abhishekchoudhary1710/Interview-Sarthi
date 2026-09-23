@@ -3,10 +3,8 @@
  * A line-by-line port of the desktop app's gemini_realtime_live.py with the
  * roles flipped. Same BidiGenerateContent websocket, same setup message
  * (native-audio models only answer as speech, so audio is requested and both
- * transcriptions are switched on), same stall watchdog and the same
- * reconnect-with-memory approach: Gemini forgets everything on a new session,
- * so we keep the transcript ourselves and put it back into the next session's
- * system instruction.
+ * transcriptions are switched on). Interrupted connections resume Google's
+ * session when possible, or restore our transcript into a fresh session.
  *
  * What is different from the desktop engine:
  *   - the audio Gemini sends back is played (there it was discarded)
@@ -14,7 +12,7 @@
  *   - inputTranscription is what the CANDIDATE said, outputTranscription is
  *     what the INTERVIEWER said
  *   - `interrupted` clears the speaker queue (barge-in)
- *   - after each connect the interviewer is nudged to speak first
+ *   - fresh sessions are nudged to speak first; resumed sessions continue
  *
  * Everything the page needs arrives through callbacks; nothing here touches
  * the DOM. Only the Gemini key the user pasted is ever sent, and only to
@@ -27,10 +25,10 @@ export const DEFAULT_MODEL = LIVE_MODELS[0];
 const LIVE_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=";
 const CAPTURE_RATE = 16000;
 
-// Measured on the desktop app (2026-08-23, free tier): the server goes silently
-// mute mid-session, no error, no goAway. A fresh session restores service.
-const STALL_SECONDS = 25;
-const STALL_GRACE_AFTER_CONNECT = 30;
+const SETUP_TIMEOUT_SECONDS = 12;
+const REPLY_TIMEOUT_SECONDS = 15;
+const MAX_RETRIES = 5;
+const MAX_BUFFERED_BYTES = 128000; // do not send seconds of stale microphone audio
 const VOICE_RMS = 0.005;
 
 const now = () => performance.now() / 1000;
@@ -114,20 +112,51 @@ export class GeminiLive {
     this._watchdog = null;
     this._modelSpeaking = false;
     this._sendErrors = 0;
+    this._now = o.now || now;
+    this._retryTimer = null;
+    this._goAwayTimer = null;
+    this._attemptAt = null;
+    this._failures = 0;
+    this._resumeHandle = null;
+    this._resuming = false;
+    this._replyPendingAt = null;
+    this._lastOutput = 0;
+    this._goAway = false;
+    this._playing = false;
+    this._activeSince = null;
+    this._activeTotal = 0;
+    this._lastMicAt = null;
+    this._audioEnded = false;
   }
 
   get healthy() { return this.connected && !this.stopped; }
 
+  get activeSeconds() {
+    return this._activeTotal + (this._activeSince === null ? 0 : this._now() - this._activeSince);
+  }
+
+  _pauseClock() {
+    this._activeTotal = this.activeSeconds;
+    this._activeSince = null;
+  }
+
+  setPlaying(playing) { this._playing = playing; }
+
   start() {
+    if (this._watchdog) return;
     this.stopped = false;
     this._watchdog = setInterval(() => this._checkStall(), 1000);
     this._connect();
   }
 
   close() {
+    this._pauseClock();
     this.stopped = true;
     this.connected = false;
     clearInterval(this._watchdog);
+    this._watchdog = null;
+    clearTimeout(this._retryTimer); this._retryTimer = null;
+    clearTimeout(this._goAwayTimer); this._goAwayTimer = null;
     const ws = this.ws; this.ws = null;
     if (ws) { try { ws.close(); } catch (_) { /* gone */ } }
     this.transcript.closeAll();
@@ -138,9 +167,16 @@ export class GeminiLive {
   /* Microphone chunk from AudioIO: 16 kHz Int16 PCM plus its RMS. */
   sendAudio(pcm16, rms) {
     if (!this.healthy) return false;
-    if (rms >= VOICE_RMS) this._lastVoiced = now();
-    this._sendJson({ realtimeInput: { audio: { data: b64(pcm16.buffer), mimeType: `audio/pcm;rate=${CAPTURE_RATE}` } } });
-    return true;
+    const t = this._now();
+    this._lastMicAt = t; this._audioEnded = false;
+    if (rms >= VOICE_RMS) {
+      this._lastVoiced = t;
+      if (!this._modelSpeaking && !this._playing) this._replyPendingAt = t;
+    }
+    return this._sendJson({ realtimeInput: { audio: {
+      data: b64(pcm16.buffer.slice(pcm16.byteOffset, pcm16.byteOffset + pcm16.byteLength)),
+      mimeType: `audio/pcm;rate=${CAPTURE_RATE}`,
+    } } });
   }
 
   /* A stage direction the interviewer acts on ("wrap up now"). turnComplete
@@ -148,7 +184,8 @@ export class GeminiLive {
    * app's inject_context. */
   sendText(text, { turnComplete = true } = {}) {
     if (!this.healthy) return false;
-    this._sendJson({ clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete } });
+    if (!this._sendJson({ clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete } })) return false;
+    if (turnComplete) this._replyPendingAt = this._now();
     this._event("text_sent", { chars: text.length, turnComplete });
     return true;
   }
@@ -157,7 +194,7 @@ export class GeminiLive {
 
   _setupMessage() {
     let text = this.instructions();
-    const context = this.transcript.asContext();
+    const context = this._resumeHandle ? "" : this.transcript.asContext();
     if (context) text += "\n\n" + context;
     const setup = {
       model: `models/${this.model}`,
@@ -168,6 +205,11 @@ export class GeminiLive {
       systemInstruction: { parts: [{ text }] },
       inputAudioTranscription: {},
       outputAudioTranscription: {},
+      sessionResumption: this._resumeHandle ? { handle: this._resumeHandle } : {},
+      contextWindowCompression: { slidingWindow: {} },
+      realtimeInputConfig: {
+        automaticActivityDetection: { prefixPaddingMs: 100, silenceDurationMs: 600 },
+      },
     };
     if (this.voice) {
       setup.generationConfig.speechConfig = { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } };
@@ -177,110 +219,174 @@ export class GeminiLive {
 
   _connect() {
     if (this.stopped) return;
+    clearTimeout(this._retryTimer); this._retryTimer = null;
+    this._attemptAt = this._now();
+    this._resuming = !!this._resumeHandle;
     this._status(this.sessions ? "reconnecting" : "connecting");
     let ws;
-    try {
-      ws = new WebSocket(LIVE_URL + encodeURIComponent(this.apiKey));
-    } catch (err) {
-      this._event("connect_error", { error: String(err) });
-      return this._retry();
-    }
+    try { ws = new WebSocket(LIVE_URL + encodeURIComponent(this.apiKey)); }
+    catch (_) { this._event("connect_error", {}); return this._retry(); }
     ws.binaryType = "arraybuffer";
     this.ws = ws;
     ws.onopen = () => {
-      this._backoff = 1;
+      if (this.ws !== ws || this.stopped) return;
       this._sendJson(this._setupMessage());
     };
-    ws.onmessage = (e) => this._onRaw(e.data);
-    ws.onerror = () => this._event("socket_error", {});
+    ws.onmessage = (e) => { if (this.ws === ws && !this.stopped) this._onRaw(e.data, ws); };
+    ws.onerror = () => { if (this.ws === ws) this._event("socket_error", {}); };
     ws.onclose = (e) => {
+      // A retired socket must never mark its replacement disconnected.
+      if (this.ws !== ws || this.stopped) return;
       const wasConnected = this.connected;
-      this.connected = false;
-      if (this.ws === ws) this.ws = null;
-      this._event("socket_closed", { code: e.code, reason: e.reason, wasConnected });
-      // A half-spoken turn must not hang open.
-      this.transcript.closeAll();
-      if (this.stopped) return;
-      // Google explains a refusal in the close reason (bad key, billing,
-      // quota, model name). Retrying that forever only hides the message.
-      if (!wasConnected && e.reason) {
-        this._event("refused", { code: e.code, reason: e.reason, model: this.model });
-        // A retired model name is Google's problem, not the user's: try the next one.
-        const next = LIVE_MODELS[LIVE_MODELS.indexOf(this.model) + 1];
-        if (next && /model|not found|not supported|unavailable/i.test(e.reason)) {
-          this._notice(`Switching to ${next}`);
-          this.model = next;
-          return this._retry();
-        }
-        this.stopped = true;
-        clearInterval(this._watchdog);
-        this._notice(e.reason);
-        this._status("failed");
-        return;
+      this._disconnect();
+      const reason = String(e.reason || "").replaceAll(this.apiKey, "[key]");
+      this._event("socket_closed", { code: e.code, reason, wasConnected });
+      if (/quota|resource.exhausted|rate.limit|billing/i.test(reason)) {
+        return this._fail("Google's usage limit was reached. Check your Gemini quota and try again later. Your answers are kept.");
       }
-      this._notice(wasConnected ? "Connection to Gemini dropped, reconnecting" : "Gemini unreachable, retrying");
+      if (!wasConnected && this._resuming && /session|resum|handle/i.test(reason)) {
+        this._resumeHandle = null;
+        this._notice("Restoring the interview from your saved answers…");
+        return this._retry();
+      }
+      if (!wasConnected && /model.*(not found|not supported|unavailable)|not found.*model/i.test(reason)) {
+        const next = LIVE_MODELS[LIVE_MODELS.indexOf(this.model) + 1];
+        if (next) { this.model = next; this._resumeHandle = null; return this._retry(); }
+      }
+      if (e.code === 1008 || /invalid.argument|api.key.*(invalid|expired)|permission.denied|unauthenticated|not supported/i.test(reason)) {
+        return this._fail(reason || "Google refused this session. Check the API key and its permissions.");
+      }
+      this._notice("Reconnecting to your interviewer. Your answers are kept and the practice timer is paused.");
       this._retry();
     };
   }
 
-  _retry() {
+  _disconnect() {
+    this._pauseClock();
+    this.connected = false;
+    this._attemptAt = null;
+    this._modelSpeaking = false;
+    this._playing = false;
+    this._goAway = false;
+    clearTimeout(this._goAwayTimer); this._goAwayTimer = null;
+    const ws = this.ws; this.ws = null;
+    if (ws) { try { ws.close(); } catch (_) { /* already gone */ } }
+    if (this.onInterrupted) this.onInterrupted();
+    this.transcript.closeAll();
+  }
+
+  _reconnect(reason) {
     if (this.stopped) return;
+    this._event("reconnect", { reason });
+    this._disconnect();
+    this._notice("Reconnecting to your interviewer. Your answers are kept and the practice timer is paused.");
+    this._retry();
+  }
+
+  _fail(message) {
+    this._disconnect();
+    this.stopped = true;
+    clearInterval(this._watchdog); this._watchdog = null;
+    clearTimeout(this._retryTimer); this._retryTimer = null;
+    this._notice(message);
+    this._status("failed");
+  }
+
+  _retry() {
+    if (this.stopped || this._retryTimer !== null) return;
+    if (++this._failures > MAX_RETRIES) {
+      return this._fail("The connection could not recover. Your answers are kept. Check your connection and Gemini quota, then try again.");
+    }
+    this._status(this.sessions ? "reconnecting" : "connecting");
     const wait = this._backoff;
-    this._backoff = Math.min(this._backoff * 2, 15);
-    setTimeout(() => this._connect(), wait * 1000);
+    this._backoff = Math.min(this._backoff * 2, 8);
+    this._retryTimer = setTimeout(() => { this._retryTimer = null; this._connect(); }, wait * 1000);
   }
 
   _sendJson(payload) {
     const ws = this.ws;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    try { ws.send(JSON.stringify(payload)); }
-    catch (err) { this._sendErrors++; this._event("send_error", { error: String(err) }); }
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    if (ws.bufferedAmount > MAX_BUFFERED_BYTES) { this._reconnect("audio_backpressure"); return false; }
+    try { ws.send(JSON.stringify(payload)); return true; }
+    catch (_) { this._sendErrors++; this._event("send_error", {}); this._reconnect("send_error"); return false; }
   }
 
   _checkStall() {
-    const t = now();
-    if (!this.connected
-      || t - this._connectedAt < STALL_GRACE_AFTER_CONNECT
-      || t - this._lastVoiced > 10
-      || t - this._lastServer < STALL_SECONDS) return;
-    this._event("stall_detected", { silentFor: Math.round(t - this._lastServer) });
-    this._notice("Gemini went quiet, reconnecting");
-    this.connected = false;
-    const ws = this.ws;
-    if (ws) { try { ws.close(); } catch (_) { /* reconnect path */ } }
+    if (this.stopped) return;
+    const t = this._now();
+    if (!this.connected) {
+      if (this._attemptAt !== null && t - this._attemptAt >= SETUP_TIMEOUT_SECONDS) this._reconnect("setup_timeout");
+      return;
+    }
+    if (this._lastMicAt !== null && t - this._lastMicAt > 1 && !this._audioEnded) {
+      this._audioEnded = true;
+      this._sendJson({ realtimeInput: { audioStreamEnd: true } });
+    }
+    if (this._goAway && !this._modelSpeaking && !this._playing && t - this._lastVoiced > 1) {
+      this._reconnect("scheduled_refresh"); return;
+    }
+    // A short answer followed by silence used to fall outside the old
+    // "voiced in the last ten seconds" test, leaving the visitor waiting forever.
+    const waiting = this._replyPendingAt !== null && t - this._replyPendingAt >= REPLY_TIMEOUT_SECONDS;
+    const cutOff = this._modelSpeaking && t - this._lastOutput >= REPLY_TIMEOUT_SECONDS;
+    if (!this._playing && (waiting || cutOff)) {
+      this._event("stall_detected", { silentFor: Math.round(t - (this._replyPendingAt ?? this._lastOutput)) });
+      // A silent generation can also be stuck in the resumable server session.
+      // Rebuild it from the transcript instead of resuming that stuck state.
+      this._resumeHandle = null;
+      this._reconnect("reply_timeout");
+    }
   }
 
   // --------------------------------------------------------------- receive
 
-  async _onRaw(data) {
+  async _onRaw(data, ws = this.ws) {
     let text = data;
     if (data instanceof ArrayBuffer) text = new TextDecoder().decode(data);
     else if (data instanceof Blob) text = await data.text();
+    if (this.stopped || this.ws !== ws) return;
     let message;
     try { message = JSON.parse(text); } catch { return; }
     this._handle(message);
   }
 
   _handle(message) {
-    const t = now();
+    const t = this._now();
     this._lastServer = t;
+    if (message.sessionResumptionUpdate) {
+      const update = message.sessionResumptionUpdate;
+      this._resumeHandle = update.resumable && update.newHandle ? update.newHandle : null;
+    }
     if (message.setupComplete) {
       if (!this.connected) {
         this.connected = true;
+        this._attemptAt = null;
         this._connectedAt = t;
+        this._lastMicAt = null;
+        this._audioEnded = false;
         this.sessions++;
         this._event("connected", { model: this.model, session: this.sessions });
         this._status("live");
-        // The interviewer speaks first. On a reconnect it picks up mid-interview.
-        const resumed = this.transcript.turns.length > 0;
-        this.sendText(resumed
-          ? "(The call reconnected. Continue the interview from exactly where it stopped: no greeting, no recap, just your next question or follow-up.)"
-          : "(The candidate has just joined the call. Greet them briefly and begin.)");
+        if (this._resuming) {
+          // An extra user turn would interrupt the restored conversation.
+          this._activeSince = t;
+          if (this._replyPendingAt !== null) this._replyPendingAt = t;
+        } else {
+          const resumed = this.transcript.turns.length > 0;
+          this.sendText(resumed
+            ? "(The call reconnected. Continue the interview from exactly where it stopped: no greeting, no recap. If the candidate's last answer is incomplete, ask them to repeat the missing part.)"
+            : "(The candidate has just joined the call. Greet them briefly and begin.)");
+        }
       }
       return;
     }
     if (message.goAway) {
       this._event("go_away", { timeLeft: String(message.goAway.timeLeft || "") });
+      this._goAway = true;
+      clearTimeout(this._goAwayTimer);
+      const left = parseFloat(message.goAway.timeLeft);
+      this._goAwayTimer = setTimeout(() => this._reconnect("connection_deadline"),
+        Math.max(0, (Number.isFinite(left) ? left - 2 : 1)) * 1000);
       return;
     }
     if (message.usageMetadata) {
@@ -301,7 +407,10 @@ export class GeminiLive {
     }
 
     const heard = content.inputTranscription && content.inputTranscription.text;
-    if (heard) this._append("candidate", heard, t);
+    if (heard) {
+      this._append("candidate", heard, t);
+      if (!this._modelSpeaking && !this._playing) this._replyPendingAt = t;
+    }
 
     const said = content.outputTranscription && content.outputTranscription.text;
     if (said) this._append("interviewer", said, t);
@@ -310,6 +419,10 @@ export class GeminiLive {
     for (const part of parts) {
       const inline = part.inlineData;
       if (inline && inline.data && /audio\/pcm/.test(inline.mimeType || "")) {
+        this._lastOutput = t;
+        this._replyPendingAt = null;
+        this._failures = 0; this._backoff = 1;
+        if (this._activeSince === null) this._activeSince = t;
         if (!this._modelSpeaking) { this._modelSpeaking = true; this._event("model_audio_start", {}); }
         const buf = unb64(inline.data);
         if (this.onAudio && buf.byteLength >= 2) this.onAudio(new Int16Array(buf.byteLength % 2 ? buf.slice(0, buf.byteLength - 1) : buf));
