@@ -35,6 +35,34 @@ test("setupComplete marks live and nudges the interviewer to speak first", () =>
   assert.equal(sent[0].clientContent.turnComplete, true);
 });
 
+test("noise tuning retains short speech detection and allows pauses on every connection", () => {
+  const { live } = engine();
+  for (const handle of [null, "resume-test"]) {
+    live._resumeHandle = handle;
+    assert.deepEqual(live._setupMessage().setup.realtimeInputConfig.automaticActivityDetection, {
+      startOfSpeechSensitivity: "START_SENSITIVITY_LOW",
+      prefixPaddingMs: 100,
+      endOfSpeechSensitivity: "END_SENSITIVITY_LOW",
+      silenceDurationMs: 800,
+    });
+  }
+  live.close();
+});
+
+test("quiet words, brief answers and pauses are transmitted without a volume gate", () => {
+  const { live, sent } = engine();
+  live._handle({ setupComplete: {} });
+  const chunks = [new Int16Array([1, -2, 3]), new Int16Array([20, -30, 40]), new Int16Array(1600)];
+  for (const pcm of chunks) live.sendAudio(pcm, 0.0001);
+  const audio = sent.filter(p => p.realtimeInput?.audio).map(p => p.realtimeInput.audio);
+  assert.equal(audio.length, chunks.length);
+  audio.forEach((part, i) => {
+    assert.equal(part.mimeType, "audio/pcm;rate=16000");
+    assert.deepEqual(Buffer.from(part.data, "base64"), Buffer.from(chunks[i].buffer));
+  });
+  live.close();
+});
+
 test("candidate speech, interviewer speech and audio flow into the transcript", () => {
   const { live, seen } = engine();
   live._handle({ setupComplete: {} });

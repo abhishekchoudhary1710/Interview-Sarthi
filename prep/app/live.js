@@ -175,6 +175,8 @@ export class GeminiLive {
       this._lastVoiced = t;
       if (!this._modelSpeaking && !this._playing) this._replyPendingAt = t;
     }
+    // RMS is only a recovery/timing hint, never a noise gate. Quiet words and
+    // short answers must reach Gemini with the same samples as louder speech.
     return this._sendJson({ realtimeInput: { audio: {
       data: b64(pcm16.buffer.slice(pcm16.byteOffset, pcm16.byteOffset + pcm16.byteLength)),
       mimeType: `audio/pcm;rate=${CAPTURE_RATE}`,
@@ -210,7 +212,15 @@ export class GeminiLive {
       sessionResumption: this._resumeHandle ? { handle: this._resumeHandle } : {},
       contextWindowCompression: { slidingWindow: {} },
       realtimeInputConfig: {
-        automaticActivityDetection: { prefixPaddingMs: 100, silenceDurationMs: 600 },
+        automaticActivityDetection: {
+          // Reject tentative speech starts more cautiously, without increasing
+          // the minimum speech duration or dropping quiet PCM on the client.
+          startOfSpeechSensitivity: "START_SENSITIVITY_LOW",
+          prefixPaddingMs: 100,
+          // Let soft endings and brief thinking pauses finish before replying.
+          endOfSpeechSensitivity: "END_SENSITIVITY_LOW",
+          silenceDurationMs: 800,
+        },
       },
     };
     if (this.voice) {
