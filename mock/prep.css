@@ -51,12 +51,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 textarea{min-height:120px;resize:vertical;line-height:1.5}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:600px){.row{grid-template-columns:1fr}}
-.drop{border:1.5px dashed #CFC4B1;border-radius:14px;padding:22px;text-align:center;color:var(--muted);background:var(--bg2);cursor:pointer;transition:border-color .15s,background .15s}
-.drop:hover{border-color:var(--accent)}
-.drop.ok{border-style:solid;border-color:var(--ok);color:var(--ok);background:var(--ok-wash)}
-.drop.over{border-color:var(--accent);color:var(--accent);background:var(--wash)}
-.drop.small{padding:12px;font-size:14px}
-.drop input{display:none}
+/* A field's label, with its "add a file" button sitting at the end of the row. */
+.fhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 6px}
+.fhead label.f{margin:0}
+.chip.up{flex:none;white-space:nowrap;transition:background .15s,color .15s}
+.chip.up::after{content:none}                       /* it opens a file dialog, it does not go anywhere */
+.chip.up:hover{background:var(--accent);color:var(--btn-ink)}
+.chip.up.ok{background:var(--ok-wash);color:var(--ok)}
+textarea.over{border-color:var(--accent);box-shadow:0 0 0 3px var(--wash)}
 .notice{min-height:22px;margin-top:10px;font-size:14px;color:var(--warn)}
 .notice.bad{color:var(--bad)} .notice.ok{color:var(--ok)}
 

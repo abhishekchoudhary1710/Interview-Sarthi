@@ -128,8 +128,6 @@ async function restore() {
   const voice = store.get("ps_voice");
   if (voice && [...$("voice").options].some((o) => o.value === voice)) $("voice").value = voice;
   $("key").value = store.get("ps_gemini_key");
-  if ($("cv").value) { $("drop").classList.add("ok"); $("droptext").textContent = "CV loaded. Tap to choose a different file"; }
-  if ($("jd").value) { $("jddrop").classList.add("ok"); $("jddroptext").textContent = "JD loaded. Tap to choose a different file"; }
   // A returning visitor can reach the interview screen without passing through
   // Continue (the Practise button after buying), so S has to match the form now.
   readForm();
@@ -151,36 +149,36 @@ async function restore() {
 }
 
 $("language").onchange = () => { $("language-other").style.display = $("language").value === "other" ? "block" : "none"; };
-/* The CV and the JD both accept a PDF or a text file, by tap or by drag. The
- * file is read here in the browser and dropped into the textarea below it, so
- * what the interview reads is always the text on the screen, editable. */
-function wireDrop({ drop, input, droptext, area, noticeId, label, minChars, onText }) {
+/* The CV and the JD each take a PDF or a text file from the small button on
+ * their label row, or from a file dragged onto the box itself. The file is read
+ * here in the browser and its text put into the box, so what the interview
+ * reads is always what is on the screen, and still editable. */
+function wirePicker({ pick, input, area, noticeId, label, minChars, onText }) {
   const load = async (file) => {
     if (!file) return;
     notice(noticeId, "Reading " + file.name + "…");
     try {
       const text = await readDocFile(file, label);
-      if (text.length < minChars) { notice(noticeId, `That file has almost no readable text (a scanned PDF?). Paste the ${label} text below instead.`, "bad"); return; }
+      if (text.length < minChars) { notice(noticeId, `That file has almost no readable text (a scanned PDF?). Paste the ${label} text instead.`, "bad"); return; }
       $(area).value = text;
-      $(drop).classList.add("ok"); $(droptext).textContent = file.name + " loaded";
-      notice(noticeId, `Read ${text.split(/\s+/).length} words.`, "ok");
+      $(pick).classList.add("ok"); $(pick).textContent = "Replace";
+      notice(noticeId, `Read ${text.split(/\s+/).length} words from ${file.name}.`, "ok");
       if (onText) onText(text);
     } catch (err) {
       notice(noticeId, err.message, "bad");
     }
   };
-  $(drop).onclick = () => $(input).click();
-  $(input).onchange = () => load($(input).files[0]);
-  $(drop).ondragover = (e) => { e.preventDefault(); $(drop).classList.add("over"); };
-  $(drop).ondragleave = () => $(drop).classList.remove("over");
-  $(drop).ondrop = (e) => { e.preventDefault(); $(drop).classList.remove("over"); load(e.dataTransfer && e.dataTransfer.files[0]); };
+  $(pick).onclick = () => $(input).click();
+  $(input).onchange = () => { load($(input).files[0]); $(input).value = ""; };   // same file twice still fires
+  $(area).ondragover = (e) => { e.preventDefault(); $(area).classList.add("over"); };
+  $(area).ondragleave = () => $(area).classList.remove("over");
+  $(area).ondrop = (e) => { e.preventDefault(); $(area).classList.remove("over"); load(e.dataTransfer && e.dataTransfer.files[0]); };
 }
-wireDrop({
-  drop: "drop", input: "cvfile", droptext: "droptext", area: "cv", noticeId: "cv-notice",
-  label: "CV", minChars: 80,
+wirePicker({
+  pick: "cvpick", input: "cvfile", area: "cv", noticeId: "cv-notice", label: "CV", minChars: 80,
   onText: (text) => { if (!$("name").value) $("name").value = guessName(text); },
 });
-wireDrop({ drop: "jddrop", input: "jdfile", droptext: "jddroptext", area: "jd", noticeId: "jd-notice", label: "JD", minChars: 40 });
+wirePicker({ pick: "jdpick", input: "jdfile", area: "jd", noticeId: "jd-notice", label: "JD", minChars: 40 });
 
 function readForm() {
   S.cv = tidy($("cv").value); S.jd = tidy($("jd").value); S.name = $("name").value.trim();
