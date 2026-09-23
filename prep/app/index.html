@@ -55,6 +55,14 @@
     /* the call */
     .call.big{padding:24px 22px 22px;min-height:min(640px,calc(100dvh - 150px));display:flex;flex-direction:column}
     .call.big .wheelwrap{flex:1;min-height:240px}
+    .call.big.preparing .wheelwrap{display:none}
+    .preparation{margin:auto 0;padding:28px 18px;text-align:center;border:1px solid var(--dark-line);border-radius:18px;background:rgba(255,255,255,.04)}
+    .preparation h2{color:var(--dark-ink);font-size:24px;margin:16px 0 12px}
+    .preparation p{color:var(--dark-muted);line-height:1.6}
+    .preparation .prep-time{font:13px var(--mono)}
+    .prep-spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--dark-line);border-top-color:var(--dark-ink);border-radius:50%;animation:prep-spin 1s linear infinite}
+    @keyframes prep-spin{to{transform:rotate(360deg)}}
+    @media(prefers-reduced-motion:reduce){.prep-spinner{animation:none}}
     .call.big .clock{font:500 15px var(--mono);letter-spacing:.06em;color:var(--dark-ink)}
     .call.big .clock.low{color:#ff7a70}
     .prestart{display:grid;gap:14px}
@@ -167,6 +175,15 @@
     <div class="call big">
       <div class="top"><span class="live" id="livetag">Ready</span><span class="clock" id="clock">12:00</span></div>
       <div class="wheelwrap" id="wheel"></div>
+      <div class="preparation" id="preparation" hidden>
+        <span class="prep-spinner" aria-hidden="true"></span>
+        <h2>Preparing your interview</h2>
+        <p id="prep-status" role="status" aria-live="polite">Reviewing your CV and preparing relevant assessment areas.</p>
+        <p>Your interview timer hasn’t started.<br>You don’t need to speak yet.</p>
+        <p class="prep-time" id="prep-elapsed" aria-live="off">Waiting: 0 seconds</p>
+        <p id="prep-slow" role="status" hidden>This is taking a little longer. We’re still preparing; your interview minutes haven’t started.</p>
+        <button type="button" class="pill small" id="cancel-preparation">Cancel preparation</button>
+      </div>
       <p class="caption" id="caption"><span class="hint" id="hint">Your interviewer</span><span id="line">She speaks first. Answer out loud, like a real call.</span></p>
       <p class="youline" id="youline"></p>
       <div class="micfix" id="micfix" style="display:none">
@@ -315,6 +332,6 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20260923-jd-plan"></script>
+<script type="module" src="./app.js?v=20260923-preparation-ui"></script>
 </body>
 </html>

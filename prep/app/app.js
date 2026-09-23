@@ -310,6 +310,7 @@ function showOffer(id, text) { $(id + "-text").textContent = text; $(id).style.d
 function hideOffer(id) { $(id).style.display = "none"; }
 
 function preLive() {
+  hidePreparation();
   phase = "idle";
   hideOffer("live-offer"); offerShown = false;
   show("s-live");
@@ -427,6 +428,7 @@ $("start").onclick = async () => {
   setLink("idle", "Mic check");
   setCaption("Mic check", "Say hello, so I know I can hear you.", false);
   $("left").textContent = "Your time has not started";
+  showPreparation();
   wheel.setState("listening");
   clearTimeout(micHelpTimer);
   micHelpTimer = setTimeout(() => {
@@ -446,8 +448,38 @@ function micCheckPassed() {
   startCall();
 }
 
+let preparationTimer = null;
+function hidePreparation() {
+  clearInterval(preparationTimer); preparationTimer = null;
+  $("preparation").hidden = true;
+  $("preparation").closest(".call").classList.remove("preparing");
+  $("caption").hidden = false;
+}
+function showPreparation() {
+  hidePreparation();
+  const waitingSince = Date.now();
+  $("preparation").hidden = false;
+  $("preparation").closest(".call").classList.add("preparing");
+  $("caption").hidden = true;
+  $("youbar").style.display = "none";
+  $("prep-status").textContent = S.jd.trim()
+    ? "Reviewing your CV and job description to prepare relevant assessment areas."
+    : S.practiceFocus === "general_cv"
+      ? "Reviewing your CV to prepare questions about your experience and skills."
+      : "Reviewing your CV and chosen role to prepare relevant assessment areas.";
+  $("prep-elapsed").textContent = "Waiting: 0 seconds";
+  $("prep-slow").hidden = true;
+  preparationTimer = setInterval(() => {
+    const seconds = Math.floor((Date.now() - waitingSince) / 1000);
+    $("prep-elapsed").textContent = `Waiting: ${seconds} seconds`;
+    if (seconds >= 20) $("prep-slow").hidden = false;
+  }, 1000);
+}
+$("cancel-preparation").onclick = () => cancelMicCheck();
+
 async function cancelMicCheck() {
   planController?.abort(); planController = null;
+  hidePreparation();
   clearTimeout(micHelpTimer);
   phase = "idle";
   if (audio) { await audio.stop(); audio = null; }
@@ -463,10 +495,12 @@ async function startCall() {
   setLink("busy", "Preparing");
   setCaption("Preparing your interview", "Reviewing your CV and the role. Your interview timer has not started.", true);
   $("left").textContent = "Your time has not started";
+  showPreparation();
   try {
     const plan = await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
       minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal });
     if (controller.signal.aborted || planController !== controller) return;
+    $("prep-status").textContent = "Your interview plan is ready. Checking your available practice time…";
     // Refresh after preparation: a pass can expire while the plan is being made.
     const fresh = await entitlement(S.hash);
     if (controller.signal.aborted || planController !== controller) return;
@@ -480,6 +514,8 @@ async function startCall() {
     return;
   }
   planController = null;
+  hidePreparation();
+  $("youbar").style.display = "flex";
   phase = "call";
   startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
@@ -738,6 +774,6 @@ $("copydiag").onclick = async () => {
 $("live-offer-go").onclick = () => { track("mock_offer_click", { where: "interview" }); openPasses(); };
 $("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses(); };
 
-window.addEventListener("pagehide", () => { planController?.abort(); if (live) live.close(); });
+window.addEventListener("pagehide", () => { planController?.abort(); hidePreparation(); if (live) live.close(); });
 rememberInvite();
 restore().then(() => initPasses(passCtx)).then(renderEntitlement);

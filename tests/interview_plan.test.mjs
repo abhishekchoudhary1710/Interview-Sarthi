@@ -260,11 +260,12 @@ function preparationHarness(generate) {
   const source = readFileSync(new URL("../prep/app/app.js", import.meta.url), "utf8");
   const nodes = new Map();
   const context = vm.createContext({
+    hidePreparation() {}, showPreparation() {},
     phase: "miccheck", planController: null, assessmentPlan: null, planCoverage: null,
     S: { key: "test", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "trial", secondsLeft: 1200 } },
     AbortController, generateInterviewPlan: generate, PlanCoverage,
     entitlement: async () => ({ kind: "trial", secondsLeft: 1200 }),
-    $: id => { if (!nodes.has(id)) nodes.set(id, {}); return nodes.get(id); },
+    $: id => { if (!nodes.has(id)) nodes.set(id, { style: {} }); return nodes.get(id); },
     setLink() {}, setCaption() {}, micHelpTimer: null, clearTimeout() {},
     audio: { stop: async () => {} }, preLive() { context.phase = "idle"; },
     notice(_id, message) { context.error = message; },
