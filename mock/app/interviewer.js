@@ -13,6 +13,24 @@ const LANGUAGE_NOTES = {
   auto: "Begin in English. If the candidate answers in another language, switch to that language and stay in it.",
 };
 
+/* Who the interviewer is. The candidate picks a voice, and the page then talks
+ * about the interviewer in words ("she speaks first"), so the pronouns and the
+ * name have to follow that voice instead of being female by default. The keys
+ * are the prebuilt Gemini voices offered on the CV screen. */
+const VOICE_GENDER = {
+  kore: "female", aoede: "female", leda: "female", zephyr: "female",
+  charon: "male", puck: "male", fenrir: "male", orus: "male",
+};
+const PERSONAS = {
+  female: { gender: "female", name: "Priya Nair", they: "she", They: "She", them: "her", their: "her", themself: "herself" },
+  male: { gender: "male", name: "Arjun Nair", they: "he", They: "He", them: "him", their: "his", themself: "himself" },
+};
+
+/** @param {string} voice  a prebuilt Gemini voice name; anything unknown reads as female. */
+export function interviewerPersona(voice) {
+  return PERSONAS[VOICE_GENDER[String(voice || "").trim().toLowerCase()] || "female"];
+}
+
 export function languageNote(language) {
   const key = String(language || "").trim().toLowerCase();
   if (LANGUAGE_NOTES[key]) return LANGUAGE_NOTES[key];
@@ -27,6 +45,7 @@ export function languageNote(language) {
  * @param {string} [o.jd]          job description, optional
  * @param {string} [o.language]    "English", "Hinglish", "Hindi", "auto" or any language name
  * @param {number} [o.minutes]     planned length, used for pacing
+ * @param {string} [o.voice]       the chosen voice, which decides who the interviewer is
  * @param {string} [o.interviewerName]
  */
 export function buildInterviewerInstructions(o) {
@@ -34,7 +53,8 @@ export function buildInterviewerInstructions(o) {
   const minutes = o.minutes || 15;
   const cv = (o.cv || "").trim();
   const jd = (o.jd || "").trim();
-  return `You are ${o.interviewerName || "Priya Nair"}, a senior hiring manager running a REAL job interview with ${name} over a voice call. You are the interviewer. The person speaking to you is the candidate.
+  const persona = interviewerPersona(o.voice);
+  return `You are ${o.interviewerName || persona.name}, a ${persona.gender} senior hiring manager running a REAL job interview with ${name} over a voice call. You are the interviewer. The person speaking to you is the candidate.
 
 HOW YOU BEHAVE
 - Speak only as the interviewer. Never coach, never give model answers, never say you are an AI, never describe what you are doing, never read out stage directions.

@@ -95,7 +95,7 @@
     <p class="lede">A real interviewer picks lines from your CV and digs in. So does this one. Nothing here leaves your device until the interview starts, and then it goes only to Google, on your own key.</p>
     <div class="card" style="margin-top:22px">
       <label class="f" style="margin-top:0">CV</label>
-      <div class="drop" id="drop"><input type="file" id="cvfile" accept=".pdf,.txt,.md,application/pdf,text/plain"><span id="droptext">Tap to choose a PDF or text file</span></div>
+      <div class="drop" id="drop"><input type="file" id="cvfile" accept=".pdf,.txt,.md,application/pdf,text/plain"><span id="droptext">Tap to choose a PDF or text file, or drop one here</span></div>
       <label class="f">Or paste the CV text</label>
       <textarea id="cv" placeholder="Paste your CV here if the file didn't read well."></textarea>
       <div class="row">
@@ -112,7 +112,10 @@
         </div>
       </div>
       <label class="f">Job description · optional</label>
+      <div class="drop small" id="jddrop"><input type="file" id="jdfile" accept=".pdf,.txt,.md,application/pdf,text/plain"><span id="jddroptext">Tap to choose a PDF or text file, or drop one here</span></div>
+      <label class="f">Or paste the JD text</label>
       <textarea id="jd" style="min-height:84px" placeholder="Paste the JD and the interviewer will target that role."></textarea>
+      <div class="notice" id="jd-notice"></div>
       <div class="row">
         <div><label class="f">Length</label>
           <select id="minutes"><option value="8">8 minutes · quick round</option><option value="12" selected>12 minutes</option><option value="18">18 minutes · full round</option></select></div>
@@ -166,8 +169,8 @@
       </div>
       <div class="prestart" id="pre-live">
         <ul>
-          <li>Use earphones if you can. From a loud speaker she can hear herself.</li>
-          <li>You can interrupt, and so can she.</li>
+          <li id="tip-speaker">Use earphones if you can. From a loud speaker she can hear herself.</li>
+          <li id="tip-interrupt">You can interrupt, and so can she.</li>
           <li>It ends by itself when time is up, then your report appears.</li>
         </ul>
         <button class="pill wide" id="start">Start the interview</button>

@@ -1,4 +1,4 @@
-/* Prep Sarthi: read the CV in the browser.
+/* Prep Sarthi: read the CV, or the job description, in the browser.
  *
  * PDF text comes out through pdf.js (loaded from cdnjs only when a PDF is
  * chosen). .txt and .md are read as-is. A scanned PDF has no text layer; the
@@ -21,11 +21,12 @@ function pdfjs() {
   return pdfjsPromise;
 }
 
-export async function readCvFile(file) {
+/** @param {string} label  what the file is, for the error message: "CV" or "JD". */
+export async function readDocFile(file, label = "CV") {
   const name = (file.name || "").toLowerCase();
   if (name.endsWith(".pdf") || file.type === "application/pdf") return readPdf(file);
   if (/\.(txt|md|text)$/.test(name) || /^text\//.test(file.type || "")) return tidy(await file.text());
-  throw new Error("Use a PDF or a plain text file, or paste the CV text.");
+  throw new Error(`Use a PDF or a plain text file, or paste the ${label} text.`);
 }
 
 async function readPdf(file) {

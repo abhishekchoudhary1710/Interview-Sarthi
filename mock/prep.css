@@ -54,6 +54,8 @@ textarea{min-height:120px;resize:vertical;line-height:1.5}
 .drop{border:1.5px dashed #CFC4B1;border-radius:14px;padding:22px;text-align:center;color:var(--muted);background:var(--bg2);cursor:pointer;transition:border-color .15s,background .15s}
 .drop:hover{border-color:var(--accent)}
 .drop.ok{border-style:solid;border-color:var(--ok);color:var(--ok);background:var(--ok-wash)}
+.drop.over{border-color:var(--accent);color:var(--accent);background:var(--wash)}
+.drop.small{padding:12px;font-size:14px}
 .drop input{display:none}
 .notice{min-height:22px;margin-top:10px;font-size:14px;color:var(--warn)}
 .notice.bad{color:var(--bad)} .notice.ok{color:var(--ok)}

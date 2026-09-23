@@ -5,15 +5,16 @@
  * the free-minutes counter. Timing is hard: when the planned time or the free
  * minutes run out, the interview ends that second and the report is written.
  *
- * The interview screen is a call, not a chat: the Sarthi wheel turns while she
- * speaks, only her current line is shown, and the full transcript waits for
- * the report.
+ * The interview screen is a call, not a chat: the Sarthi wheel turns while the
+ * interviewer speaks, only their current line is shown, and the full transcript
+ * waits for the report. The chosen voice decides whether the page calls the
+ * interviewer she or he: see interviewerPersona.
  */
 
 import { AudioIO } from "./audio.js";
 import { GeminiLive } from "./live.js";
-import { buildInterviewerInstructions, NOTES } from "./interviewer.js";
-import { readCvFile, tidy, guessName } from "./cv.js";
+import { buildInterviewerInstructions, interviewerPersona, NOTES } from "./interviewer.js";
+import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
 import { generateReport } from "./report.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite } from "./billing.js";
@@ -112,6 +113,9 @@ function currentLanguage() {
   const v = $("language").value;
   return v === "other" ? ($("language-other").value.trim() || "auto") : v;
 }
+/* Who the interviewer is right now: the voice the candidate picked decides the
+ * name in the brief and the pronouns on the screen. */
+function who() { return interviewerPersona(S.voice); }
 function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 // ---------------------------------------------------------------- 1. CV
@@ -121,8 +125,14 @@ async function restore() {
   const lang = store.get("ps_language", "English");
   if ([...$("language").options].some((o) => o.value === lang)) $("language").value = lang;
   else { $("language").value = "other"; $("language-other").value = lang; $("language-other").style.display = "block"; }
+  const voice = store.get("ps_voice");
+  if (voice && [...$("voice").options].some((o) => o.value === voice)) $("voice").value = voice;
   $("key").value = store.get("ps_gemini_key");
   if ($("cv").value) { $("drop").classList.add("ok"); $("droptext").textContent = "CV loaded. Tap to choose a different file"; }
+  if ($("jd").value) { $("jddrop").classList.add("ok"); $("jddroptext").textContent = "JD loaded. Tap to choose a different file"; }
+  // A returning visitor can reach the interview screen without passing through
+  // Continue (the Practise button after buying), so S has to match the form now.
+  readForm();
   renderEntitlement();
   // A returning visitor must see what they actually own, not the free-minutes
   // placeholder: ask the server before they touch anything.
@@ -141,27 +151,45 @@ async function restore() {
 }
 
 $("language").onchange = () => { $("language-other").style.display = $("language").value === "other" ? "block" : "none"; };
-$("drop").onclick = () => $("cvfile").click();
-$("cvfile").onchange = async () => {
-  const file = $("cvfile").files[0];
-  if (!file) return;
-  notice("cv-notice", "Reading " + file.name + "…");
-  try {
-    const text = await readCvFile(file);
-    if (text.length < 80) { notice("cv-notice", "That file has almost no readable text (a scanned PDF?). Paste the CV text below instead.", "bad"); return; }
-    $("cv").value = text;
-    if (!$("name").value) $("name").value = guessName(text);
-    $("drop").classList.add("ok"); $("droptext").textContent = file.name + " loaded";
-    notice("cv-notice", `Read ${text.split(/\s+/).length} words.`, "ok");
-  } catch (err) {
-    notice("cv-notice", err.message, "bad");
-  }
-};
-$("to-key").onclick = () => {
+/* The CV and the JD both accept a PDF or a text file, by tap or by drag. The
+ * file is read here in the browser and dropped into the textarea below it, so
+ * what the interview reads is always the text on the screen, editable. */
+function wireDrop({ drop, input, droptext, area, noticeId, label, minChars, onText }) {
+  const load = async (file) => {
+    if (!file) return;
+    notice(noticeId, "Reading " + file.name + "…");
+    try {
+      const text = await readDocFile(file, label);
+      if (text.length < minChars) { notice(noticeId, `That file has almost no readable text (a scanned PDF?). Paste the ${label} text below instead.`, "bad"); return; }
+      $(area).value = text;
+      $(drop).classList.add("ok"); $(droptext).textContent = file.name + " loaded";
+      notice(noticeId, `Read ${text.split(/\s+/).length} words.`, "ok");
+      if (onText) onText(text);
+    } catch (err) {
+      notice(noticeId, err.message, "bad");
+    }
+  };
+  $(drop).onclick = () => $(input).click();
+  $(input).onchange = () => load($(input).files[0]);
+  $(drop).ondragover = (e) => { e.preventDefault(); $(drop).classList.add("over"); };
+  $(drop).ondragleave = () => $(drop).classList.remove("over");
+  $(drop).ondrop = (e) => { e.preventDefault(); $(drop).classList.remove("over"); load(e.dataTransfer && e.dataTransfer.files[0]); };
+}
+wireDrop({
+  drop: "drop", input: "cvfile", droptext: "droptext", area: "cv", noticeId: "cv-notice",
+  label: "CV", minChars: 80,
+  onText: (text) => { if (!$("name").value) $("name").value = guessName(text); },
+});
+wireDrop({ drop: "jddrop", input: "jdfile", droptext: "jddroptext", area: "jd", noticeId: "jd-notice", label: "JD", minChars: 40 });
+
+function readForm() {
   S.cv = tidy($("cv").value); S.jd = tidy($("jd").value); S.name = $("name").value.trim();
   S.language = currentLanguage(); S.minutes = Number($("minutes").value) || 12; S.voice = $("voice").value;
+}
+$("to-key").onclick = () => {
+  readForm();
   if (S.cv.length < 80) { notice("cv-notice", "Add your CV first: a file or pasted text.", "bad"); return; }
-  store.set("ps_cv", S.cv); store.set("ps_jd", S.jd); store.set("ps_name", S.name); store.set("ps_language", S.language);
+  store.set("ps_cv", S.cv); store.set("ps_jd", S.jd); store.set("ps_name", S.name); store.set("ps_language", S.language); store.set("ps_voice", S.voice);
   track("mock_cv_ready", { words: S.cv.split(/\s+/).length, jd: !!S.jd, language: S.language });
   show("s-key");
   if (!$("key").value) $("key").focus();
@@ -267,7 +295,10 @@ function preLive() {
   $("transcript").innerHTML = ""; bubbles.clear();
   $("clock").textContent = fmt(S.minutes * 60); $("clock").classList.remove("low");
   setLink("idle", "Ready");
-  setCaption("Your interviewer", "She speaks first. Answer out loud, like a real call.");
+  const p = who();
+  setCaption("Your interviewer", `${p.They} speaks first. Answer out loud, like a real call.`);
+  $("tip-speaker").textContent = `Use earphones if you can. From a loud speaker ${p.they} can hear ${p.themself}.`;
+  $("tip-interrupt").textContent = `You can interrupt, and so can ${p.they}.`;
   if (S.ent.kind === "none") {
     $("start").disabled = true;
     if (passCtx.passesOn) { openPasses("Your free minutes are used up. A pass gives you unlimited mocks, or invite a friend for 20 more free minutes."); return; }
@@ -282,7 +313,7 @@ function preLive() {
 }
 
 /* The transcript is kept (hidden, under Diagnostics) and drives the captions:
- * her current line in large type, your own words in a small line beneath, so
+ * their current line in large type, your own words in a small line beneath, so
  * you can see you are being heard. */
 function onTranscript(u, done) {
   let el = bubbles.get(u);
@@ -295,13 +326,13 @@ function onTranscript(u, done) {
   el.querySelector("span").textContent = u.text + (u.interrupted ? " …" : "");
   if (u.who === "interviewer") {
     // Google sends your words in one batch when your turn ends, so they land
-    // just as she starts to reply. Leave them up for a few seconds: it reads as
-    // "this is what she heard", then it fades.
+    // just as the interviewer starts to reply. Leave them up for a few seconds:
+    // it reads as "this is what they heard", then it fades.
     if (!youClearTimer && $("youline").textContent) youClearTimer = setTimeout(() => { $("youline").textContent = ""; youClearTimer = null; }, 6000);
     setCaption("Interviewer", lastLines(u.text) + (u.interrupted ? " …" : ""), false);
   } else {
     clearTimeout(youClearTimer); youClearTimer = null;
-    $("youline").innerHTML = "<b>She heard</b>" + escapeHtml(lastLines(u.text, 120));
+    $("youline").innerHTML = `<b>${who().They} heard</b>` + escapeHtml(lastLines(u.text, 120));
   }
 }
 
@@ -406,7 +437,7 @@ function startCall() {
   $("left").textContent = "You're on";
   wheel.setState("reconnecting");
 
-  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, minutes: Math.round(plannedSeconds / 60) };
+  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: Math.round(plannedSeconds / 60) };
   live = new GeminiLive({
     apiKey: S.key,
     voice: S.voice,
@@ -447,15 +478,15 @@ async function onSecond() {
   }
   if (remaining <= 0) { endInterview("time"); return; }
 
-  // She asked, and the microphone has delivered exact digital silence ever
-  // since: that is a mute key or a dead input, not someone thinking.
+  // The interviewer asked, and the microphone has delivered exact digital silence
+  // ever since: that is a mute key or a dead input, not someone thinking.
   if (!micWarned && linkState === "live" && !speaking && sheStoppedAt && !heardSinceShe
       && nowS() - sheStoppedAt > 10 && quietMax < MIC_MUTED_RMS) {
     micWarned = true;
     log("mic_silent_in_call", { quietMax: +quietMax.toFixed(6) });
     track("mock_mic_silent", {});
     setCaption("Can't hear you", null, true);
-    showMicFix("Your microphone has gone completely silent. Is it muted? She is waiting for your answer.", { allowAnyway: false });
+    showMicFix(`Your microphone has gone completely silent. Is it muted? ${who().They} is waiting for your answer.`, { allowAnyway: false });
   }
 
   // Book used time against the trial, like the desktop app's 30-second slices.

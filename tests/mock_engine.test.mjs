@@ -2,8 +2,9 @@
 // messages. No network, no audio. Run: node --test tests/mock_engine.test.mjs
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { GeminiLive, Transcript } from "../mock/app/live.js";
-import { buildInterviewerInstructions, languageNote } from "../mock/app/interviewer.js";
+import { buildInterviewerInstructions, interviewerPersona, languageNote } from "../mock/app/interviewer.js";
 
 function engine(extra = {}) {
   const seen = { transcript: [], events: [], audio: 0, interrupted: 0, status: [] };
@@ -112,6 +113,30 @@ test("interviewer brief states the persona, the CV and the language", () => {
   assert.match(text, /about 12 minutes/);
   assert.match(languageNote("Tamil"), /in Tamil/);
   assert.match(languageNote(""), /Begin in English/);
+});
+
+test("the interviewer's gender follows the chosen voice", () => {
+  const male = interviewerPersona("Charon");
+  assert.deepEqual([male.gender, male.they, male.them, male.their, male.themself], ["male", "he", "him", "his", "himself"]);
+  const female = interviewerPersona("Kore");
+  assert.deepEqual([female.gender, female.they, female.them, female.their, female.themself], ["female", "she", "her", "her", "herself"]);
+  assert.equal(interviewerPersona("puck").they, "he");          // the select's value, whatever its case
+  assert.equal(interviewerPersona("").they, "she");             // nothing chosen yet: the default voice is Kore
+  assert.equal(interviewerPersona("Nonesuch").they, "she");
+});
+
+test("a male voice gets a male interviewer in the brief, and the CV screen offers both", () => {
+  const male = buildInterviewerInstructions({ candidateName: "Riya", cv: "Built a payments service.", voice: "Fenrir" });
+  assert.match(male, /You are Arjun Nair, a male senior hiring manager/);
+  const female = buildInterviewerInstructions({ candidateName: "Riya", cv: "Built a payments service.", voice: "Leda" });
+  assert.match(female, /You are Priya Nair, a female senior hiring manager/);
+  // Every voice in the picker has to be one the persona knows, or the page
+  // would say "she" over a male voice again.
+  const html = readFileSync(new URL("../mock/app/index.html", import.meta.url), "utf8");
+  const picker = html.match(/<select id="voice">([\s\S]*?)<\/select>/)[1];
+  const offered = [...picker.matchAll(/value="([^"]+)"[^>]*>[^·]*· (\w+)/g)];
+  assert.ok(offered.length >= 6);
+  for (const [, voice, gender] of offered) assert.equal(interviewerPersona(voice).gender, gender, voice);
 });
 
 import { computeMetrics, describeMetrics } from "../mock/app/metrics.js";
