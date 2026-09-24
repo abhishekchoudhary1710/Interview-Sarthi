@@ -48,10 +48,12 @@ class SeoTests(unittest.TestCase):
         self.assertEqual(render(), (ROOT/'sitemap.xml').read_text(encoding='utf-8'))
 
     def test_software_offer_prices_and_entity_links(self):
-        page = Page((ROOT/'index.html').read_text(encoding='utf-8'))
+        page = Page((ROOT/'live/index.html').read_text(encoding='utf-8'))
         app = next(n for s in page.schemas for n in nodes(s) if n.get('@type')=='SoftwareApplication')
         self.assertEqual([str(o['price']) for o in app['offers']], ['0','99','399','999','1999'])
         self.assertEqual(app['publisher']['@id'], 'https://interviewsarthi.com/#organization')
+        self.assertEqual(app['@id'], 'https://interviewsarthi.com/#software')
+        self.assertEqual(app['url'], 'https://interviewsarthi.com/live/')
 
     def test_weekly_checkout_labels_match_weekly_product(self):
         class Links(HTMLParser):
@@ -70,7 +72,7 @@ class SeoTests(unittest.TestCase):
                         self.found.append(self.href)
                     self.href = ''
         links = Links()
-        links.feed((ROOT/'index.html').read_text(encoding='utf-8'))
+        links.feed((ROOT/'live/index.html').read_text(encoding='utf-8'))
         self.assertEqual(len(links.found), 2)
         # The licence server picks Dodo or Cashfree; the plan code is what must match the label.
         self.assertTrue(all('license.interviewsarthi.com/buy?plan=7d' in href for href in links.found))

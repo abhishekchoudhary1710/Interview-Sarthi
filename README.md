@@ -1,14 +1,18 @@
 # Interview Sarthi
 
-Interview Sarthi is a Windows AI interview assistant for Indian job seekers, with resume-grounded assistance and English, Hindi and Hinglish support.
+InterviewSarthi brings together three apps for job seekers. The [homepage](https://interviewsarthi.com/) explains each app and its starting price:
+
+- [Apply Sarthi](https://interviewsarthi.com/apply/): jobs from multiple portals, CV matching and application autofill.
+- [Prep Sarthi](https://interviewsarthi.com/prep/): spoken AI mock interviews with follow-up questions and feedback.
+- [Live Sarthi](https://interviewsarthi.com/live/): the existing Windows interview assistant, with CV-based answer suggestions during a call.
 
 [Official website](https://interviewsarthi.com/) · [Product facts](https://interviewsarthi.com/facts.html) · [Microsoft Store](https://apps.microsoft.com/detail/9NMKQPSQ1KS8) · [Releases](https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases)
 
 ## What this repository contains
 
-The public static website, product information, interview guides and website analytics. It does not contain the desktop application's source code. Public availability of this repository does not establish an open-source license.
+The public static website, product information, interview guides, website analytics and the Prep browser app under `prep/app/`. The root page is the three-product homepage; the existing Windows product page is at `live/index.html`. This repository does not contain the desktop application's source code. Public availability of this repository does not establish an open-source license.
 
-## Product and access
+## Live Sarthi access
 
 - Windows 10 version 2004 or later, or Windows 11.
 - Transcription and resume-grounded suggestions for mock calls and permitted live use.

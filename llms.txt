@@ -1,18 +1,18 @@
 # Interview Sarthi
 
-> Three tools for one job hunt in India, all running on the job seeker's own free Google Gemini API key rather than our servers: ApplySarthi finds jobs and fills applications, Prep Sarthi runs voice mock interviews from your CV, and Interview Sarthi gives live help during the real interview. Built and run by one developer, Abhishek Choudhary, in New Delhi. Prices are in rupees.
+> InterviewSarthi brings together three apps for job seekers in India: Apply Sarthi finds jobs and helps fill applications, Prep Sarthi runs voice mock interviews from your CV, and Live Sarthi gives answer suggestions during interview calls. The homepage at https://interviewsarthi.com/ explains all three. AI features use the job seeker's own Google Gemini API key; provider limits and any API charges are separate. Built and run by Abhishek Choudhary. Prices below are for India.
 
-Every page below is plain HTML with no JavaScript needed to read it. Facts pages carry review dates and a corrections address.
+Product and guide pages contain readable HTML. Interactive app features require JavaScript. Facts pages carry review dates and a corrections address.
 
 ## The three products
 
-- [Interview Sarthi](https://interviewsarthi.com/): Windows app. During a live online interview it hears the interviewer through the meeting audio and drafts an answer from your resume in English, Hindi or Hinglish, on an overlay that screen sharing does not capture. 30 minutes free, then one-time passes from Rs 99 for 2 days. Microsoft Store and direct download.
-- [Prep Sarthi](https://interviewsarthi.com/mock/): Web app, works on phones. An AI interviewer reads your CV, asks about your own projects out loud, follows up when an answer is vague, then scores every answer and writes a stronger version of each. Any language. 20 minutes free, then one-time passes of Rs 99 for 7 days or Rs 249 for 30 days.
-- [ApplySarthi](https://interviewsarthi.com/apply/): Web app plus a Chrome extension. Ranks open jobs from Naukri, LinkedIn, Indeed and 750+ company career pages against your CV, tailors the CV to each job and fills the application form in your own browser for you to check and submit. Free in early access.
+- [Apply Sarthi](https://interviewsarthi.com/apply/): Web app plus a Chrome extension. Brings together jobs from Naukri, LinkedIn, Indeed and company career pages, matches them to your CV, helps tailor documents and fills supported application forms for review. Free during early access. Public job browsing does not require a Gemini key.
+- [Prep Sarthi](https://interviewsarthi.com/prep/): Web app for phones and computers. An AI interviewer asks spoken questions using your CV and target role, follows up on weak answers, and gives feedback with stronger answer examples. 20 minutes free, then separate one-time passes of Rs 99 for 7 days or Rs 249 for 30 days. The app is at https://interviewsarthi.com/prep/app/.
+- [Live Sarthi](https://interviewsarthi.com/live/): The existing Interview Sarthi Windows app. Hears interview questions and drafts answer suggestions using your CV. Its panel is hidden from supported screen sharing on Windows 10 (2004+) and Windows 11. Answers start in about 1.5 seconds; timing varies. 30 minutes free per device, then one-time passes from Rs 99 for 2 days. Available through the Microsoft Store and direct download. Use assistance where interview rules permit it.
 
 ## Product facts, with review dates
 
-- [Interview Sarthi product facts](https://interviewsarthi.com/facts.html): identity, platform, current passes, capabilities and limits, privacy, official links, corrections address.
+- [Live Sarthi product facts](https://interviewsarthi.com/facts.html): the Windows app's identity, platform, passes, capabilities and limits, privacy, official links and corrections address.
 - [Privacy policy](https://interviewsarthi.com/privacy.html): what each product processes and where. Covers all three.
 - [Refunds](https://interviewsarthi.com/refunds.html) and [Terms](https://interviewsarthi.com/terms.html).
 - [About the developer](https://interviewsarthi.com/about.html).

@@ -5,7 +5,7 @@ import json
 import mimetypes
 from pathlib import Path
 import sys
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,13 +47,27 @@ with sync_playwright() as p:
             if overflow:
                 errors.append(f'{path}: horizontal viewport overflow at {width}px')
             checked.append({'page':path,'width':width,'overflow':overflow})
-            if path in ('index.html','facts.html','best-ai-interview-assistant-india.html','guides/index.html'):
+            if path in ('index.html','live/index.html','facts.html','best-ai-interview-assistant-india.html','guides/index.html'):
                 page.screenshot(path=str(ARTIFACTS / f"{path.replace('/','-')}-{width}.png"),full_page=True)
-    page.goto('http://localhost/index.html',wait_until='load')
+    page.goto('http://localhost/live/',wait_until='load')
     weekly = page.get_by_role('link',name='Buy 7-Day Pass',exact=False)
     assert weekly.count()==2
     for item in weekly.all():
         assert 'license.interviewsarthi.com/buy?plan=7d' in item.get_attribute('href')
+    # Both weekly CTAs, including the closing one below the region script,
+    # must honor the visible currency choice and remember it after a reload.
+    for region, label in (('intl', 'outside India (USD)'), ('in', 'India')):
+        if page.locator('#regionname').inner_text() != label:
+            page.locator('#regionswap').click()
+        for reload in (False, True):
+            if reload:
+                page.reload(wait_until='load')
+            assert page.locator('#regionname').inner_text() == label
+            assert weekly.count() == 2
+            for item in weekly.all():
+                query = parse_qs(urlsplit(item.get_attribute('href')).query)
+                assert query['plan'] == ['7d']
+                assert query['region'] == [region]
     page.goto('http://localhost/thanks.html?license_key=TEST-RECEIPT&email=test@example.invalid',wait_until='load')
     assert page.locator('#keyval').inner_text() == 'TEST-RECEIPT'
     assert urlsplit(page.url).query == ''

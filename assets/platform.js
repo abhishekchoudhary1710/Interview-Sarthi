@@ -35,7 +35,7 @@
   if (isWindows) return;
 
   var onThanks = /\/thanks\.html$/.test(location.pathname);
-  var SITE = "https://interviewsarthi.com/?utm_source=self_share&utm_medium=mobile_handoff" +
+  var SITE = "https://interviewsarthi.com/live/?utm_source=self_share&utm_medium=mobile_handoff" +
     "&utm_content=" + (onThanks ? "post_purchase" : "free");
 
   /* On thanks.html the buyer's key is in the URL (analytics.js and the page

@@ -70,7 +70,7 @@ def sarthi_handoff(prefix='../'):
     """Every applying page ends where applying ends: the interview."""
     return (
         '<div class="box"><p><b>When the calls start.</b> Applying is only the first half. Once an '
-        'interview is booked, <a href="{p}">Interview Sarthi</a> helps you through the call itself — '
+        'interview is booked, <a href="{p}live/">Live Sarthi</a> helps you through the call itself — '
         'resume-grounded answers in English, Hindi or Hinglish, on the same Gemini key ApplySarthi '
         'uses. See the <a href="{p}guides/">interview guides</a> for the questions that keep '
         'coming up.</p></div>'

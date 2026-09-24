@@ -16,6 +16,9 @@
 (function () {
   "use strict";
 
+  // The homepage routes legacy links and receipts before any tracking starts.
+  if (window.sarthiHomeRedirecting) return;
+
   var GA4_ID = "G-CCFHWPJD9K";
   var CLARITY_ID = "yb9mq7tzkq";
 

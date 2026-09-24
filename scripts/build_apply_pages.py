@@ -131,7 +131,7 @@ def render(page):
 <div class="wrap">
 <header class="top">
   <a class="logo" href="{prefix or '/'}"><img src="{prefix}assets/mark.svg" width="26" height="26" alt=""><span class="wm">Interview <i>Sarthi</i></span></a>
-  <nav><a href="{prefix}apply/">ApplySarthi</a><a href="{prefix}apply/guides/">Applying guides</a><a href="{prefix}#pricing">Pricing</a><a href="{prefix}help.html">Help</a></nav>
+  <nav><a href="{prefix}apply/">ApplySarthi</a><a href="{prefix}apply/guides/">Applying guides</a><a href="/live/#pricing">Pricing</a><a href="{prefix}help.html">Help</a></nav>
 </header>
 
 <p class="crumb" aria-label="Breadcrumb">{crumb_html(page['trail'], prefix)}</p>
@@ -145,7 +145,7 @@ def render(page):
   <h3>{html.escape(page['cta_title'])}</h3>
   <p>{page['cta_text']}</p>
   <p><a class="cta" href="https://apply.interviewsarthi.com/">Open ApplySarthi</a>
-  <p class="alsotry">An interview call coming? Practise it first with <a href="{prefix}prep/">a mock interview from your own CV</a>, 20 minutes free, then keep <a href="{prefix or '/'}">Interview Sarthi</a> open on the real call.</p> <a class="cta ghost" href="{prefix}apply/">What it does</a></p>
+  <p class="alsotry">An interview call coming? Practise it first with <a href="{prefix}prep/">a mock interview from your own CV</a>, 20 minutes free, then keep <a href="{prefix}live/">Live Sarthi</a> open on the real call.</p> <a class="cta ghost" href="{prefix}apply/">What it does</a></p>
 </div>
 
 <div class="more">
