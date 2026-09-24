@@ -41,7 +41,7 @@ python scripts/build_apply_pages.py --check
 python scripts/seo_audit.py
 python scripts/generate_sitemap.py --check
 python -m unittest discover -s tests -p 'test_*.py'
-node --test tests/analytics.test.cjs
+node --test tests/analytics.test.cjs tests/home-routing.test.cjs tests/mock_engine.test.mjs tests/interview_plan.test.mjs
 ```
 
 Optional browser checks require Python Playwright and Microsoft Edge:
@@ -76,6 +76,11 @@ python scripts/build_apply_pages.py      # rewrite the HTML, which is committed 
 states must exist there with a note on where it was read from. See [APPLYSARTHI_SEO.md](APPLYSARTHI_SEO.md).
 
 ## Research and reach
+
+- [Current full audit and release plan](SEO_AUDIT_AND_GROWTH_PLAN.md)
+- [24 September research](research/seo-growth-research-2026-09-24.md)
+- [Public Apply job-site audit](research/seo-apply-public-audit-2026-09-24.md)
+- [Page-by-page intent map](research/seo-page-map-2026-09-24.csv)
 
 - [Research findings](research/SEO_GEO_RESEARCH_2026-09-15.md)
 - [Benchmark methodology](research/README.md)

@@ -135,6 +135,32 @@
     if (!a) return;
     var href = a.getAttribute("href") || "";
 
+    // Measure which app a visitor chooses from any marketing page. Never send
+    // link queries, CV text, keys, email or a full destination URL.
+    try {
+      var target = new URL(href, location.href);
+      var product = "", kind = "product_page";
+      var ours = target.origin === location.origin || target.origin === "https://interviewsarthi.com";
+      if (target.hostname === "apply.interviewsarthi.com" && /^https?:$/.test(target.protocol)) {
+        product = "apply"; kind = "application";
+      } else if (ours) {
+        var productPath = target.pathname.replace(/\/index\.html$/, "/").replace(/\/$/, "");
+        if (productPath === "/apply") product = "apply";
+        if (productPath === "/prep" || productPath === "/mock") product = "prep";
+        if (productPath === "/live") product = "live";
+        if (productPath === "/prep/app" || productPath === "/mock/app") {
+          product = "prep"; kind = "application";
+        }
+      }
+      if (product && !privateReturn && location.pathname !== "/thanks.html" && !inPrepApp) {
+        track("product_click", {
+          product: product, destination_kind: kind,
+          placement: a.closest("header, nav") ? "navigation" : a.closest("#products") ? "product_card" :
+            a.closest("#plans, #pricing") ? "pricing" : a.closest("footer") ? "footer" : "page"
+        });
+      }
+    } catch (e) { /* Invalid or non-web links still navigate normally. */ }
+
     /* Both install paths count as a download: the Microsoft Store listing and
      * the direct .exe on GitHub Releases. */
     if (href.indexOf("releases/latest/download") !== -1 ||

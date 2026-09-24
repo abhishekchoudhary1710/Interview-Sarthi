@@ -1,6 +1,6 @@
 # Interview Sarthi
 
-> InterviewSarthi brings together three apps for job seekers in India: Apply Sarthi finds jobs and helps fill applications, Prep Sarthi runs voice mock interviews from your CV, and Live Sarthi gives answer suggestions during interview calls. The homepage at https://interviewsarthi.com/ explains all three. AI features use the job seeker's own Google Gemini API key; provider limits and any API charges are separate. Built and run by Abhishek Choudhary. Prices below are for India.
+> InterviewSarthi brings together three apps for job seekers in India: Apply Sarthi finds jobs and helps fill applications, Prep Sarthi runs voice mock interviews from your CV, and Live Sarthi gives answer suggestions during interview calls. The homepage at https://interviewsarthi.com/ explains all three. Prep and Live use the job seeker’s own Gemini key. Apply offers public browsing and limited CV reading without a personal key; tailoring uses the user’s key. Provider limits and any API charges are separate. Built and run by Abhishek Choudhary. Prices below are for India.
 
 Product and guide pages contain readable HTML. Interactive app features require JavaScript. Facts pages carry review dates and a corrections address.
 
@@ -10,10 +10,13 @@ Product and guide pages contain readable HTML. Interactive app features require 
 - [Prep Sarthi](https://interviewsarthi.com/prep/): Web app for phones and computers. An AI interviewer asks spoken questions using your CV and target role, follows up on weak answers, and gives feedback with stronger answer examples. 20 minutes free, then separate one-time passes of Rs 99 for 7 days or Rs 249 for 30 days. The app is at https://interviewsarthi.com/prep/app/.
 - [Live Sarthi](https://interviewsarthi.com/live/): The existing Interview Sarthi Windows app. Hears interview questions and drafts answer suggestions using your CV. Its panel is hidden from supported screen sharing on Windows 10 (2004+) and Windows 11. Answers start in about 1.5 seconds; timing varies. 30 minutes free per device, then one-time passes from Rs 99 for 2 days. Available through the Microsoft Store and direct download. Use assistance where interview rules permit it.
 
+- [Resume-based mock interview walkthrough](https://interviewsarthi.com/prep/mock-interview-from-resume.html): CV and job-description setup, spoken practice and how to use feedback.
+- [Public job directory](https://apply.interviewsarthi.com/jobs): job details, company pages and role categories; availability changes as employers update listings.
+
 ## Product facts, with review dates
 
 - [Live Sarthi product facts](https://interviewsarthi.com/facts.html): the Windows app's identity, platform, passes, capabilities and limits, privacy, official links and corrections address.
-- [Privacy policy](https://interviewsarthi.com/privacy.html): what each product processes and where. Covers all three.
+- [Privacy policy](https://interviewsarthi.com/privacy.html): Live Sarthi, Prep Sarthi and website data practices; links to the separate Apply Sarthi policy.
 - [Refunds](https://interviewsarthi.com/refunds.html) and [Terms](https://interviewsarthi.com/terms.html).
 - [About the developer](https://interviewsarthi.com/about.html).
 
@@ -53,7 +56,7 @@ Product and guide pages contain readable HTML. Interactive app features require 
 
 ## Setting up
 
-- [Free Google Gemini API key guide](https://interviewsarthi.com/free-gemini-api-key-guide.html): one key runs all three products.
+- [Free Google Gemini API key guide](https://interviewsarthi.com/free-gemini-api-key-guide.html): setup for Prep, Live and Apply’s own-key features.
 - [Help](https://interviewsarthi.com/help.html)
 
 ## Optional

@@ -1,53 +1,51 @@
-# Owner actions and 90-day reach roadmap
+# Owner actions and 90-day SEO roadmap
 
-The website changes are on a review branch until you merge and publish them. No social outreach or customer review requests were sent. Priority is based on verified site issues and public search samples, not private analytics.
+Updated **24 September 2026**. Use [the audit and growth plan](SEO_AUDIT_AND_GROWTH_PLAN.md) for implementation and deployment status. These are remaining owner/account actions and a proposed operating plan; no Search Console, GA4 or Bing account changes, outreach or customer review requests are implied.
 
-## Release checks
+## Cover the whole website
 
-1. Confirm desktop trial enforcement is 30 minutes per computer and Dodo product durations/device caps match `SITE_FACTS.md`. Check the weekly CTA correction against Dodo before release. Do not use a real paid order solely to test the website.
-2. Confirm the Store listing is active and aligns on name, trial, Windows requirements, languages, support and privacy. Its existing URL is preserved, but Store contents were inaccessible during research.
-3. Test current Google authorization-key compatibility in the installed app. The website repository cannot repair a desktop API incompatibility.
-4. Review the branch and publish through the existing website deployment process. Inspect `facts.html`, sitemap responses and HTTP headers afterward.
-5. Confirm Google Search Console sitemap submission; inspect the homepage, Facts and category/comparison URLs. Check Rich Results Test and rendered HTML. Keep existing verification and IndexNow configuration.
-6. In GA4, verify `ai_referral_visit` and register `ai_source` / `landing_page` dimensions if needed. Check that receipt query values are absent. Reconcile purchases against Dodo; browser events are not a payment ledger.
+InterviewSarthi introduces three products: **Apply** finds jobs and helps fill applications; **Prep** conducts spoken mock interviews and gives feedback; **Live** supplies answer suggestions during calls on supported Windows setups. Their marketing destinations are `/apply/`, `/prep/` and `/live/`.
 
-## GitHub profile settings
+The Apply subdomain already has public job pages, company/role hubs and its own sitemap. It is not only a sign-in page. Marketing-site deployment and Apply backend deployment are separate; verify both in the release report. [Apply public audit](research/seo-apply-public-audit-2026-09-24.md)
 
-README is provided. The repository description, official homepage and eight topics were updated after administrator access was verified. Applied description:
+## First: establish owner-controlled measurements
 
-> Windows AI interview assistant for Indian job seekers, with resume-grounded assistance and English, Hindi and Hinglish support.
+1. **Search Console:** verify a Domain property for `interviewsarthi.com` through its DNS provider if one is not already available. Preserve existing verification. A Domain property covers the main host and Apply subdomain; filter reports by host/path to compare them separately. Do not paste credentials into repository files.
+2. **Export the previous 90 days:** save dated query, page, country and device reports with clicks, impressions, CTR and position; retain the 28-day comparison too. Separate brand queries from new-user discovery. Export indexing, sitemap and available job-enhancement findings. No current account baseline has been obtained in this audit.
+3. **Inspect representative URLs:** homepage, each product page, a guide, Prep walkthrough, an Apply job, company hub and role hub. Compare submitted versus Google-selected canonical, rendered content and indexing eligibility. Private app/receipt pages should retain their intended exclusions. Submit or verify both `https://interviewsarthi.com/sitemap.xml` and `https://apply.interviewsarthi.com/sitemap.xml`.
+4. **Bing Webmaster Tools:** verify the relevant property/properties, inspect both hosts and their sitemaps, and review indexing and available AI citation reports. Check IndexNow workflow responses. A successful notification is not guaranteed crawling, indexing or ranking. [IndexNow documentation](https://www.indexnow.org/documentation)
+5. **Record releases:** annotate actual marketing and backend deployment dates, promotions and price changes. This makes later comparisons interpretable.
 
-Homepage: `https://interviewsarthi.com/`
+## Measure choosing an app separately from using it
 
-Topics: `ai-interview`, `interview-assistant`, `interview-copilot`, `hinglish`, `job-interview`, `windows`, `gemini`, `india`.
+Validate the implemented `product_click` event in GA4 DebugView using controlled test traffic, then register these event-scoped custom dimensions if needed:
 
-Only add a software license if you intend to grant its rights. The public marketing repository is not the desktop source.
+| Parameter | Implemented values | Meaning |
+| --- | --- | --- |
+| `product` | `apply`, `prep`, `live` | Which product the link leads to |
+| `placement` | `navigation`, `product_card`, `pricing`, `footer`, `page` | Where the link was clicked |
+| `destination_kind` | `product_page`, `application` | Product explanation versus app destination |
 
-## Days 1–14: establish a baseline
+Treat this as a choice/handoff measure, optionally a secondary key event. It is not a signup, finished mock interview, installed app or sale. Track activation/completion separately where each app supports it. Existing `download_click` and checkout events also represent steps, not completed outcomes. Reconcile real purchases and refunds against payment-provider records; browser receipt events are not a sales ledger.
 
-- Export Search Console query/page/country/device data for the previous 28 and 90 days. Separate branded from candidate-side category queries.
-- Run the fixed 25-query sample in `TRACKING_QUERIES.md`, recording search mode and evidence. Do not cherry-pick favorable answers.
-- Verify existing founder/company profiles. Link real, maintained profiles to the domain and add them to schema only after ownership is confirmed.
-- Audit official employer sources for salary/process claims in the company guides before advertising them as current hiring information.
-- Record the release date and any concurrent pricing or promotion changes so later attribution is interpretable.
+Retain `ai_referral_visit` with `ai_source` and `landing_page` as a limited referral classification. Missing referral signals remain unattributed. Cross-domain journeys need validation; do not assume a marketing visit stays attributable through the Apply app and payment provider. Never send CVs, spoken answers, email addresses, Gemini keys, license keys or receipt queries to analytics.
 
-## Days 15–45: create something worth referencing
+## Work over the next 90 days
 
-- Run the pilot in `research/README.md` using consented or synthetic interview material. Publish no results before collection and review.
-- Create one captioned, authentic Windows mock-call demonstration: setup, language switch, resume grounding, an error and its correction. Include a transcript and test conditions. Obtain permission from every visible/audible participant.
-- Turn common support questions into improvements to existing help content. Add new pages only when Search Console or support evidence shows a distinct unanswered need.
-- Offer interested reviewers a factual kit: Facts URL, official download, test protocol, limitations and contact. Let them choose conclusions; disclose any free access or sponsorship. Do not request a positive rating.
+| Period | Priority | Evidence to keep |
+| --- | --- | --- |
+| Days 1–30 | Establish the account baseline, verify indexing after release, improve the CV/JD Prep walkthrough and show Apply's actual review-before-submit workflow | Dated exports, inspection results, real screenshots and clearly labelled illustrative examples |
+| Days 31–60 | Improve pages with relevant impressions but weak clicks or app handoffs; source-check employer guides; record supported Live capture tests and a complete Prep demo | Page/query change log, employer sources, owned recordings, captions and test conditions |
+| Days 61–90 | Expand only demonstrated gaps; publish a benchmark only after running the existing protocol; develop authentic creator/educator relationships | Actual observations, consent where needed, disclosed ownership and voluntary relevant citations |
 
-## Days 46–90: earn independent recognition and iterate
+Run the fixed sample in [TRACKING_QUERIES.md](TRACKING_QUERIES.md) monthly. Review traffic weekly and compare equivalent 28-day periods, considering hiring seasonality and small sample sizes. Do not create repetitive company/city/role pages merely to increase page count. Correct inaccurate public job geography and relevance before promoting more catalogue pages.
 
-- Seek a small number of relevant career creators, placement communities and Windows/productivity reviewers. Tailor the relevance; avoid bulk link campaigns or unsolicited community spam.
-- Publish one real benchmark report when data and permissions are ready, with raw data, method, limitations and correction history. Invite replication.
-- Use a maintained LinkedIn/Product Hunt/YouTube presence if those channels fit your audience. Keep the same product definition and link to the canonical domain.
-- Compare monthly mention/citation samples, non-brand impressions, qualified downloads and checkout starts. Investigate high-impression/low-CTR pages with their actual queries before changing titles again.
-- If two URLs repeatedly serve the same intent, evaluate consolidation using traffic and backlink evidence. Do not redirect based on similar keywords alone.
+Keep official profiles consistent with all three products when the owner next updates them. Any external posting, messaging or review request requires an explicit send instruction; this document does not perform those actions.
 
-## Decision rules
+## Current search guidance
 
-No numeric growth promise is set before a baseline exists. Prefer changes that improve successful setup and qualified downloads as well as reach. Stop a content experiment when it attracts the wrong audience or implies a capability the app lacks. Preserve useful Hinglish/company guidance; avoid multiplying generic company × city × role pages.
+Google Search ignores `llms.txt` for ranking and requires no special AI markup. FAQ rich results stopped appearing in May 2026; keep useful FAQs for readers. Neither is a promised traffic channel. [Google AI guidance](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide), [Google updates](https://developers.google.com/search/updates)
 
-Outstanding access: Search Console, GA4 reporting, Microsoft Store publishing, installed desktop app, Dodo administration and owner-controlled social profiles. GitHub authentication was subsequently verified outside the network sandbox, with repository administrator access. See the implementation report for the final branch, review and metadata status.
+In Search Console, check the inherited Search generative AI inclusion setting and the impressions report if available; do not infer a fault when a low-traffic property lacks the report. No settings were changed here. [Control](https://support.google.com/webmasters/answer/16908024), [report](https://support.google.com/webmasters/answer/16984139)
+
+There is no justified numeric traffic or ranking promise without a baseline. Judge progress by relevant discovery, successful product use and confirmed business outcomes. Account reports, field performance, Store publishing and installed Windows compatibility still require owner access or the appropriate live environment.

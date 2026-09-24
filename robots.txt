@@ -2,9 +2,8 @@
 User-agent: *
 Allow: /
 
-# AI assistants may read and quote these pages. Said explicitly, because some
-# crawlers treat silence as a refusal, and because assistants already send this
-# site more visitors than any source except Google.
+# Existing access policy for search, assistant and training crawlers.
+# These permissions do not guarantee indexing, citations or referral traffic.
 User-agent: GPTBot
 Allow: /
 

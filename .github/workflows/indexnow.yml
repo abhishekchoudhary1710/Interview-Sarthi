@@ -10,7 +10,7 @@ jobs:
       - name: Submit sitemap URLs to IndexNow
         run: |
           URLS=$(grep -oP '(?<=<loc>)[^<]+' sitemap.xml | jq -R . | jq -s -c .)
-          curl -s -X POST "https://api.indexnow.org/indexnow" \
+          curl --fail-with-body -sS --retry 2 -X POST "https://api.indexnow.org/indexnow" \
             -H "Content-Type: application/json; charset=utf-8" \
             -d "{\"host\":\"interviewsarthi.com\",\"key\":\"e49da6f34e7f08e2375fa243d86dced5\",\"keyLocation\":\"https://interviewsarthi.com/e49da6f34e7f08e2375fa243d86dced5.txt\",\"urlList\":$URLS}" \
             -w "\nIndexNow HTTP %{http_code}\n"

@@ -7,7 +7,7 @@ may not assert it -- link to the source that has it instead.
 
 SNAPSHOT = '18 September 2026'
 REVIEWED = '18 September 2026'
-TODAY = '2026-09-18'
+TODAY = '2026-09-24'  # Last content edit; original research and publication dates stay unchanged.
 
 # Read from the live database on SNAPSHOT: SELECT count(*) FROM jobs WHERE status='open'.
 OPEN_JOBS = '60,975'
@@ -67,11 +67,11 @@ def table(headers, rows, classes=''):
 
 
 def sarthi_handoff(prefix='../'):
-    """Every applying page ends where applying ends: the interview."""
+    """Help a job seeker prepare after finding a relevant role."""
     return (
-        '<div class="box"><p><b>When the calls start.</b> Applying is only the first half. Once an '
-        'interview is booked, <a href="{p}live/">Live Sarthi</a> helps you through the call itself — '
-        'resume-grounded answers in English, Hindi or Hinglish, on the same Gemini key ApplySarthi '
-        'uses. See the <a href="{p}guides/">interview guides</a> for the questions that keep '
-        'coming up.</p></div>'
+        '<div class="box"><p><b>When the calls start.</b> Use the job description and your CV for '
+        '<a href="{p}prep/mock-interview-from-resume.html">an AI mock interview with Prep Sarthi</a>. '
+        'Practise weak answers before the real round. For assistance during a call where it is '
+        'permitted, <a href="{p}live/">Live Sarthi</a> shows CV-based answer suggestions. '
+        'The apps use your Gemini key; Google’s usage limits apply.</p></div>'
     ).format(p=prefix)

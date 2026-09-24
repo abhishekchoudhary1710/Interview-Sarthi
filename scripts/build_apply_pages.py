@@ -56,11 +56,12 @@ def article_schema(page, canonical):
         '@id': canonical + '#article',
         'headline': page['h1'],
         'description': page['description'],
+        'image': ORIGIN + '/assets/apply-app-current.png',
         'inLanguage': 'en-IN',
         'datePublished': page['published'],
         'dateModified': page['modified'],
-        'author': {'@id': ORIGIN + '/#organization'},
-        'publisher': {'@id': ORIGIN + '/#organization'},
+        'author': {'@type': 'Organization', '@id': ORIGIN + '/#organization', 'name': 'Interview Sarthi', 'url': ORIGIN + '/about.html'},
+        'publisher': {'@type': 'Organization', '@id': ORIGIN + '/#organization', 'name': 'Interview Sarthi', 'url': ORIGIN + '/'},
         'isPartOf': {'@type': 'WebSite', '@id': ORIGIN + '/#website'},
         'about': {'@id': ORIGIN + '/apply/#software'},
         'mainEntityOfPage': canonical,
@@ -102,7 +103,7 @@ def render(page):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{t}</title>
 <meta name="description" content="{d}">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="{canonical}">
 <meta property="og:title" content="{t}">
 <meta property="og:description" content="{d}">
@@ -131,7 +132,7 @@ def render(page):
 <div class="wrap">
 <header class="top">
   <a class="logo" href="{prefix or '/'}"><img src="{prefix}assets/mark.svg" width="26" height="26" alt=""><span class="wm">Interview <i>Sarthi</i></span></a>
-  <nav><a href="{prefix}apply/">ApplySarthi</a><a href="{prefix}apply/guides/">Applying guides</a><a href="/live/#pricing">Pricing</a><a href="{prefix}help.html">Help</a></nav>
+  <nav><a href="{prefix}apply/">ApplySarthi</a><a href="{prefix}apply/guides/">Applying guides</a><a href="{prefix}prep/">AI mock interviews</a><a href="{prefix}#plans">All app prices</a><a href="{prefix}help.html">Help</a></nav>
 </header>
 
 <p class="crumb" aria-label="Breadcrumb">{crumb_html(page['trail'], prefix)}</p>
@@ -144,8 +145,8 @@ def render(page):
 <div class="promo">
   <h3>{html.escape(page['cta_title'])}</h3>
   <p>{page['cta_text']}</p>
-  <p><a class="cta" href="https://apply.interviewsarthi.com/">Open ApplySarthi</a>
-  <p class="alsotry">An interview call coming? Practise it first with <a href="{prefix}prep/">a mock interview from your own CV</a>, 20 minutes free, then keep <a href="{prefix}live/">Live Sarthi</a> open on the real call.</p> <a class="cta ghost" href="{prefix}apply/">What it does</a></p>
+  <p><a class="cta" href="https://apply.interviewsarthi.com/">Open ApplySarthi</a> <a class="cta ghost" href="{prefix}apply/">What it does</a></p>
+  <p class="alsotry">An interview call coming? Practise it first with <a href="{prefix}prep/">a mock interview from your own CV</a>, 20 minutes free, then keep <a href="{prefix}live/">Live Sarthi</a> open on the real call.</p>
 </div>
 
 <div class="more">

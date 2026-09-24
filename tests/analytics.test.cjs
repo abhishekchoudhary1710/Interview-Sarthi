@@ -74,3 +74,34 @@ test('Clarity never loads inside the Prep Sarthi app, but does on its landing pa
 test('the old /mock/app path is still excluded from Clarity while its stub redirects',()=>{
   assert.ok(!run('https://interviewsarthi.com/mock/app/').scripts.some(s=>s.includes('clarity.ms')));
 });
+test('product choices are measured across guides without personal URL parameters',()=>{
+  const r=run('https://interviewsarthi.com/guides/first-job-interview-guide-freshers.html');
+  for (const [href,product,kind] of [
+    ['../prep/','prep','product_page'],
+    ['/prep/app/?email=private%40example.test&key=SECRET','prep','application'],
+    ['https://apply.interviewsarthi.com/jobs?email=private','apply','application'],
+    ['/live/','live','product_page'],
+    ['/apply/','apply','product_page']
+  ]) {
+    const anchor={getAttribute:()=>href,closest:()=>null};
+    r.listeners.click({target:{closest:()=>anchor}});
+    const event=r.events.filter(e=>e[1]==='product_click').at(-1);
+    assert.equal(event[2].product,product);assert.equal(event[2].destination_kind,kind);
+  }
+  assert.equal(r.events.filter(e=>e[1]==='product_click').length,5);
+  assert.ok(!JSON.stringify(r.events).includes('SECRET'));
+  assert.ok(!JSON.stringify(r.events).includes('private'));
+});
+test('unrelated and spoof product URLs are not tracked as product choices',()=>{
+  const r=run('https://interviewsarthi.com/');
+  for(const href of ['https://apply.interviewsarthi.com.evil.test/','https://other.test/prep/','/guides/','mailto:support@interviewsarthi.com']) {
+    r.listeners.click({target:{closest:()=>({getAttribute:()=>href,closest:()=>null})}});
+  }
+  assert.equal(r.events.filter(e=>e[1]==='product_click').length,0);
+});
+test('receipt and private Prep app screens do not emit product-choice events',()=>{
+  for(const url of ['https://interviewsarthi.com/thanks.html','https://interviewsarthi.com/prep/app/']) {
+    const r=run(url);r.listeners.click({target:{closest:()=>({getAttribute:()=>'/live/',closest:()=>null})}});
+    assert.equal(r.events.filter(e=>e[1]==='product_click').length,0);
+  }
+});

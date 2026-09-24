@@ -128,14 +128,5 @@
   menu.querySelectorAll('a').forEach(link => link.addEventListener('click',closeMenu));
   document.addEventListener('click', event => { if (!event.target.closest('.site-nav')) closeMenu(); });
 
-  document.addEventListener('click', event => {
-    const link = event.target.closest('a[data-product]');
-    if (link && typeof window.sarthiTrack === 'function') {
-      window.sarthiTrack('product_click', {
-        product: link.dataset.product,
-        placement: link.closest('header') ? 'navigation' : link.closest('#products') ? 'product_card' : link.closest('#plans') ? 'pricing' : link.closest('footer') ? 'footer' : 'page'
-      });
-    }
-  });
   paint(); showProduct('prep');
 })();

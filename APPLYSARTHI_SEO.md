@@ -5,8 +5,7 @@ rank for a product name and very little else, so this round built the surroundin
 product already had: a category page, a comparison set, a guides hub with guides under it, an
 objection-handling page, and a first-party dataset.
 
-The app itself (`apply.interviewsarthi.com`) is a sign-in wall and cannot carry content SEO. Everything
-here therefore lives on `interviewsarthi.com`, which already holds the domain's authority.
+This was the 18 September content build. The app now also has public job details, a job directory, company and role pages, and separate sitemaps at `apply.interviewsarthi.com`. The marketing site and public job site have different search intents. See [the 24 September public-site audit](research/seo-apply-public-audit-2026-09-24.md).
 
 ## What was added
 
