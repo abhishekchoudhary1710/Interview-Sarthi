@@ -145,6 +145,18 @@ We do not yet know which queries already rank, how much organic traffic each app
 
 Pre-release validation: 60 indexable marketing pages; 66 content pages examined; zero static audit errors or warnings. All 60 marketing pages rendered at 390px and 1366px widths, giving 120 checks without overflow, broken images, local missing resources or JavaScript errors. Generated pages and sitemap match their source. Python SEO and Node analytics/routing/Prep-engine tests pass.
 
-Apply validation uses synthetic temporary data for public pages, accounts, source adapters and browser-script boot logic. The full suite is run before restarting the web service. Production verification and release identifiers are recorded below after deployment. No real purchases or job applications are submitted by release QA.
+Apply validation uses synthetic temporary data for public pages, accounts, source adapters and browser-script boot logic. All 153 tests passed before restarting the web service. Production verification and release identifiers follow below. No real purchases or job applications are submitted by release QA.
 
 See [owner actions](OWNER_ACTIONS_SEO_GEO.md) and [query tracking](TRACKING_QUERIES.md) for the ongoing routine.
+
+### Production release, 24 September 2026
+
+- Marketing implementation: [`9e2be1d`](https://github.com/abhishekchoudhary1710/Interview-Sarthi/commit/9e2be1dc1a951e9c4754df8ac1eb77e8aadfb8a1). GitHub Pages build, SEO checks and IndexNow workflow completed successfully. The production host serves this release; subsequent documentation commits record evidence without changing these pages.
+- Apply implementation: `194de09`, descriptive metadata in `731f757`, and the rendered-title/heading correction in `64dea2d`, pushed to its existing main branch. Restarted only `jobhunt-web.service`; service reports active/running and its public health endpoint returns 200.
+- [Public marketing verification](research/seo-public-verification-2026-09-24.json): all 60 URLs return 200 and exactly match local HTML; canonicals, indexing directives, one H1, titles, descriptions and JSON-LD pass. Live sitemap contains exactly the 60 expected URLs; robots points to it.
+- [Public Apply verification](research/seo-apply-release-verification-2026-09-24.json): health, app, directory, AI hub, two sampled jobs and sitemaps return expected responses. Invalid pagination and anonymous extension-detail requests return 404. The sampled Mexico remote role has no invented India JobPosting. No per-record source facts were fabricated to restore omitted markup. Catalogue counts are live and can change between requests.
+- [Production browser verification](research/seo-browser-verification-2026-09-24.json): homepage checked at eight widths from 320 to 1440 pixels; product links, mobile navigation, media tabs, screenshots, zoom, the existing video, prices and FAQs work. Legacy Live anchors and both mocked receipt-return formats work. Core product copy and prices remain available with JavaScript disabled. No JavaScript or same-host HTTP errors were observed.
+- [Product-event checks](research/seo-product-events-verification-2026-09-24.json) confirm exactly one event per homepage app choice and successful signed-out Apply rendering with its descriptive title and one main heading.
+- Validation totals: 16 Python marketing tests, four Node test files and 153 Apply tests pass. The final title change also passed 38 targeted app/account checks. Separately, 120 local page/viewport checks pass. Analytics and payment providers were intercepted during browser QA; no real purchase or job application was performed.
+
+This confirms deployment and the checked functionality. Search ranking, index inclusion, field Core Web Vitals and revenue impact still require subsequent search/account observations.

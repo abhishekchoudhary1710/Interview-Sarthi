@@ -1,0 +1,20 @@
+{
+  "base": "https://interviewsarthi.com",
+  "passed": [
+    "8 viewport layouts, no overflow; all product CTAs above laptop fold",
+    {
+      "video": {
+        "duration": 23.18585,
+        "time": 0.017903
+      }
+    },
+    "Product media tabs, keyboard navigation, all screenshot views, zoom, video, pricing and FAQs",
+    "All three primary CTAs open existing product websites; mobile navigation works",
+    "Legacy Live links and mobile handoff preserved; new homepage anchors stay home",
+    "Both old root payment-return formats display mocked receipt safely; no actual purchases",
+    "Core copy, prices and product destinations available without JavaScript"
+  ],
+  "js_errors": [],
+  "http_failures": [],
+  "external_tracking_blocked": 40
+}

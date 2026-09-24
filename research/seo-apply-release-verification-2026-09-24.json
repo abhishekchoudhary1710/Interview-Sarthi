@@ -1,0 +1,89 @@
+{
+  "results": [
+    {
+      "path": "/healthz",
+      "status": 200,
+      "seconds": 0.358
+    },
+    {
+      "path": "/",
+      "status": 200,
+      "seconds": 0.022,
+      "title": "Browse Jobs & Match Your CV | Apply Sarthi",
+      "canonical": "https://apply.interviewsarthi.com/",
+      "job_posting_count": 0
+    },
+    {
+      "path": "/jobs",
+      "status": 200,
+      "seconds": 0.238,
+      "title": "Open jobs \u2014 page 1 of 289 | ApplySarthi",
+      "canonical": "https://apply.interviewsarthi.com/jobs",
+      "job_posting_count": 0
+    },
+    {
+      "path": "/jobs?page=999999",
+      "status": 404,
+      "seconds": 0.14
+    },
+    {
+      "path": "/jobs?page=-1",
+      "status": 404,
+      "seconds": 0.013
+    },
+    {
+      "path": "/roles/ai",
+      "status": 200,
+      "seconds": 0.246,
+      "title": "AI jobs | ApplySarthi",
+      "canonical": "https://apply.interviewsarthi.com/roles/ai",
+      "h1": "AI jobs",
+      "job_posting_count": 0
+    },
+    {
+      "path": "/roles/ai?page=999999",
+      "status": 404,
+      "seconds": 0.209
+    },
+    {
+      "path": "/jobs/remoteok/customer-success-manager-mexico-jumpcloud/1137406",
+      "status": 200,
+      "seconds": 1.023,
+      "title": "Customer Success Manager Mexico at JumpCloud \u2014 Mexico City, Mexico - Remote | ApplySarthi",
+      "canonical": "https://apply.interviewsarthi.com/jobs/remoteok/customer-success-manager-mexico-jumpcloud/1137406",
+      "job_posting_count": 0
+    },
+    {
+      "path": "/jobs/amazon/software-development-engineer-ii-amazon-cross-border-tech-adci-karnataka/10370961",
+      "status": 200,
+      "seconds": 0.521,
+      "title": "Software Development Engineer II , Amazon Cross Border Tech at ADCI - Karnataka \u2014 IN, KA, Bengaluru | ApplySarthi",
+      "canonical": "https://apply.interviewsarthi.com/jobs/amazon/software-development-engineer-ii-amazon-cross-border-tech-adci-karnataka/10370961",
+      "job_posting_count": 0
+    },
+    {
+      "path": "/sitemap.xml",
+      "status": 200,
+      "seconds": 0.12,
+      "entries": 4
+    },
+    {
+      "path": "/sitemaps/pages.xml",
+      "status": 200,
+      "seconds": 0.013,
+      "entries": 3
+    },
+    {
+      "path": "/sitemaps/hubs.xml",
+      "status": 200,
+      "seconds": 0.47,
+      "entries": 1456
+    },
+    {
+      "path": "/api/job?source=ext&source_id=seo-check-nonexistent",
+      "status": 404,
+      "seconds": 0.015
+    }
+  ],
+  "errors": []
+}

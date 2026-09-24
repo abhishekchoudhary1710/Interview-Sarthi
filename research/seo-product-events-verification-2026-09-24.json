@@ -1,0 +1,36 @@
+{
+  "product_events": [
+    {
+      "product": "apply",
+      "events": [
+        {
+          "product": "apply",
+          "destination_kind": "product_page",
+          "placement": "product_card"
+        }
+      ]
+    },
+    {
+      "product": "prep",
+      "events": [
+        {
+          "product": "prep",
+          "destination_kind": "product_page",
+          "placement": "product_card"
+        }
+      ]
+    },
+    {
+      "product": "live",
+      "events": [
+        {
+          "product": "live",
+          "destination_kind": "product_page",
+          "placement": "product_card"
+        }
+      ]
+    }
+  ],
+  "apply_public_browser": "Passed: signed-out browsing renders",
+  "javascript_errors": []
+}
