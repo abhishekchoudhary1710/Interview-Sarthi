@@ -265,6 +265,7 @@ function preparationHarness(generate, extra = {}) {
     // The free demo (billing.js): off unless a test turns it on.
     demo: null, requestDemo: async () => ({ ok: false, reason: "unavailable" }), demoTransport: (id) => ({ demoId: id }),
     demoUsed: { set() { context.demoMarked = true; } }, passCtx: { passesOn: false }, openPasses(text) { context.passes = text; },
+    showDemoFull() { context.fullChoice = true; },
     S: { key: "test", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "trial", secondsLeft: 1200 } },
     AbortController, generateInterviewPlan: generate, PlanCoverage,
     entitlement: async () => ({ kind: "trial", secondsLeft: 1200 }),
@@ -377,4 +378,17 @@ test("a refused demo never prepares or calls, and says so without mentioning a k
   assert.equal(ctx.started, undefined);
   assert.match(ctx.error, /free demos are all used up/);
   assert.doesNotMatch(ctx.error, /key/i);
+});
+
+test("when both demo keys are full, the visitor is offered a choice and nothing is prepared or used up", async () => {
+  let planned = false;
+  const ctx = preparationHarness(async () => { planned = true; return plan(); }, {
+    requestDemo: async () => ({ ok: false, reason: "full", retry_after: 60 }),
+  });
+  ctx.S.key = ""; ctx.S.ent = { kind: "demo", secondsLeft: 420 };
+  await ctx.startCall();
+  assert.equal(ctx.fullChoice, true);
+  assert.equal(planned, false);
+  assert.equal(ctx.started, undefined);
+  assert.equal(ctx.demoMarked, undefined);
 });

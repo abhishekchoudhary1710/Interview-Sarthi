@@ -340,6 +340,7 @@ function hideOffer(id) { $(id).style.display = "none"; }
 
 function preLive() {
   hidePreparation();
+  hideDemoFull();
   phase = "idle";
   hideOffer("live-offer"); offerShown = false;
   show("s-live");
@@ -372,6 +373,35 @@ function preLive() {
   }
 }
 
+
+/* Both of our keys are running all the interviews they can (6 each, measured). The owner's call: offer the
+   visitor their own key right now, or a minute's wait. Either way the demo is not used up. */
+let demoWaitTimer = null;
+function showDemoFull() {
+  hideDemoFull();
+  $("demo-full").style.display = "block";
+  $("start").disabled = true;
+  track("mock_demo_full", {});
+}
+function hideDemoFull() {
+  clearInterval(demoWaitTimer); demoWaitTimer = null;
+  $("demo-full").style.display = "none"; $("demo-full-note").textContent = "";
+  $("demo-full-key").disabled = false; $("demo-full-wait").disabled = false;
+}
+$("demo-full-key").onclick = () => { track("mock_demo_full_choice", { choice: "key" }); hideDemoFull(); showKeyStep(); };
+$("demo-full-wait").onclick = () => {
+  track("mock_demo_full_choice", { choice: "wait" });
+  $("demo-full-key").disabled = true; $("demo-full-wait").disabled = true;
+  let left = 60;
+  const say = () => { $("demo-full-note").textContent = `Trying again in ${left} seconds…`; };
+  say();
+  demoWaitTimer = setInterval(() => {
+    left -= 1;
+    if (left > 0) { say(); return; }
+    hideDemoFull(); $("start").disabled = false;
+    notice("live-notice", "Ready. Press Start the interview.", "ok");
+  }, 1000);
+};
 
 /* The live engine retains the full transcript for the report. The call shows
  * current captions only; support can explicitly enable the diagnostic view. */
@@ -527,6 +557,7 @@ async function cancelMicCheck() {
 async function demoRefused(reason) {
   await cancelMicCheck();
   track("mock_demo_refused", { reason });
+  if (reason === "full") { showDemoFull(); return; }
   if (reason === "busy") { notice("live-notice", "Lots of people are practising right now. Press Start again in about 20 seconds.", "bad"); return; }
   if (reason === "used") demoUsed.set();
   const text = reason === "used" ? "You've had your free demo. A pass gives you unlimited mock interviews."
@@ -699,6 +730,11 @@ async function endInterview(reason) {
     if (slice) { const r = await tick(S.hash, slice); S.ent.secondsLeft = r.secondsLeft; }
     if (S.ent.secondsLeft <= 0) S.ent.kind = "none";
     renderEntitlement();
+  }
+  if (reason === "failed" && turns.length === 0 && demo) {
+    // Google refused the connection (a key at its limit): the same choice as a full server, never a key message.
+    ending = false; preLive(); notice("live-notice", ""); showDemoFull();
+    return;
   }
   if (reason === "failed" && turns.length === 0) {
     const why = $("live-notice").textContent || "Gemini refused the session.";

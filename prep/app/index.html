@@ -212,6 +212,16 @@
       </div>
     </div>
     <div class="notice" id="live-notice"></div>
+    <!-- The free demo when both of our keys are busy (12 interviews at once): the visitor chooses. -->
+    <div class="card" id="demo-full" style="display:none;margin-top:14px">
+      <b>Lots of people are practising right now.</b>
+      <p class="small" style="margin:6px 0 12px">Your free demo is kept for you. Choose one:</p>
+      <div class="actions">
+        <button class="pill" id="demo-full-key">Use my own Gemini key now</button>
+        <button class="pill ghost" id="demo-full-wait">Wait a minute, then try again</button>
+      </div>
+      <div class="notice" id="demo-full-note"></div>
+    </div>
     <div class="offer" id="live-offer" style="display:none">
       <p id="live-offer-text"></p>
       <button class="pill small" id="live-offer-go">See passes</button>
@@ -332,6 +342,6 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20260925-demo2"></script>
+<script type="module" src="./app.js?v=20260925-demo3"></script>
 </body>
 </html>
