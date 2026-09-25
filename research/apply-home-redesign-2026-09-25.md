@@ -6,7 +6,7 @@ recent public-site audit and existing app screenshot. No current rankings or key
 
 ## Design and content
 
-- Green and warm white product layout, responsive header and a focused hero.
+- Interview Sarthi blue, navy and light backgrounds, shared brand mark, responsive header and a focused hero.
 - Separate links to personalised matches and the public job browser.
 - Existing app screenshot with keyboard-accessible enlargement and a clear snapshot caption.
 - Three feature cards, setup steps, review controls, application guides and native FAQ disclosures.
@@ -14,6 +14,11 @@ recent public-site audit and existing app screenshot. No current rankings or key
   remain explicit. No invented testimonials, usage totals or outcome statistics.
 - Existing conversion analytics retained; no extra tracking library added.
 - Dedicated matching social share image, with an editable HTML source.
+- Interactive product walkthrough with a real screenshot and labelled matching/autofill examples.
+  Timed transitions pause on hover, focus, manual selection, offscreen or hidden tabs. Reduced-motion
+  users start with autoplay paused. Keyboard tab navigation and explicit playback controls are provided.
+- Short entrance animations, scroll reveals, reading progress and hover feedback. Content remains
+  visible without JavaScript; no animation framework, simulated live jobs or invented activity counters.
 
 ## Search foundations
 

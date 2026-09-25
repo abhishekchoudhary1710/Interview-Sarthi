@@ -141,16 +141,17 @@
 <link href="/favicon.ico" rel="icon" sizes="any"/><link href="../assets/mark.svg" rel="icon" type="image/svg+xml"/><link href="../assets/favicon-96.png" rel="icon" sizes="96x96" type="image/png"/><link href="../assets/favicon-192.png" rel="icon" sizes="192x192" type="image/png"/><link href="../assets/icon-512.png" rel="apple-touch-icon"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;600;650;700;750&amp;display=swap" rel="stylesheet"/>
-<link href="../assets/apply-home.css" rel="stylesheet"/>
+<link href="../assets/apply-home.css?v=20260925b" rel="stylesheet"/>
 
 <script defer src="../assets/analytics.js"></script>
-<script defer src="../assets/apply-home.js"></script>
+<script defer src="../assets/apply-home.js?v=20260925b"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
+  <div class="reading-progress" aria-hidden="true"></div>
   <div class="container nav-row">
-    <a class="brand" href="./" aria-label="ApplySarthi home"><span class="brand-symbol" aria-hidden="true">↗</span><span>Apply<span>Sarthi</span></span></a>
+    <a class="brand" href="./" aria-label="ApplySarthi home"><img class="brand-mark" src="../assets/mark.svg" width="33" height="33" alt=""><span>Apply<span>Sarthi</span></span></a>
     <span class="brand-family">Part of<br><a href="../">Interview Sarthi</a></span>
     <nav class="main-nav" id="main-nav" aria-label="Main navigation"><a href="#features">Features</a><a href="#how-it-works">How it works</a><a href="guides/">Guides</a><a href="#faq">FAQs</a></nav>
     <a class="button small" href="https://apply.interviewsarthi.com/">Start for free <span aria-hidden="true">↗</span></a>
@@ -166,23 +167,50 @@
       <div class="actions"><a class="button" href="https://apply.interviewsarthi.com/">Find my job matches <span aria-hidden="true">↗</span></a><a class="button secondary" href="https://apply.interviewsarthi.com/jobs">Browse jobs <span aria-hidden="true">→</span></a></div>
       <p class="micro"><span aria-hidden="true">✓</span> Always free &nbsp; · &nbsp; No subscription &nbsp; · &nbsp; No card needed</p>
     </div>
-    <figure class="product-visual">
-      <div class="visual-heading"><span><span class="status-dot" aria-hidden="true"></span>Multiple job sites. One job list.</span><span class="visual-label">Inside ApplySarthi</span></div>
-      <div class="browser-frame">
-        <div class="browser-bar" aria-hidden="true"><i></i><i></i><i></i><span>apply.interviewsarthi.com</span></div>
-        <a class="screenshot-link" href="../assets/apply-app-current.png" aria-label="Enlarge the ApplySarthi job browser screenshot"><img src="../assets/apply-app-current.png" width="1360" height="960" fetchpriority="high" alt="ApplySarthi job browser with filters for job site, city, remote work and date, plus links to CV-ranked matches."><span class="zoom-label" aria-hidden="true">View full screen ↗</span></a>
+    <figure class="product-visual" aria-label="Explore ApplySarthi">
+      <div class="visual-heading"><span><span class="status-dot" aria-hidden="true"></span>See how it comes together</span><span class="visual-label">ApplySarthi</span></div>
+      <div class="preview-tabs" role="tablist" aria-label="Explore the application" hidden>
+        <button id="tab-search" type="button" role="tab" aria-controls="panel-search" aria-selected="true" tabindex="0"><span>01</span> Find jobs</button>
+        <button id="tab-match" type="button" role="tab" aria-controls="panel-match" aria-selected="false" tabindex="-1"><span>02</span> Match your CV</button>
+        <button id="tab-fill" type="button" role="tab" aria-controls="panel-fill" aria-selected="false" tabindex="-1"><span>03</span> Fill the form</button>
       </div>
-      <div class="visual-steps"><b>Find your fit</b><span aria-hidden="true">→</span><b>Tailor your CV</b><span aria-hidden="true">→</span><b>Review &amp; apply</b></div>
-      <figcaption>Actual app screenshot. Listings and counts change over time.</figcaption>
+      <div class="preview-stage">
+        <div class="preview-panel" id="panel-search" role="tabpanel" aria-labelledby="tab-search" tabindex="0">
+          <div class="browser-frame">
+            <div class="browser-bar" aria-hidden="true"><i></i><i></i><i></i><span>apply.interviewsarthi.com</span></div>
+            <a class="screenshot-link" href="../assets/apply-app-current.png" aria-label="Enlarge the ApplySarthi job browser screenshot"><img src="../assets/apply-app-current.png" width="1360" height="960" fetchpriority="high" alt="ApplySarthi job browser with filters for job site, city, remote work and date, plus links to CV-ranked matches."><span class="zoom-label" aria-hidden="true">View full screen ↗</span></a>
+          </div>
+        </div>
+        <div class="preview-panel demo-panel" id="panel-match" role="tabpanel" aria-labelledby="tab-match" tabindex="0" hidden>
+          <div class="demo-top"><span>YOUR CV → RELEVANT ROLES</span><span class="example-label">Example</span></div>
+          <div class="cv-summary"><span class="document-symbol" aria-hidden="true">≡</span><div><strong>Your experience comes first.</strong><span>Skills from an example CV</span></div><span class="complete-mark" aria-hidden="true">✓</span></div>
+          <div class="skill-tags"><span>Python</span><span>SQL</span><span>Data analysis</span></div>
+          <div class="match-connector" aria-hidden="true"><span></span><b>↓</b><span></span></div>
+          <div class="example-job"><div class="job-icon" aria-hidden="true">↗</div><div><span class="example-overline">A ROLE TO EXPLORE</span><h3>Data Analyst</h3><p>Compare the role with your experience</p></div></div>
+          <div class="match-facts"><span><i aria-hidden="true">✓</i> Relevant skills</span><span><i aria-hidden="true">✓</i> Your experience</span><span><i aria-hidden="true">✓</i> Role requirements</span></div>
+          <p class="demo-note">Upload your CV to see your own matches.</p>
+        </div>
+        <div class="preview-panel demo-panel" id="panel-fill" role="tabpanel" aria-labelledby="tab-fill" tabindex="0" hidden>
+          <div class="demo-top"><span>LESS TYPING. MORE PROGRESS.</span><span class="example-label">Example</span></div>
+          <h3 class="form-title">Another application.<br>Your details, already filled.</h3>
+          <div class="demo-field"><span>Name</span><div><span>Alex Sharma</span><b aria-hidden="true">✓</b></div></div>
+          <div class="demo-field"><span>Skills</span><div><span>Python, SQL, data analysis</span><b aria-hidden="true">✓</b></div></div>
+          <div class="demo-field"><span>CV</span><div><span class="demo-file">Your tailored CV.pdf</span><b aria-hidden="true">✓</b></div></div>
+          <div class="review-reminder"><span aria-hidden="true">◎</span><span><strong>Your turn: review the application.</strong><br>You check the details before submitting.</span></div>
+        </div>
+      </div>
+      <div class="preview-footer"><p class="preview-caption">Actual app screenshot. Listings change over time.</p><button class="preview-play" type="button" aria-label="Pause preview" hidden><span aria-hidden="true">Ⅱ</span> Pause</button></div>
+      <div class="preview-timeline" aria-hidden="true"><span></span><span></span><span></span></div>
+      <figcaption class="visual-steps"><b>Find your fit</b><span aria-hidden="true">→</span><b>Tailor your CV</b><span aria-hidden="true">→</span><b>Review &amp; apply</b></figcaption>
     </figure>
   </section>
   <div class="source-strip"><div class="container source-inner"><p class="source-intro">Your search, brought together.<br>Listings from sources including</p><div class="source-names" aria-label="Job listing sources"><span>Naukri</span><span>LinkedIn</span><span>Indeed</span><span>Foundit</span><span>Internshala</span><span>+ company career pages</span></div></div></div>
   <section class="container section" id="features" aria-labelledby="features-title">
-    <div class="section-head"><div><p class="eyebrow">Fewer tabs. A clearer next step.</p><h2 id="features-title">A better way to get<br>your applications moving.</h2></div><p>From finding a relevant role to filling another long form, ApplySarthi helps with the work in between.</p></div>
+    <div class="section-head" data-reveal><div><p class="eyebrow">Fewer tabs. A clearer next step.</p><h2 id="features-title">A better way to get<br>your applications moving.</h2></div><p>From finding a relevant role to filling another long form, ApplySarthi helps with the work in between.</p></div>
     <div class="feature-grid">
-      <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M8 10h4m-2-2v4"/></svg></div><h3>Find your kind of role.</h3><p>Bring job portals and company career pages into one search. Upload your CV to see jobs ranked by how well they match your profile.</p><p class="feature-detail">Job search + CV matching</p></article>
-      <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8zm0 0v5h5M8 12h8m-8 4h6"/></svg></div><h3>Make every CV relevant.</h3><p>Create a CV and cover letter tailored to the role, using your own experience. Review the wording and download your documents before applying.</p><p class="feature-detail">Tailored documents · your Gemini key</p></article>
-      <article class="feature-card"><div class="feature-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-13 5 2 2 5-4"/></svg></div><h3>Fill less. Move forward.</h3><p>Let the Chrome extension fill your details and draft application answers. Check the form, add anything missing, and submit when you’re ready.</p><p class="feature-detail">Application autofill · Chrome on desktop</p></article>
+      <article class="feature-card" data-reveal><div class="feature-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M8 10h4m-2-2v4"/></svg></div><h3>Find your kind of role.</h3><p>Bring job portals and company career pages into one search. Upload your CV to see jobs ranked by how well they match your profile.</p><p class="feature-detail">Job search + CV matching</p></article>
+      <article class="feature-card" data-reveal><div class="feature-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M14 3H5v18h14V8zm0 0v5h5M8 12h8m-8 4h6"/></svg></div><h3>Make every CV relevant.</h3><p>Create a CV and cover letter tailored to the role, using your own experience. Review the wording and download your documents before applying.</p><p class="feature-detail">Tailored documents · your Gemini key</p></article>
+      <article class="feature-card" data-reveal><div class="feature-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-13 5 2 2 5-4"/></svg></div><h3>Fill less. Move forward.</h3><p>Let the Chrome extension fill your details and draft application answers. Check the form, add anything missing, and submit when you’re ready.</p><p class="feature-detail">Application autofill · Chrome on desktop</p></article>
     </div>
   </section>
   <section class="workflow section" id="how-it-works" aria-labelledby="workflow-title"><div class="container workflow-layout">
@@ -190,15 +218,15 @@
     <ol class="steps"><li><span class="step-number" aria-hidden="true">01</span><div><h3>Tell us what you bring.</h3><p>Sign in with your email and upload a PDF or Word CV. Your experience and skills become the starting point for your job matches.</p></div></li><li><span class="step-number" aria-hidden="true">02</span><div><h3>Find a role worth applying for.</h3><p>Explore your matches and check the job description. Use your Gemini key to tailor your CV and cover letter to that opportunity.</p></div></li><li><span class="step-number" aria-hidden="true">03</span><div><h3>Review it. Make it yours. Apply.</h3><p>Open the application in Chrome and let the extension help fill the form. Check every answer, complete missing details and CAPTCHAs, then submit.</p></div></li></ol>
   </div></section>
   <section class="container section" aria-labelledby="control-title">
-    <div class="control-panel"><div><p class="eyebrow">Your career. Your call.</p><h2 id="control-title">A helping hand.<br>You stay in control.</h2><p>Good applications start with real experience and a role you actually want. ApplySarthi helps you put both into words.</p><p><a href="is-auto-apply-safe.html">Understand how application automation works →</a></p></div><ul class="control-list"><li><span class="check" aria-hidden="true">✓</span><div><h3>Your experience stays the foundation.</h3><p>Tailoring is designed to preserve the facts in your CV. Review all generated wording for accuracy before sending.</p></div></li><li><span class="check" aria-hidden="true">✓</span><div><h3>Personal decisions stay with you.</h3><p>Salary, notice period, work authorisation and legal declarations need your input. Save reusable answers in Setup.</p></div></li><li><span class="check" aria-hidden="true">✓</span><div><h3>Review before you submit.</h3><p>Autofill stops for your review by default. Optional Autopilot submission requires you to switch it on. Your job-site accounts stay in your own browser.</p></div></li></ul></div>
+    <div class="control-panel" data-reveal><div><p class="eyebrow">Your career. Your call.</p><h2 id="control-title">A helping hand.<br>You stay in control.</h2><p>Good applications start with real experience and a role you actually want. ApplySarthi helps you put both into words.</p><p><a href="is-auto-apply-safe.html">Understand how application automation works →</a></p></div><ul class="control-list"><li><span class="check" aria-hidden="true">✓</span><div><h3>Your experience stays the foundation.</h3><p>Tailoring is designed to preserve the facts in your CV. Review all generated wording for accuracy before sending.</p></div></li><li><span class="check" aria-hidden="true">✓</span><div><h3>Personal decisions stay with you.</h3><p>Salary, notice period, work authorisation and legal declarations need your input. Save reusable answers in Setup.</p></div></li><li><span class="check" aria-hidden="true">✓</span><div><h3>Review before you submit.</h3><p>Autofill stops for your review by default. Optional Autopilot submission requires you to switch it on. Your job-site accounts stay in your own browser.</p></div></li></ul></div>
     <div class="start-note"><div><h3>What do I need to get started?</h3><p>A PDF or Word CV. Your own Gemini key for tailoring. Chrome on a computer for autofill. Browse jobs on any device.</p></div><a class="text-link" href="../free-gemini-api-key-guide.html">Gemini key setup guide ↗</a></div>
   </section>
   <section class="container section resources" aria-labelledby="resources-title">
-    <div class="section-head"><div><p class="eyebrow">A little guidance goes a long way</p><h2 id="resources-title">Make your next application count.</h2></div><a class="text-link" href="guides/">All job application guides →</a></div>
+    <div class="section-head" data-reveal><div><p class="eyebrow">A little guidance goes a long way</p><h2 id="resources-title">Make your next application count.</h2></div><a class="text-link" href="guides/">All job application guides →</a></div>
     <div class="guide-grid">
-      <a class="guide-card" href="guides/ats-resume-format-india.html"><span class="category">Your CV</span><h3>A resume that’s easier for an ATS to read.</h3><p>Formatting choices that help your experience come through clearly.</p><span class="text-link">Read the resume guide ↗</span></a>
-      <a class="guide-card" href="guides/why-no-interview-calls.html"><span class="category">Your search</span><h3>Applying, but not getting interview calls?</h3><p>Common reasons applications go unanswered, and what to look at next.</p><span class="text-link">Improve your applications ↗</span></a>
-      <a class="guide-card" href="auto-apply-jobs-india.html"><span class="category">Your tools</span><h3>Auto-apply for jobs in India, explained.</h3><p>Understand the difference between matching, autofill and automatic submission.</p><span class="text-link">Explore the auto-apply guide ↗</span></a>
+      <a data-reveal class="guide-card" href="guides/ats-resume-format-india.html"><span class="category">Your CV</span><h3>A resume that’s easier for an ATS to read.</h3><p>Formatting choices that help your experience come through clearly.</p><span class="text-link">Read the resume guide ↗</span></a>
+      <a data-reveal class="guide-card" href="guides/why-no-interview-calls.html"><span class="category">Your search</span><h3>Applying, but not getting interview calls?</h3><p>Common reasons applications go unanswered, and what to look at next.</p><span class="text-link">Improve your applications ↗</span></a>
+      <a data-reveal class="guide-card" href="auto-apply-jobs-india.html"><span class="category">Your tools</span><h3>Auto-apply for jobs in India, explained.</h3><p>Understand the difference between matching, autofill and automatic submission.</p><span class="text-link">Explore the auto-apply guide ↗</span></a>
     </div>
     <div class="resource-more"><a href="best-auto-apply-tools-india.html">Compare job application tools</a><a href="guides/naukri-auto-apply.html">Applying on Naukri</a><a href="job-application-statistics-india.html">Our job market dataset</a><a href="../guides/salary-expectation-answer.html">Answering salary questions</a></div>
   </section>
@@ -210,10 +238,10 @@
 <details><summary>Can I use ApplySarthi on my phone?</summary><p>Yes, you can browse jobs, view your matches and download tailored CVs on a phone. Application autofill needs the Chrome extension on a laptop or desktop. Start with a PDF or Word CV and sign in with your email.</p></details>
 <details><summary>Where are my CV and personal details stored?</summary><p>Your CV, extracted profile, tailored documents and saved answers are stored in your ApplySarthi account on the server. Your Gemini key is stored encrypted. You can delete your account and its data from Setup. Read the <a href="https://apply.interviewsarthi.com/privacy">ApplySarthi privacy policy</a> for details.</p></details>
   </div></div></section>
-  <section class="container closing" aria-labelledby="closing-title"><p class="eyebrow">Find it. Tailor it. Apply.</p><h2 id="closing-title">Stop searching site by site.<br>Start your job search here.</h2><p>Jobs from multiple portals, matched to your CV. Always free.</p><div class="actions"><a class="button" href="https://apply.interviewsarthi.com/">Find my job matches <span aria-hidden="true">↗</span></a><a class="button secondary" href="https://apply.interviewsarthi.com/jobs">Browse jobs first <span aria-hidden="true">→</span></a></div><p class="micro">Always free. No card. Your next step is yours.</p></section>
+  <section data-reveal class="container closing" aria-labelledby="closing-title"><p class="eyebrow">Find it. Tailor it. Apply.</p><h2 id="closing-title">Stop searching site by site.<br>Start your job search here.</h2><p>Jobs from multiple portals, matched to your CV. Always free.</p><div class="actions"><a class="button" href="https://apply.interviewsarthi.com/">Find my job matches <span aria-hidden="true">↗</span></a><a class="button secondary" href="https://apply.interviewsarthi.com/jobs">Browse jobs first <span aria-hidden="true">→</span></a></div><p class="micro">Always free. No card. Your next step is yours.</p></section>
   <p class="container prep-note">Got an interview lined up? <a href="../prep/">Practise with Prep Sarthi →</a></p>
 </main>
-<footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand" href="./"><span class="brand-symbol" aria-hidden="true">↗</span><span>Apply<span>Sarthi</span></span></a><p>Jobs from multiple portals. One place to search.</p></div><nav class="footer-links" aria-label="Footer"><a href="../">Interview Sarthi</a><a href="guides/">Applying guides</a><a href="../prep/">Prep Sarthi</a><a href="../live/">Live Sarthi</a><a href="../facts.html">Product facts</a><a href="../help.html">Help</a><a href="https://apply.interviewsarthi.com/privacy">ApplySarthi privacy</a><a href="../privacy.html">Website privacy</a><a href="../terms.html">Terms</a></nav><div class="footer-bottom"><span>© 2026 Interview Sarthi. Every Arjuna needs a sarthi.</span><span>Job listings may change. Confirm details with the employer.</span></div></div></footer>
+<footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand" href="./"><img class="brand-mark" src="../assets/mark.svg" width="33" height="33" alt=""><span>Apply<span>Sarthi</span></span></a><p>Jobs from multiple portals. One place to search.</p></div><nav class="footer-links" aria-label="Footer"><a href="../">Interview Sarthi</a><a href="guides/">Applying guides</a><a href="../prep/">Prep Sarthi</a><a href="../live/">Live Sarthi</a><a href="../facts.html">Product facts</a><a href="../help.html">Help</a><a href="https://apply.interviewsarthi.com/privacy">ApplySarthi privacy</a><a href="../privacy.html">Website privacy</a><a href="../terms.html">Terms</a></nav><div class="footer-bottom"><span>© 2026 Interview Sarthi. Every Arjuna needs a sarthi.</span><span>Job listings may change. Confirm details with the employer.</span></div></div></footer>
 <dialog class="screenshot-dialog" id="screenshot-dialog" aria-labelledby="preview-title"><div class="dialog-bar"><p id="preview-title">Inside ApplySarthi · actual app screenshot</p><button type="button" aria-label="Close screenshot">Close ×</button></div><img src="../assets/apply-app-current.png" width="1360" height="960" loading="lazy" alt="Full-size ApplySarthi job browser screenshot. Listings shown are a snapshot, not a live feed."></dialog>
 </body>
 </html>
