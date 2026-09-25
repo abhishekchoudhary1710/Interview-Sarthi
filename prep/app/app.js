@@ -27,6 +27,10 @@ import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
 
 const $ = (id) => document.getElementById(id);
+// Technical output is available only when support explicitly requests this URL.
+// Keep it hidden in the HTML too, so it never flashes during normal page loading.
+const diagnosticsEnabled = new URLSearchParams(location.search).get("diagnostics") === "1";
+$("diagnostics").hidden = !diagnosticsEnabled;
 const store = {
   get(k, d = "") { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* private mode */ } },
@@ -66,6 +70,7 @@ function show(id) {
 }
 function notice(id, text, cls = "") { const el = $(id); el.textContent = text || ""; el.className = "notice " + cls; }
 function log(name, data) {
+  if (!diagnosticsEnabled) return;
   const t = startedAt ? (nowS() - startedAt).toFixed(1) : "0.0";
   const line = `${t.padStart(6)}  ${name}${data && Object.keys(data).length ? " " + JSON.stringify(data) : ""}`;
   logLines.push(line);
@@ -337,18 +342,19 @@ function preLive() {
   }
 }
 
-/* The transcript is kept (hidden, under Diagnostics) and drives the captions:
- * their current line in large type, your own words in a small line beneath, so
- * you can see you are being heard. */
+/* The live engine retains the full transcript for the report. The call shows
+ * current captions only; support can explicitly enable the diagnostic view. */
 function onTranscript(u, done) {
-  let el = bubbles.get(u);
-  if (!el) {
-    el = document.createElement("div");
-    el.className = "bubble " + u.who;
-    el.innerHTML = `<small>${u.who === "interviewer" ? "Interviewer" : (escapeHtml(S.name) || "You")}</small><span></span>`;
-    $("transcript").appendChild(el); bubbles.set(u, el);
+  if (diagnosticsEnabled) {
+    let el = bubbles.get(u);
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "bubble " + u.who;
+      el.innerHTML = `<small>${u.who === "interviewer" ? "Interviewer" : (escapeHtml(S.name) || "You")}</small><span></span>`;
+      $("transcript").appendChild(el); bubbles.set(u, el);
+    }
+    el.querySelector("span").textContent = u.text + (u.interrupted ? " …" : "");
   }
-  el.querySelector("span").textContent = u.text + (u.interrupted ? " …" : "");
   if (u.who === "interviewer") {
     // Google sends your words in one batch when your turn ends, so they land
     // just as the interviewer starts to reply. Leave them up for a few seconds:
@@ -651,7 +657,7 @@ async function endInterview(reason) {
     const deaf = micStats.maxRms < 0.002;
     notice("live-notice", deaf
       ? "Your microphone sent only silence for the whole call, so there is nothing to score. It was muted, or the browser used the wrong one. Check it and try again."
-      : "Google did not pick up any of your answers, so there is nothing to score. Try again, and if it repeats, open Diagnostics below, tap Copy, and send it to support@interviewsarthi.com.", "bad");
+      : "Google did not pick up any of your answers, so there is nothing to score. Check your microphone and try again. If it happens again, contact support@interviewsarthi.com.", "bad");
     return;
   }
   wheel.stop();

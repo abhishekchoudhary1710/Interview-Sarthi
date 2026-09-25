@@ -45,7 +45,7 @@ def main() -> int:
         page.on("console", lambda m: console.append(f"{m.type}: {m.text}"))
         page.on("pageerror", lambda e: failures.append(f"pageerror: {e}"))
         page.on("dialog", lambda d: d.accept())
-        page.goto(f"{BASE}/prep/app/", wait_until="networkidle")
+        page.goto(f"{BASE}/prep/app/?diagnostics=1", wait_until="networkidle")
 
         page.fill("#cv", CV)
         page.select_option("#practice-focus", "general_cv")

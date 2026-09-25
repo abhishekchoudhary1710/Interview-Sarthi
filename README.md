@@ -52,6 +52,11 @@ python tests/browser_smoke.py
 
 This checks desktop/mobile layouts, receipt rendering, weekly checkout destinations and analytics behavior without purchasing anything. Screenshots and results go to ignored `.seo-preview/`.
 
+Prep's normal interview screen does not display diagnostic logs or a duplicate transcript.
+Support sessions can explicitly use `/prep/app/?diagnostics=1`; this setting is not persisted.
+Run `python tests/prep_diagnostics_smoke.py` with Playwright and Chromium to check this behaviour
+and current captions without making AI or microphone calls. `BROWSER_EXECUTABLE` can select a local browser.
+
 ## Maintain sitemap dates
 
 After a meaningful content change, record its actual date:
