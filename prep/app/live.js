@@ -25,6 +25,8 @@ import { NOTES } from "./interviewer.js?v=20260923-jd-plan";
 export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
 export const DEFAULT_MODEL = LIVE_MODELS[0];
 const LIVE_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=";
+// The free demo connects with a one-time token our licence server minted, never with a key.
+const LIVE_TOKEN_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=";
 const CAPTURE_RATE = 16000;
 
 const SETUP_TIMEOUT_SECONDS = 12;
@@ -81,6 +83,7 @@ export class GeminiLive {
   /**
    * @param {object} o
    * @param {string} o.apiKey            the candidate's own Gemini key
+   * @param {string} [o.authToken]       a one-time Live token instead of a key (the free demo)
    * @param {function} o.instructions    () => system instruction text (called on every connect)
    * @param {function} [o.getInterviewProgress] () => trusted app-clock snapshot for the read-only pacing tool
    * @param {string} [o.model]
@@ -95,6 +98,7 @@ export class GeminiLive {
    */
   constructor(o) {
     this.apiKey = o.apiKey;
+    this.authToken = o.authToken || "";
     this.instructions = o.instructions;
     this.getInterviewProgress = o.getInterviewProgress;
     this.model = o.model || DEFAULT_MODEL;
@@ -249,7 +253,7 @@ export class GeminiLive {
     this._resuming = !!this._resumeHandle;
     this._status(this.sessions ? "reconnecting" : "connecting");
     let ws;
-    try { ws = new WebSocket(LIVE_URL + encodeURIComponent(this.apiKey)); }
+    try { ws = new WebSocket(this.authToken ? LIVE_TOKEN_URL + encodeURIComponent(this.authToken) : LIVE_URL + encodeURIComponent(this.apiKey)); }
     catch (_) { this._event("connect_error", {}); return this._retry(); }
     ws.binaryType = "arraybuffer";
     this.ws = ws;
@@ -264,7 +268,8 @@ export class GeminiLive {
       if (this.ws !== ws || this.stopped) return;
       const wasConnected = this.connected;
       this._disconnect();
-      const reason = String(e.reason || "").replaceAll(this.apiKey, "[key]");
+      const secret = this.authToken || this.apiKey;       // never replaceAll(""), which would splice "[key]" everywhere
+      const reason = secret ? String(e.reason || "").replaceAll(secret, "[key]") : String(e.reason || "");
       this._event("socket_closed", { code: e.code, reason, wasConnected });
       if (/quota|resource.exhausted|rate.limit|billing/i.test(reason)) {
         return this._fail("Google's usage limit was reached. Check your Gemini quota and try again later. Your answers are kept.");

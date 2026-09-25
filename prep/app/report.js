@@ -58,7 +58,7 @@ function systemPrompt(language) {
   return `You are a blunt, kind senior interviewer writing the debrief after a mock interview. Judge only what the transcript shows. Be specific: quote the candidate's own words when pointing out a problem. Never invent facts about the candidate. Do not infer competence or personality from accent, identity, language choice or speaking speed. Evaluate each answer against the question actually asked and the candidate's experience: an introduction needs a clear relevant background, a project walkthrough needs purpose and personal contribution, a technical answer needs sound reasoning, and a behavioural answer needs actions and outcomes. Reward specific evidence where relevant, but do not require numbers or technical depth in an introduction. Do not penalize skills or stages that were never assessed, candidate questions at the close, or answers cut off by the session time limit. If the session only covered background or one project, explicitly describe the assessment as limited instead of claiming technical readiness was established. Write in ${language && language.toLowerCase() !== "auto" ? language : "the language the candidate mostly spoke"}; keep technical terms in English.`;
 }
 
-export async function generateReport({ apiKey, cv, jd, language, transcript, metrics, minutes, assessmentPlan }) {
+export async function generateReport({ apiKey, cv, jd, language, transcript, metrics, minutes, assessmentPlan, transport }) {
   const lines = transcript.map((u, i) => `[${i + 1}] ${u.who === "interviewer" ? "INTERVIEWER" : "CANDIDATE"}: ${u.text}${u.interrupted ? " [cut off]" : ""}`);
   const user = [
     `Mock interview length: ${minutes} minutes. ${jd ? "The role:\n" + jd + "\n" : ""}`,
@@ -94,9 +94,10 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
   for (const model of REPORT_MODELS) {
     let res;
     try {
-      res = await fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
-        method: "POST", headers: { "content-type": "application/json" }, body,
-      });
+      res = transport ? await transport(model, body)          // the free demo: through the licence server
+        : await fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
+            method: "POST", headers: { "content-type": "application/json" }, body,
+          });
     } catch (err) { throw new Error(`Gemini unreachable (${err.message})`); }
     if (!res.ok) {
       let detail = "";

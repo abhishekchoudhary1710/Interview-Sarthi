@@ -256,12 +256,15 @@ test("interviewer instructions make question choice dynamic while keeping scorin
 
 // Execute the actual app's preparation/cancellation functions with fake UI,
 // audio and transport. No credentials, payment, microphone or network access.
-function preparationHarness(generate) {
+function preparationHarness(generate, extra = {}) {
   const source = readFileSync(new URL("../prep/app/app.js", import.meta.url), "utf8");
   const nodes = new Map();
   const context = vm.createContext({
     hidePreparation() {}, showPreparation() {},
     phase: "miccheck", planController: null, assessmentPlan: null, planCoverage: null,
+    // The free demo (billing.js): off unless a test turns it on.
+    demo: null, requestDemo: async () => ({ ok: false, reason: "unavailable" }), demoTransport: (id) => ({ demoId: id }),
+    demoUsed: { set() { context.demoMarked = true; } }, passCtx: { passesOn: false }, openPasses(text) { context.passes = text; },
     S: { key: "test", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "trial", secondsLeft: 1200 } },
     AbortController, generateInterviewPlan: generate, PlanCoverage,
     entitlement: async () => ({ kind: "trial", secondsLeft: 1200 }),
@@ -271,8 +274,9 @@ function preparationHarness(generate) {
     notice(_id, message) { context.error = message; },
     nowS: () => 100, log() {}, track() {}, wheel: { setState() {} },
     buildInterviewerInstructions, currentProgress: () => ({}), onTranscript() {},
-    GeminiLive: class { start() { context.started = true; } },
+    GeminiLive: class { constructor(o) { context.liveOptions = o; } start() { context.started = true; } },
     setInterval() { context.timerStarted = true; return 1; }, onSecond() {},
+    ...extra,
   });
   vm.runInContext(source.slice(source.indexOf("async function cancelMicCheck()"), source.indexOf("function currentProgress(")), context);
   return context;
@@ -345,4 +349,32 @@ test("no-JD controls follow pasted/removed JD and general-practice selection", (
   assert.equal(nodes["no-jd-options"].hidden, false);
   assert.equal(nodes["target-details"].style.display, "none");
   assert.match(nodes["no-jd-help"].textContent, /does not assess suitability/);
+});
+
+
+test("the free demo plans through the licence server and calls with a one-time token, for 7 minutes", async () => {
+  let planArgs;
+  const ctx = preparationHarness(async (a) => { planArgs = a; return plan(); }, {
+    requestDemo: async () => ({ ok: true, demo: "d".repeat(24), token: "auth_tokens/abc", seconds: 420 }),
+  });
+  ctx.S.key = ""; ctx.S.ent = { kind: "demo", secondsLeft: 420 };
+  await ctx.startCall();
+  assert.deepEqual(planArgs.transport, { demoId: "d".repeat(24) });
+  assert.equal(ctx.liveOptions.authToken, "auth_tokens/abc");
+  assert.equal(ctx.plannedSeconds, 420);
+  assert.equal(ctx.demoMarked, true);
+  assert.equal(ctx.started, true);
+});
+
+test("a refused demo never prepares or calls, and says so without mentioning a key", async () => {
+  let planned = false;
+  const ctx = preparationHarness(async () => { planned = true; return plan(); }, {
+    requestDemo: async () => ({ ok: false, reason: "day_full" }),
+  });
+  ctx.S.key = ""; ctx.S.ent = { kind: "demo", secondsLeft: 420 };
+  await ctx.startCall();
+  assert.equal(planned, false);
+  assert.equal(ctx.started, undefined);
+  assert.match(ctx.error, /free demos are all used up/);
+  assert.doesNotMatch(ctx.error, /key/i);
 });

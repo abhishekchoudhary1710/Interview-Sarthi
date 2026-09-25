@@ -146,7 +146,7 @@ def render(page):
   <h3>{html.escape(page['cta_title'])}</h3>
   <p>{page['cta_text']}</p>
   <p><a class="cta" href="https://apply.interviewsarthi.com/">Open ApplySarthi</a> <a class="cta ghost" href="{prefix}apply/">What it does</a></p>
-  <p class="alsotry">An interview call coming? Practise it first with <a href="{prefix}prep/">a mock interview from your own CV</a>, 20 minutes free, then keep <a href="{prefix}live/">Live Sarthi</a> open on the real call.</p>
+  <p class="alsotry">An interview call coming? Practise it first with <a href="{prefix}prep/">a mock interview from your own CV</a>, free to try, then keep <a href="{prefix}live/">Live Sarthi</a> open on the real call.</p>
 </div>
 
 <div class="more">

@@ -13,7 +13,7 @@
  * score worth showing.
  */
 
-import { LOCAL, config, inviteLink, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js";
+import { LOCAL, config, inviteLink, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260925-demo";
 
 const $ = (id) => document.getElementById(id);
 const PENDING = "ps_pending_order";
@@ -69,6 +69,7 @@ export async function initPasses(context) {
   try { cfg = await config(); } catch (_) { cfg = null; }
   const testLogin = LOCAL && cfg && !cfg.google_client_id;
   ctx.passesOn = !!(cfg && (cfg.google_client_id || testLogin));
+  ctx.demoOn = !!(cfg && cfg.demo);          // the licence server offers the free demo only while a key pays for it
   if (cfg && cfg.plans) {
     for (const [id, p] of Object.entries(cfg.plans)) {
       const el = document.querySelector(`.plan[data-plan="${id}"]`);

@@ -146,3 +146,28 @@ export async function orderStatus(orderId, hash, paymentId) {
 export const startFreeDays = () => post("/mock/days/start", { session: session.get() });
 
 export const inviteLink = (code) => `https://interviewsarthi.com/mock/?ref=${encodeURIComponent(code)}`;
+
+// ── The free demo (license-server src/demo.js) ─────────────────────────────
+// One short interview on our key, before any setup. The device id is what "one demo per device" counts;
+// it is random, stays in this browser, and says nothing about the person.
+export function demoDevice() {
+  let d = mem.get("ps_demo_device");
+  if (!/^[a-z0-9-]{16,64}$/.test(d)) { d = crypto.randomUUID(); mem.set("ps_demo_device", d); }
+  return d;
+}
+export const demoUsed = { get: () => mem.get("ps_demo_used") === "1", set: () => mem.set("ps_demo_used", "1") };
+
+/* { ok, demo, token, model, seconds } or { ok: false, reason: used|day_full|network|busy|unavailable }. */
+export async function requestDemo(demo, failed) {
+  try { return await post("/mock/demo/start", { device: demoDevice(), demo, failed: !!failed }); }
+  catch (_) { return { ok: false, reason: "unavailable" }; }
+}
+
+/* The plan and report requests, sent through the licence server on our key. `body` is the JSON string the
+   app would have sent to Google; the answer is Google's own, so the callers need no other change. */
+export function demoTransport(demo) {
+  return (model, body, signal) => fetch(LICENSE_API + "/mock/demo/generate", {
+    method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", signal,
+    body: `{"demo":${JSON.stringify(demo)},"device":${JSON.stringify(demoDevice())},"model":${JSON.stringify(model)},"request":${body}}`,
+  });
+}

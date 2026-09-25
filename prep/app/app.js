@@ -12,17 +12,17 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20260923-jd-plan";
+import { GeminiLive } from "./live.js?v=20260925-demo";
 import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260923-jd-plan";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { generateReport } from "./report.js?v=20260923-jd-plan";
+import { generateReport } from "./report.js?v=20260925-demo";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
-import { generateInterviewPlan } from "./plan-request.js";
+import { generateInterviewPlan } from "./plan-request.js?v=20260925-demo";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource } from "./billing.js";
-import { initPasses, openPasses, renderInvite } from "./pass.js";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed } from "./billing.js?v=20260925-demo";
+import { initPasses, openPasses, renderInvite } from "./pass.js?v=20260925-demo";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
 
@@ -58,6 +58,8 @@ let offerShown = false;
 let booted = false;
 const bubbles = new Map();
 const logLines = [];
+const DEMO_SECONDS = 7 * 60;   // the licence server's DEMO.SECONDS; its answer caps the call too
+let demo = null;               // the free demo in progress: { demo, token, seconds } from /mock/demo/start
 const wheel = new Wheel($("wheel"));
 const waitWheel = new Wheel($("wheel-wait"));
 
@@ -92,6 +94,7 @@ function renderEntitlement() {
   // Nothing known yet: a dash while the server is being asked, and the honest
   // default for a first-time visitor once it is clear nobody is signed in.
   if (!e) { el.textContent = booted ? (store.get("ps_from") === "applysarthi" ? "30 min free" : "20 min free") : "\u2026"; el.className = "chip"; return; }
+  if (e.kind === "demo") { el.textContent = "Free demo · 7 min"; el.className = "chip ok"; return; }
   if (e.kind === "pass") { el.textContent = `Pass · ${fmtLong(e.secondsLeft)} left`; el.className = "chip ok"; }
   else if (e.kind === "trial") { el.textContent = `Free · ${fmtLong(e.secondsLeft)} left`; el.className = "chip"; }
   // Signed in, but no Gemini key in this browser yet: no free-minute count to show.
@@ -120,7 +123,7 @@ const passCtx = {
   practise() {
     $("pass-back").textContent = "Back";
     if (["call", "miccheck", "preparing"].includes(phase)) { show("s-live"); return; }
-    if (S.key && S.ent) preLive(); else show(S.cv || $("cv").value ? "s-key" : "s-cv");
+    if (S.key && S.ent) preLive(); else if (S.cv || $("cv").value) showKeyStep(); else show("s-cv");
   },
 };
 function currentLanguage() {
@@ -215,7 +218,7 @@ function readForm() {
   S.practiceFocus = $("practice-focus").value; S.targetRole = $("target-role").value.trim(); S.targetLevel = $("target-level").value;
   S.language = currentLanguage(); S.minutes = Number($("minutes").value) || 12; S.voice = $("voice").value;
 }
-$("to-key").onclick = () => {
+$("to-key").onclick = async () => {
   readForm();
   if (S.cv.length < 80) { notice("cv-notice", "Add your CV first: a file or pasted text.", "bad"); return; }
   try { interviewContext(S); }
@@ -224,9 +227,26 @@ $("to-key").onclick = () => {
   store.set("ps_practice_focus", S.practiceFocus); store.set("ps_target_role", S.targetRole); store.set("ps_target_level", S.targetLevel);
   store.set("ps_cv", S.cv); store.set("ps_jd", S.jd); store.set("ps_name", S.name); store.set("ps_language", S.language); store.set("ps_voice", S.voice);
   track("mock_cv_ready", { words: S.cv.split(/\s+/).length, jd: !!S.jd, language: S.language });
+  await booting;                           // the server's config says whether the free demo is on
+  // A first-time visitor gets the free demo on our key: no key, no sign-in, straight to the interview.
+  // A key comes up only after a pass is bought (the owner's call, 25 Sep 2026). Someone who already
+  // has a key keeps the old path untouched.
+  if (!S.key && passCtx.demoOn && !(S.ent && S.ent.kind === "pass")) {
+    if (!demoUsed.get()) { S.ent = { kind: "demo", secondsLeft: DEMO_SECONDS, hasTrial: false }; renderEntitlement(); preLive(); return; }
+    if (passCtx.passesOn) { openPasses("You've had your free demo. A pass gives you unlimited mock interviews."); return; }
+  }
+  showKeyStep();
+};
+
+/* The key screen. After a purchase it is the one-minute setup that makes the pass usable. */
+function showKeyStep() {
+  const paid = S.ent && S.ent.kind === "pass";
+  $("key-lede").textContent = paid
+    ? "Your pass is active. One last step, about a minute: the interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google."
+    : "The interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google. If you use Interview Sarthi or ApplySarthi, it is the same key.";
   show("s-key");
   if (!$("key").value) $("key").focus();
-};
+}
 
 // --------------------------------------------------------------- 2. Key
 
@@ -333,7 +353,13 @@ function preLive() {
   setCaption("Your interviewer", `${p.They} speaks first. Answer out loud, like a real call.`);
   $("tip-speaker").textContent = `Use earphones if you can. From a loud speaker ${p.they} can hear ${p.themself}.`;
   $("tip-interrupt").textContent = `You can interrupt, and so can ${p.they}.`;
-  if (S.ent.kind === "none") {
+  if (S.ent.kind === "demo") {
+    $("start").disabled = false;
+    const cap = Math.min(S.minutes * 60, DEMO_SECONDS);
+    $("clock").textContent = fmt(cap);
+    // Free-tier Gemini may use what it hears to improve Google's services; say so before the call, once.
+    notice("live-notice", `Your free demo: a ${Math.round(cap / 60)}-minute interview, then your report. It runs on Google Gemini, which may use it to improve its services.`);
+  } else if (S.ent.kind === "none") {
     $("start").disabled = true;
     if (passCtx.passesOn) { openPasses("Your free minutes are used up. A pass gives you unlimited mocks, or invite a friend for 20 more free minutes."); return; }
     notice("live-notice", "Your free minutes are used up. Passes open in a few days. Until then, tap Invite at the top: you and a friend both get 20 free minutes.", "bad");
@@ -345,6 +371,7 @@ function preLive() {
     notice("live-notice", cap < S.minutes * 60 ? `${why}, so this interview will be ${fmtLong(cap)}.` : "");
   }
 }
+
 
 /* The live engine retains the full transcript for the report. The call shows
  * current captions only; support can explicitly enable the diagnostic view. */
@@ -496,6 +523,18 @@ async function cancelMicCheck() {
   preLive();
 }
 
+/* No demo for this visitor right now. Nothing here mentions keys: that step comes after a purchase. */
+async function demoRefused(reason) {
+  await cancelMicCheck();
+  track("mock_demo_refused", { reason });
+  if (reason === "busy") { notice("live-notice", "Lots of people are practising right now. Press Start again in about 20 seconds.", "bad"); return; }
+  if (reason === "used") demoUsed.set();
+  const text = reason === "used" ? "You've had your free demo. A pass gives you unlimited mock interviews."
+    : reason === "unavailable" ? "The free demo isn't available just now. Try again in a few minutes, or start with a pass."
+    : "Today's free demos are all used up. Come back tomorrow, or start with a pass.";
+  if (passCtx.passesOn) openPasses(text); else notice("live-notice", text, "bad");
+}
+
 async function startCall() {
   if (phase === "preparing" || phase === "call") return;
   phase = "preparing";
@@ -507,12 +546,21 @@ async function startCall() {
   $("left").textContent = "Your time has not started";
   showPreparation();
   try {
+    if (S.ent.kind === "demo") {
+      // Asked for only now, at Start: a visitor who never presses it never uses one up.
+      demo = await requestDemo();
+      if (controller.signal.aborted || planController !== controller) return;
+      if (!demo.ok) { const why = demo.reason; demo = null; planController = null; await demoRefused(why); return; }
+      demoUsed.set();
+      track("mock_demo_start", {});
+    }
     const plan = await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
-      minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal });
+      minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal,
+      transport: demo ? demoTransport(demo.demo) : undefined });
     if (controller.signal.aborted || planController !== controller) return;
     $("prep-status").textContent = "Your interview plan is ready. Checking your available practice time…";
-    // Refresh after preparation: a pass can expire while the plan is being made.
-    const fresh = await entitlement(S.hash);
+    // Refresh after preparation: a pass can expire while the plan is being made. A demo has no key to look up.
+    const fresh = demo ? S.ent : await entitlement(S.hash);
     if (controller.signal.aborted || planController !== controller) return;
     S.ent = fresh;
     if (S.ent.secondsLeft <= 0) throw new Error("Your practice time has expired. Get a pass or more free minutes before starting.");
@@ -530,7 +578,7 @@ async function startCall() {
   startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
   trialLeftAtStart = S.ent.secondsLeft;
-  plannedSeconds = Math.min(S.minutes * 60, S.ent.secondsLeft);   // free minutes and passes both stop on the second
+  plannedSeconds = Math.min(S.minutes * 60, S.ent.secondsLeft, demo ? demo.seconds : Infinity);   // free minutes, passes and the demo all stop on the second
   log("call_start", { planned: plannedSeconds });
   setLink("busy", "Connecting");
   setCaption("I can hear you", "Calling your interviewer…", true);
@@ -540,6 +588,7 @@ async function startCall() {
   const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60, assessmentPlan };
   live = new GeminiLive({
     apiKey: S.key,
+    authToken: demo ? demo.token : "",
     voice: S.voice,
     instructions: () => buildInterviewerInstructions(brief),
     getInterviewProgress: currentProgress,
@@ -584,7 +633,8 @@ async function onSecond() {
   const remaining = currentProgress().remainingSeconds;
   $("clock").textContent = fmt(remaining);
   $("clock").classList.toggle("low", remaining <= 60);
-  if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
+  if (S.ent.kind === "demo") $("left").textContent = `Free demo · ${fmt(remaining)} left`;
+  else if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
   else if (S.ent.kind === "pass") $("left").textContent = `Pass · ${fmtLong(Math.max(0, passLeft))} left`;
   // Free time is nearly gone: this is the moment someone decides to buy.
   if (S.ent.kind === "trial" && passCtx.passesOn && !offerShown && trialLeftAtStart - elapsed <= LOW_FREE_SECONDS) {
@@ -677,7 +727,7 @@ async function writeReport(turns, elapsed, usage) {
   const metrics = computeMetrics(turns, voiceLog);
   let result;
   try {
-    result = await generateReport({ apiKey: S.key, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan });
+    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan });
   } catch (err) {
     waitWheel.stop(); $("report-wait").style.display = "none";
     $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">The report could not be written</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Your transcript is safe. Download it below and try again later.</p></div>`;
@@ -689,6 +739,18 @@ async function writeReport(turns, elapsed, usage) {
   window.__lastReport = record;
   saveHistory(record);
   renderReport(record);
+  if (S.ent.kind === "demo") {
+    // The demo is over: this is the moment to offer the pass. A second demo is not offered.
+    track("mock_demo_end", { score: result.report.overall_score });
+    demo = null;
+    S.ent = { kind: "none", secondsLeft: 0, hasTrial: false }; renderEntitlement();   // spent: the chip now says "Get a pass"
+    if (passCtx.passesOn) {
+      showOffer("report-offer", "That was your free demo. A pass gives you unlimited mock interviews, from Rs 99 for a week.");
+      track("mock_offer_shown", { where: "demo_report" });
+    } else hideOffer("report-offer");
+    track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
+    return;
+  }
   if (S.ent.kind !== "pass") { const fresh = await entitlement(S.hash); if (fresh.source === "server") { S.ent = fresh; renderEntitlement(); } }
   renderInvite($("invite-report"), result.report.overall_score);
   if (S.ent.kind !== "pass" && passCtx.passesOn) {
@@ -825,4 +887,4 @@ async function loadJobFromApply() {
 window.addEventListener("pagehide", () => { planController?.abort(); hidePreparation(); if (live) live.close(); });
 rememberInvite();
 rememberSource();
-restore().then(loadJobFromApply).then(() => initPasses(passCtx)).then(renderEntitlement);
+const booting = restore().then(loadJobFromApply).then(() => initPasses(passCtx)).then(renderEntitlement);
