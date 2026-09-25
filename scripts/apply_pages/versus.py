@@ -268,7 +268,7 @@ options its own site presents, not from a statement of coverage.</p>""",
         ('How much does Jobright AI cost?',
          'We could not find a candidate pricing page at a public URL when we checked, so we are not quoting a figure. Third-party reviews report a paid Turbo tier at a monthly price, but since we could not confirm that from Jobright itself we have left it out. Check inside the product for current pricing.'),
         ('What is a good Jobright alternative for Indian job seekers?',
-         'The requirement is a matcher that can actually see Indian postings. ApplySarthi ranks your CV against 60,975 open jobs from 21 sources including Naukri, Foundit, Shine and Internshala, plus 754 company career boards, and fills the application form in your own Chrome. It is free during early access.'),
+         'The requirement is a matcher that can actually see Indian postings. ApplySarthi ranks your CV against 60,975 open jobs from 21 sources including Naukri, Foundit, Shine and Internshala, plus 754 company career boards, and fills the application form in your own Chrome. It is always free.'),
     ],
     siblings=[
         ('Auto-apply tools for India, compared', 'best-auto-apply-tools-india.html'),

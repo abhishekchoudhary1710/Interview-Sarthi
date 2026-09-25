@@ -83,7 +83,7 @@ NAUKRI = {
     'meta': f'Reviewed {REVIEWED} · Written by the team that builds ApplySarthi',
     'published': '2026-09-18', 'modified': TODAY,
     'cta_title': 'Naukri, Foundit and Shine included',
-    'cta_text': f'ApplySarthi reaches the Indian boards most tools skip, alongside {ATS_BOARDS} company career pages. Free in early access.',
+    'cta_text': f'ApplySarthi reaches the Indian boards most tools skip, alongside {ATS_BOARDS} company career pages. Always free.',
     'body': f"""
 <h2>Why most tools cannot reach Naukri</h2>
 <p>Naukri blocks two things that nearly every automation product depends on: <b>plain HTTP requests</b> and
