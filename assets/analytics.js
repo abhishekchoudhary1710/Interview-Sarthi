@@ -155,7 +155,7 @@
       if (product && !privateReturn && location.pathname !== "/thanks.html" && !inPrepApp) {
         track("product_click", {
           product: product, destination_kind: kind,
-          placement: a.closest("header, nav") ? "navigation" : a.closest("#products") ? "product_card" :
+          placement: a.closest(".quick-pick") ? "quick_pick" : a.closest("header, nav") ? "navigation" : a.closest("#products") ? "product_card" :
             a.closest("#plans, #pricing") ? "pricing" : a.closest("footer") ? "footer" : "page"
         });
       }
