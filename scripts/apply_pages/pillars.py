@@ -96,7 +96,7 @@ through the session already sitting there.</li>
 <p>There is an Autopilot switch that will press submit for you, off by default, and only when the form
 has nothing left needing a human. We would rather explain that honestly than pretend the option does not
 exist.</p>
-<p>It is free while in early access. You bring your own Google Gemini API key, which Google issues free,
+<p>It is always free. You bring your own Google Gemini API key, which Google issues free,
 so your usage is never rationed against anyone else&rsquo;s. There is a
 <a href="../free-gemini-api-key-guide.html">step-by-step guide to getting one</a>.</p>
 
@@ -138,7 +138,7 @@ COMPARE = {
 
 <h2>The comparison</h2>
 {table(['Product', 'Published price', 'Presses submit?', 'Reaches Naukri / Shine / Internshala?'], [
-  ('<b>ApplySarthi</b>', 'Free in early access; you bring your own Gemini key',
+  ('<b>ApplySarthi</b>', 'Always free; you bring your own Gemini key',
    'No, unless you switch Autopilot on', '<b>Yes</b> &mdash; plus Foundit, Wellfound, LinkedIn, Indeed'),
   ('<a href="vs-lazyapply.html">LazyApply</a>', '$99, $149 or $999 a year',
    'Yes, by design', 'No &mdash; Greenhouse, Dice, Indeed, ZipRecruiter'),
@@ -194,9 +194,9 @@ the same five jobs through each.</p>
 """,
     'faq': [
         ('Which auto-apply tool is best for jobs in India?',
-         'For Indian job boards specifically, the deciding question is whether the tool reaches Naukri, Foundit, Shine and Internshala, and most of the internationally marketed tools do not. ApplySarthi covers those alongside 754 company career boards and is free in early access. If you are applying mainly to United States roles, the comparison changes entirely and Jobright or Simplify may suit you better.'),
+         'For Indian job boards specifically, the deciding question is whether the tool reaches Naukri, Foundit, Shine and Internshala, and most of the internationally marketed tools do not. ApplySarthi covers those alongside 754 company career boards and is always free. If you are applying mainly to United States roles, the comparison changes entirely and Jobright or Simplify may suit you better.'),
         ('Is there a free auto-apply tool?',
-         'Simplify’s autofill tier is free and LoopCV has a free plan. ApplySarthi is free in early access, with the qualification that you supply your own Google Gemini API key, which Google issues at no cost. Paid plans for ApplySarthi are planned once early access ends.'),
+         'Simplify’s autofill tier is free and LoopCV has a free plan. ApplySarthi is always free, with the qualification that you supply your own Google Gemini API key, which Google issues at no cost. Paid plans for ApplySarthi are planned once early access ends.'),
         ('Do any of these work on Naukri?',
          'Of the six compared here, ApplySarthi is the one that states Naukri coverage explicitly. Naukri blocks plain HTTP requests and headless browsers, so a product has to drive a real browser window to reach it, and most do not. Treat an unitemised claim of "30+ job boards" as not including Naukri unless the company names it.'),
         ('Will paying more get me more interviews?',

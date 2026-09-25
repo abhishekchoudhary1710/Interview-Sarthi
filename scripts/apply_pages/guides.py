@@ -62,7 +62,7 @@ you</a>, <a href="{UP}guides/salary-expectation-answer.html">salary expectations
         ('What is the difference between ApplySarthi and Interview Sarthi?',
          'They cover the two halves of a job search. ApplySarthi handles applying — it finds open jobs, matches them to your CV, tailors the CV to each one and fills the employer’s application form in your own browser. Interview Sarthi handles what happens after: live, resume-grounded help during the interview itself, in English, Hindi or Hinglish. Both run on the same free Google Gemini key.'),
         ('Do I need to pay for ApplySarthi?',
-         'Not during early access. ApplySarthi is free while it is being built out, and you supply your own Google Gemini API key, which Google issues at no cost. Paid plans are planned once early access ends. Interview Sarthi is a separate product with its own passes.'),
+         'No. ApplySarthi is always free, and you supply your own Google Gemini API key, which Google issues at no cost. Interview Sarthi is a separate product with its own passes.'),
     ],
     'more': [
         ('What ApplySarthi does', f'{UP}apply/'),

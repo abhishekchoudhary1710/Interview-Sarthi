@@ -33,7 +33,7 @@ def page(slug, name, title, description, lead, verified, differ, decide, unverif
         'meta': f'Public sources reviewed {REVIEWED} · Not a hands-on benchmark',
         'published': '2026-09-18', 'modified': TODAY,
         'cta_title': 'Try ApplySarthi on your own CV',
-        'cta_text': f'Free in early access, with {OPEN_JOBS} open jobs from {SOURCES} sources and {ATS_BOARDS} company career boards.',
+        'cta_text': f'Always free, with {OPEN_JOBS} open jobs from {SOURCES} sources and {ATS_BOARDS} company career boards.',
         'body': f"""{DISCLOSURE}
 <h2>What we could verify</h2>
 {verified}
@@ -64,14 +64,14 @@ profile, <b>$149 a year</b> for 150 a day and five profiles, and <b>$999 a year<
 twenty profiles. It describes applying automatically across <b>Greenhouse, Dice, Indeed and
 ZipRecruiter</b>, with referral emails and a tracking dashboard.
 (<a href="https://lazyapply.com/pricing" rel="nofollow">Official pricing page</a>, read {REVIEWED}.)</p>
-<p><b>ApplySarthi</b> is free in early access. It collects open jobs from {SOURCES} sources and
+<p><b>ApplySarthi</b> is always free. It collects open jobs from {SOURCES} sources and
 {ATS_BOARDS} company career boards, ranks them against your CV, rewrites the CV for the job you pick and
 fills that employer&rsquo;s form in your own Chrome. You press submit. You supply a free Google Gemini
 key, so your usage is not rationed against other users. See the
 <a href="{UP}facts.html">product facts</a>.</p>""",
     differ="""
 """ + table(['', 'ApplySarthi', 'LazyApply'], [
-        ('Price', 'Free in early access', '$99 / $149 / $999 per year'),
+        ('Price', 'Always free', '$99 / $149 / $999 per year'),
         ('Daily applications', 'As many as genuinely fit', '15 / 150 / 1,500 by plan'),
         ('Presses submit', 'No, unless you switch Autopilot on', 'Yes &mdash; that is the product'),
         ('Indian job boards', 'Naukri, Foundit, Shine, Internshala, Wellfound, LinkedIn, Indeed',
@@ -100,7 +100,7 @@ above comes from that page.</p>""",
         ('Does LazyApply work on Naukri?',
          'Its pricing page lists Greenhouse, Dice, Indeed and ZipRecruiter, and does not mention Naukri. Naukri blocks plain HTTP requests and headless browsers, so reaching it requires driving a real browser window — an approach that does not fit a product built around high-volume server-side submission.'),
         ('What is the cheapest way to auto-apply to jobs in India?',
-         'ApplySarthi is free during early access, with the qualification that you supply your own Google Gemini API key, which Google issues at no cost. Among paid products, LoopCV publishes plans from €9.99 a month and LazyApply from $99 a year, though neither states coverage of the main Indian job boards.'),
+         'ApplySarthi is always free, with the qualification that you supply your own Google Gemini API key, which Google issues at no cost. Among paid products, LoopCV publishes plans from €9.99 a month and LazyApply from $99 a year, though neither states coverage of the main Indian job boards.'),
     ],
     siblings=[
         ('Auto-apply tools for India, compared', 'best-auto-apply-tools-india.html'),
@@ -122,13 +122,13 @@ autofill, and does not describe automatic submission. Copilot is presented as fr
 <p>Simplify does not publish a public pricing page for its paid tier, so we are not quoting a figure for
 it. Third-party reviews cite monthly and weekly prices; we could not confirm those from Simplify itself
 and have left them out rather than repeat them.</p>
-<p><b>ApplySarthi</b> is free in early access, covers {SOURCES} sources including Naukri, Foundit, Shine,
+<p><b>ApplySarthi</b> is always free, covers {SOURCES} sources including Naukri, Foundit, Shine,
 Internshala, Wellfound, LinkedIn and Indeed alongside {ATS_BOARDS} company career boards, ranks them
 against your CV and rewrites the CV per job. It also stops at the submit button.</p>""",
     differ="""
 """ + table(['', 'ApplySarthi', 'Simplify'], [
         ('Presses submit', 'No, unless you switch Autopilot on', 'No &mdash; autofill only'),
-        ('Price', 'Free in early access', 'Free tier; paid tier price not published publicly'),
+        ('Price', 'Always free', 'Free tier; paid tier price not published publicly'),
         ('Finds jobs for you', 'Yes &mdash; ranked against your CV', 'Job board and matches within the product'),
         ('Indian job boards', 'Naukri, Foundit, Shine, Internshala, Wellfound, LinkedIn, Indeed',
          'Not stated; positioned around company career sites'),
@@ -158,7 +158,7 @@ we would encourage that over taking either of our words for it.</p>""",
         ('Does Simplify auto-submit applications?',
          'No. Its own page describes autofilling applications in one click and saving them to a tracker; it does not describe automatic submission. That is the same position ApplySarthi takes by default — the software fills the form, you read it and press the site’s own submit button.'),
         ('What is the best Simplify alternative for India?',
-         'The gap to close is Indian job board coverage, since Simplify is built around company career sites. ApplySarthi covers Naukri, Foundit, Shine, Internshala, Wellfound, LinkedIn and Indeed alongside 754 company career boards, and is free during early access. The two work the same way at the form itself, so switching costs little.'),
+         'The gap to close is Indian job board coverage, since Simplify is built around company career sites. ApplySarthi covers Naukri, Foundit, Shine, Internshala, Wellfound, LinkedIn and Indeed alongside 754 company career boards, and is always free. The two work the same way at the form itself, so switching costs little.'),
     ],
     siblings=[
         ('Auto-apply tools for India, compared', 'best-auto-apply-tools-india.html'),
@@ -181,11 +181,11 @@ offers a browser extension so credentials are not shared.
 (<a href="https://www.loopcv.pro/pricing" rel="nofollow">Official pricing page</a>, read {REVIEWED}.)</p>
 <p>The 30+ boards are not itemised on that page, so we cannot tell you whether Naukri, Foundit, Shine or
 Internshala are among them.</p>
-<p><b>ApplySarthi</b> is free in early access and names its {SOURCES} sources openly, including all four of
+<p><b>ApplySarthi</b> is always free and names its {SOURCES} sources openly, including all four of
 those, plus {ATS_BOARDS} company career boards.</p>""",
     differ="""
 """ + table(['', 'ApplySarthi', 'LoopCV'], [
-        ('Price', 'Free in early access', 'From &euro;9.99 a month'),
+        ('Price', 'Always free', 'From &euro;9.99 a month'),
         ('Presses submit', 'No, unless you switch Autopilot on', 'Yes'),
         ('Emails employers for you', 'No', 'Yes &mdash; follow-up emails are a stated feature'),
         ('Job sources named publicly', f'Yes &mdash; all {SOURCES} listed', '&ldquo;30+ job boards&rdquo;, not itemised'),
@@ -202,8 +202,7 @@ sites by keeping credentials out of its servers. What we cannot tell you from it
 its 30+ boards include the Indian ones. If you are applying in India, ask them to name the list before
 paying, and treat an unitemised claim as excluding Naukri and Foundit, which block the kind of automation
 a server-side product depends on.</p>
-<p>On price, &euro;9.99 a month is about &#8377;950 at the time of writing, recurring. ApplySarthi is free
-during early access, with paid plans planned afterwards.</p>""",
+<p>On price, &euro;9.99 a month is about &#8377;950 at the time of writing, recurring. ApplySarthi is always free.</p>""",
     unverified="""
 <p>We have not verified which specific job boards LoopCV covers, its fill accuracy, the content of its
 follow-up emails, or how its free plan differs in practice from the paid ones. Currency conversions move;
@@ -237,12 +236,12 @@ selector centres on the United States.
 <p>Jobright does not publish a candidate pricing page at a public URL that we could read, so we are not
 quoting plan prices. Third-party reviews report a paid Turbo tier; we could not confirm the figure from
 Jobright and have not repeated it.</p>
-<p><b>ApplySarthi</b> is free in early access, and its sources are Indian and international boards plus
+<p><b>ApplySarthi</b> is always free, and its sources are Indian and international boards plus
 {ATS_BOARDS} company career boards, with {OPEN_JOBS} postings open in the current snapshot.</p>""",
     differ="""
 """ + table(['', 'ApplySarthi', 'Jobright AI'], [
         ('Primary market', 'India', 'United States, including H1B categories'),
-        ('Price', 'Free in early access', 'Not published on a public page'),
+        ('Price', 'Always free', 'Not published on a public page'),
         ('Matching', 'Your CV text against the full job description', 'Matching plus insider connections'),
         ('Presses submit', 'No, unless you switch Autopilot on', 'Autofill; an agent on paid tiers'),
         ('Indian job boards', 'Naukri, Foundit, Shine, Internshala, Wellfound, LinkedIn, Indeed', 'Not a stated focus'),
@@ -296,7 +295,7 @@ are a separate product, <a href="{UP}">Interview Sarthi</a>, with its own passes
     differ="""
 """ + table(['', 'ApplySarthi', 'AIApply'], [
         ('Shape', 'Applying only; interviews are a separate product', 'One suite across the whole search'),
-        ('Price', 'Free in early access', 'Not published; auto-apply sold as credit packs'),
+        ('Price', 'Always free', 'Not published; auto-apply sold as credit packs'),
         ('Presses submit', 'No, unless you switch Autopilot on', 'Yes, spending credits'),
         ('Indian job boards', 'Naukri, Foundit, Shine, Internshala, Wellfound, LinkedIn, Indeed', 'Not stated'),
         ('Interview help', 'Interview Sarthi &mdash; live help during the real call', 'Mock interview tools in the suite'),

@@ -82,7 +82,7 @@ Python regression tests: 8 passed
   switched on — so the headline promises more than a new user's first session delivers, and it places
   ApplySarthi in the blind-auto-apply category that `vs-lazyapply.html` and `vs-loopcv.html` argue
   against. Worth revisiting if early users arrive expecting applications to send themselves.
-- **Pricing.** ApplySarthi is described as free in early access, which is currently true. When plans
+- **Pricing.** ApplySarthi is always free (owner decision, 24 Sep 2026), and every page now says so. If plans ever
   launch, the offer in `apply/index.html`'s schema and the price column in
   `best-auto-apply-tools-india.html` both need updating, and `_shared.py` is where to start.
 - **Competitor facts age.** Re-read the five linked pricing pages before quoting them in any new content,
