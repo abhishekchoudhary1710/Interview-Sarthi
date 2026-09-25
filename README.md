@@ -65,7 +65,7 @@ The reviewed allow-list in `scripts/seo_pages.json` controls inclusion and dates
 
 ## ApplySarthi pages
 
-The pages under `apply/` are generated from `scripts/apply_pages/`, so the shared header, footer and
+The guide and comparison pages under `apply/` are generated from `scripts/apply_pages/`, so the shared header, footer and
 schema are written once rather than thirteen times. Edit the content module, then:
 
 ```sh
@@ -74,6 +74,14 @@ python scripts/build_apply_pages.py      # rewrite the HTML, which is committed 
 
 `scripts/apply_pages/_shared.py` is the fact register for that content: every number an ApplySarthi page
 states must exist there with a note on where it was read from. See [APPLYSARTHI_SEO.md](APPLYSARTHI_SEO.md).
+
+The product homepage `apply/index.html` is maintained directly, with `assets/apply-home.css` and
+`assets/apply-home.js`. Its social share image is `assets/og-apply-home.jpg`, rendered at 1200×630
+from `assets/og-apply-home.source.html`. Guide share images are separate. Run
+`python tests/apply_browser_smoke.py` with Python Playwright and Chromium for responsive and
+interaction checks; `BROWSER_EXECUTABLE` optionally selects a locally installed Chromium binary.
+External analytics and font requests are blocked during this test. Screenshots go to
+`.seo-preview/apply-redesign/`. See [the redesign verification](research/apply-home-redesign-2026-09-25.md).
 
 ## Research and reach
 
