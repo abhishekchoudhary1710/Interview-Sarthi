@@ -51,11 +51,10 @@ def main() -> int:
         if page.locator("#checkout").is_visible():
             failures.append("the sign-in step is visible before Buy is pressed")
 
-        # a different plan changes the button
-        page.click('.plan[data-plan="m"]')
+        # one pass since 25 Sep 2026: the button names the month
         if "30-day" not in page.text_content("#buy-cta"):
-            failures.append("choosing the 30-day plan did not change the Buy button")
-        page.click('.plan[data-plan="w"]')
+            failures.append("the Buy button does not name the 30-day pass")
+        page.click('.plan[data-plan="m"]')
 
         # step 2: who you are, then the number
         page.click("#buy-cta")

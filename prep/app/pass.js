@@ -112,7 +112,7 @@ export async function initPasses(context) {
     $("testlogin-go").onclick = () => onGoogle("test:" + ($("testlogin-email").value.trim() || "tester@example.com"));
   }
   const asked = window.__ps || {};
-  choosePlan(asked.buy || ctx.state.plan || "w");
+  choosePlan(asked.buy || ctx.state.plan || "m");
   if (asked.buy || asked.order) {
     // The head put the right screen up; from here the app owns it.
     if (asked.buy) { step = "checkout"; ctx.show("s-pass"); }
@@ -140,7 +140,7 @@ function choosePlan(id) {
 
 /**
  * @param {string} [message]
- * @param {{plan?: "w"|"m", checkout?: boolean}} [opts]  the pricing page's buttons
+ * @param {{plan?: "m", checkout?: boolean}} [opts]  the pricing page's buttons
  *        open the app straight at checkout for the pass that was clicked
  */
 export async function openPasses(message, opts = {}) {
@@ -260,7 +260,7 @@ async function pay() {
   $("pay").disabled = true;
   say("Opening secure checkout…");
   try {
-    const order = await startOrder(ctx.state.plan || "w", abroad ? "" : phone);
+    const order = await startOrder(ctx.state.plan || "m", abroad ? "" : phone);
     try {
       localStorage.setItem(PENDING, JSON.stringify({
         order_id: order.order_id, hash: ctx.state.hash || null,
@@ -269,7 +269,7 @@ async function pay() {
       if (!abroad) localStorage.setItem(PHONE, phone.slice(-10));
     } catch (_) { /* private mode */ }
     ctx.track("begin_checkout", {
-      product: "prep-sarthi", plan: ctx.state.plan || "w",
+      product: "prep-sarthi", plan: ctx.state.plan || "m",
       value: order.amount, currency: order.currency || "INR",
     });
     // Dodo hosts its own checkout page, so there is no SDK to load: leaving the

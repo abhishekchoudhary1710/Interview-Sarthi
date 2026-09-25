@@ -50,11 +50,11 @@ with sync_playwright() as p:
             if path in ('index.html','live/index.html','facts.html','best-ai-interview-assistant-india.html','guides/index.html'):
                 page.screenshot(path=str(ARTIFACTS / f"{path.replace('/','-')}-{width}.png"),full_page=True)
     page.goto('http://localhost/live/',wait_until='load')
-    weekly = page.get_by_role('link',name='Buy 7-Day Pass',exact=False)
-    assert weekly.count()==2
-    for item in weekly.all():
-        assert 'license.interviewsarthi.com/buy?plan=7d' in item.get_attribute('href')
-    # Both weekly CTAs, including the closing one below the region script,
+    monthly = page.get_by_role('link',name='Buy 1-Month Pass',exact=False)
+    assert monthly.count()==2
+    for item in monthly.all():
+        assert 'license.interviewsarthi.com/buy?plan=30d' in item.get_attribute('href')
+    # Both monthly CTAs, including the closing one below the region script,
     # must honor the visible currency choice and remember it after a reload.
     for region, label in (('intl', 'outside India (USD)'), ('in', 'India')):
         if page.locator('#regionname').inner_text() != label:
@@ -63,10 +63,10 @@ with sync_playwright() as p:
             if reload:
                 page.reload(wait_until='load')
             assert page.locator('#regionname').inner_text() == label
-            assert weekly.count() == 2
-            for item in weekly.all():
+            assert monthly.count() == 2
+            for item in monthly.all():
                 query = parse_qs(urlsplit(item.get_attribute('href')).query)
-                assert query['plan'] == ['7d']
+                assert query['plan'] == ['30d']
                 assert query['region'] == [region]
     page.goto('http://localhost/thanks.html?license_key=TEST-RECEIPT&email=test@example.invalid',wait_until='load')
     assert page.locator('#keyval').inner_text() == 'TEST-RECEIPT'

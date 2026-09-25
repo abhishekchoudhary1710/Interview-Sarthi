@@ -44,7 +44,7 @@ const BAR_SHAPE = [0.55, 1, 0.75, 0.95, 0.5];
 const MIC_MUTED_RMS = 0.00002;   // exact digital silence: a mute key or a dead input
 const LOW_FREE_SECONDS = 5 * 60;      // when the pass offer appears during a free interview
 
-const S = { cv: "", jd: "", practiceFocus: "role", targetRole: "", targetLevel: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "w" };
+const S = { cv: "", jd: "", practiceFocus: "role", targetRole: "", targetLevel: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "m" };
 let lastScreen = "s-cv";
 let assessmentPlan = null, planCoverage = null, planController = null;
 let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, ending = false;
@@ -336,7 +336,8 @@ $("anyway").onclick = () => {
 };
 
 function showOffer(id, text) { $(id + "-text").textContent = text; $(id).style.display = "flex"; }
-const weekPrice = () => priceOf("w") || "Rs 99";
+// One pass since 25 Sep 2026: a month of unlimited mocks, Rs 99 in India ($9.99 abroad).
+const monthPrice = () => priceOf("m") || "Rs 99";
 const clip = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 
 /* The report is where someone decides whether to keep practising. From 20 to 25 Sep 2026 about seven
@@ -348,8 +349,8 @@ function showReportOffer(lead, rep) {
   const ask = weakest && Number(weakest.score) < 7
     ? ` Your weakest answer was "${clip(weakest.question, 90)}" (${Number(weakest.score)}/10). Practise it again tonight, as many times as you like.`
     : " Practise again tonight, as many times as you like.";
-  showOffer("report-offer", `${lead}${ask} A 7-day pass gives you unlimited mock interviews.`);
-  $("report-offer-go").textContent = `Get 7 days for ${weekPrice()}`;
+  showOffer("report-offer", `${lead}${ask} A 30-day pass gives you unlimited mock interviews.`);
+  $("report-offer-go").textContent = `Get 30 days for ${monthPrice()}`;
   const score = $("report").firstElementChild;
   if (score) score.after($("report-offer"));
 }
@@ -687,7 +688,7 @@ async function onSecond() {
   // Free time is nearly gone: this is the moment someone decides to buy.
   if (S.ent.kind === "trial" && passCtx.passesOn && !offerShown && trialLeftAtStart - elapsed <= LOW_FREE_SECONDS) {
     offerShown = true;
-    showOffer("live-offer", `About ${Math.max(1, Math.round((trialLeftAtStart - elapsed) / 60))} free minutes left. A pass gives you unlimited mocks, ${weekPrice()} for a week.`);
+    showOffer("live-offer", `About ${Math.max(1, Math.round((trialLeftAtStart - elapsed) / 60))} free minutes left. A pass gives you unlimited mocks, ${monthPrice()} for 30 days.`);
     track("mock_offer_shown", { where: "interview" });
   }
   if (remaining <= 0) { endInterview("time"); return; }
@@ -897,7 +898,7 @@ $("copydiag").onclick = async () => {
 };
 
 $("live-offer-go").onclick = () => { track("mock_offer_click", { where: "interview" }); openPasses(); };
-$("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses("", { plan: "w" }); };
+$("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses("", { plan: "m" }); };
 
 /* ApplySarthi's "Practise this interview" arrives as ?from=applysarthi&job=source:id. The job's public listing is
  * read from ApplySarthi and put in the JD box, so the mock interview is for that exact role. Only the public

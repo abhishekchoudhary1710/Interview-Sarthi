@@ -9,7 +9,7 @@ This records the current advertised offer, not a certification of the desktop bi
 InterviewSarthi is the shared brand. Its root homepage explains three products and links to their existing websites:
 
 - `/apply/`: Apply Sarthi brings together jobs from multiple portals, with CV matching and application autofill.
-- `/prep/`: Prep Sarthi runs spoken AI mock interviews, follow-up questions and feedback. The browser app is at `/prep/app/`.
+- `/prep/`: Prep Sarthi runs spoken AI mock interviews, follow-up questions and feedback. The browser app is at `/prep/app/`. Free 7-minute demo with no sign-up, then one pass only: ₹99 ($9.99 outside India) for 30 days of unlimited mock interviews, paid once, never renews (since 25 September 2026; the 7-Day Pass is withdrawn).
 - `/live/`: Live Sarthi is the existing Windows AI interview assistant, with CV-based suggestions during a call.
 
 The platform details and passes below describe **Live Sarthi**, previously presented on the root homepage as Interview Sarthi. It can support mock calls and permitted live use; Prep is the separate AI mock interviewer. Moving the product page does not change the desktop app's name or access terms.
@@ -30,9 +30,8 @@ The platform details and passes below describe **Live Sarthi**, previously prese
 
 - Trial: **30 minutes free per computer**, all features, no card or Interview Sarthi account. FAQ says answers stop after the trial; transcripts remain available. Reinstallation does not reset the trial.
 - 2-Day Pass: ₹99 once, 2 days, 1 device; checkout product `pdt_0Nn41S0EP7d5UNAJZNPAL`.
-- 7-Day Pass: ₹399 once, 7 days, 1 device; `pdt_0NmLzNTWbybTsXtpmtmaH`.
-- 1-Month Pass: ₹999 once, 30 days, 2 devices; `pdt_0NmHQqaKlKiZ57ISIRzdn`.
-- 3-Month Pass: ₹1,999 once, 90 days, 2 devices; `pdt_0NmHNZ2I6qiJg6CrzInBg`.
+- 1-Month Pass: ₹299 once ($29.99 outside India), 30 days, 2 devices; `pdt_0NmHQqaKlKiZ57ISIRzdn`.
+- Outside India the 2-Day Pass is $9.99. Since 25 September 2026 these are the only two passes; the 7-Day and 3-Month passes are withdrawn and must not be offered or linked (`plan=7d`, `plan=90d`).
 - Paid passes advertise unlimited sessions during validity, without automatic renewal. Google API quotas/billing are separate.
 - Evidence: `live/index.html` pricing cards, JSON-LD offers, FAQ and matching checkout URLs. Older About/guide session-count copy is stale.
 - Refund claims remain governed by `refunds.html`; do not change commercial policy as an SEO edit.

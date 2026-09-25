@@ -195,12 +195,12 @@ class SeoTests(unittest.TestCase):
     def test_software_offer_prices_and_entity_links(self):
         page = Page((ROOT/'live/index.html').read_text(encoding='utf-8'))
         app = next(n for s in page.schemas for n in nodes(s) if n.get('@type')=='SoftwareApplication')
-        self.assertEqual([str(o['price']) for o in app['offers']], ['0','99','399','999','1999'])
+        self.assertEqual([str(o['price']) for o in app['offers']], ['0','99','299'])
         self.assertEqual(app['publisher']['@id'], 'https://interviewsarthi.com/#organization')
         self.assertEqual(app['@id'], 'https://interviewsarthi.com/#software')
         self.assertEqual(app['url'], 'https://interviewsarthi.com/live/')
 
-    def test_weekly_checkout_labels_match_weekly_product(self):
+    def test_monthly_checkout_labels_match_monthly_product(self):
         class Links(HTMLParser):
             def __init__(self):
                 super().__init__()
@@ -213,14 +213,18 @@ class SeoTests(unittest.TestCase):
                     self.label += text
             def handle_endtag(self, tag):
                 if tag == 'a':
-                    if 'Buy 7-Day Pass' in ' '.join(self.label.split()):
+                    if 'Buy 1-Month Pass' in ' '.join(self.label.split()):
                         self.found.append(self.href)
                     self.href = ''
+        html = (ROOT/'live/index.html').read_text(encoding='utf-8')
         links = Links()
-        links.feed((ROOT/'live/index.html').read_text(encoding='utf-8'))
+        links.feed(html)
         self.assertEqual(len(links.found), 2)
         # The licence server picks Dodo or Cashfree; the plan code is what must match the label.
-        self.assertTrue(all('license.interviewsarthi.com/buy?plan=7d' in href for href in links.found))
+        self.assertTrue(all('license.interviewsarthi.com/buy?plan=30d' in href for href in links.found))
+        # The 7-Day and 3-Month passes were withdrawn on 25 Sep 2026.
+        self.assertNotIn('plan=7d', html)
+        self.assertNotIn('plan=90d', html)
 
 
 if __name__ == '__main__':

@@ -112,17 +112,20 @@
     });
   }
 
-  /* The four passes, keyed by the plan code in the checkout link
-   * (license.interviewsarthi.com/buy?plan=7d), so a price change on the site
+  /* The passes, keyed by the plan code in the checkout link
+   * (license.interviewsarthi.com/buy?plan=30d), so a price change on the site
    * does not silently desync the reported revenue. Rupee prices: the value
-   * is what the report is for, not what a foreign card was charged. */
+   * is what the report is for, not what a foreign card was charged.
+   * Only 2d and 30d are sold since 25 Sep 2026. The two withdrawn passes stay
+   * here, at the price they were sold for, so a key bought before then still
+   * reports its value when it reaches thanks.html. No page links to them. */
   var PASSES = {
     "2d": { name: "2-Day Pass", value: 99 },
+    "30d": { name: "1-Month Pass", value: 299 },
     "7d": { name: "7-Day Pass", value: 399 },
-    "30d": { name: "1-Month Pass", value: 999 },
     "90d": { name: "3-Month Pass", value: 1999 }
   };
-  /* The licence server names the pass by its label ("7-Day Pass"). */
+  /* The licence server names the pass by its label ("1-Month Pass"). */
   function passByName(label) {
     for (var code in PASSES) {
       if (PASSES[code].name === label) return { id: code, name: label, value: PASSES[code].value };
@@ -180,7 +183,7 @@
       return;
     }
 
-    /* Every buy button goes to license.interviewsarthi.com/buy?plan=7d, which
+    /* Every buy button goes to license.interviewsarthi.com/buy?plan=30d (or 2d), which
      * sends the buyer on to Dodo or Cashfree. The plan code names the pass. */
     var buy = href.match(/license\.interviewsarthi\.com\/buy\?plan=(\d+d)\b/);
     if (buy) {

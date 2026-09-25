@@ -50,20 +50,20 @@ test('disabled analytics and denied storage do not break navigation',()=>{
   const denied={getItem:()=>{throw Error('denied')},setItem:()=>{throw Error('denied')}};
   assert.equal(referral(run('https://interviewsarthi.com/?utm_source=copilot','',denied)).length,1);
 });
-test('checkout still records the selected 7-day product and price',()=>{
+test('checkout still records the selected 1-month product and price',()=>{
   const local=storage(); const r=run('https://interviewsarthi.com/','',storage(),local);
-  const anchor={getAttribute:()=> 'https://license.interviewsarthi.com/buy?plan=7d',closest:()=>null};
+  const anchor={getAttribute:()=> 'https://license.interviewsarthi.com/buy?plan=30d',closest:()=>null};
   r.listeners.click({target:{closest:()=>anchor}});
-  assert.equal(JSON.parse(local.getItem('pending_pass')).value,399);
-  assert.equal(r.events.find(e=>e[1]==='begin_checkout')[2].items[0].item_name,'7-Day Pass');
+  assert.equal(JSON.parse(local.getItem('pending_pass')).value,299);
+  assert.equal(r.events.find(e=>e[1]==='begin_checkout')[2].items[0].item_name,'1-Month Pass');
 });
 test('a Cashfree order reports the purchase once, valued by the plan label, without the key',()=>{
   const local=storage(); const r=run('https://interviewsarthi.com/thanks.html?order_id=order_123','',storage(),local);
-  r.window.sarthiReportPurchase('IS-TEST-KEY','7-Day Pass');
-  r.window.sarthiReportPurchase('IS-TEST-KEY','7-Day Pass');
+  r.window.sarthiReportPurchase('IS-TEST-KEY','1-Month Pass');
+  r.window.sarthiReportPurchase('IS-TEST-KEY','1-Month Pass');
   const purchases=r.events.filter(e=>e[1]==='purchase');
   assert.equal(purchases.length,1);
-  assert.equal(purchases[0][2].value,399);
+  assert.equal(purchases[0][2].value,299);
   assert.ok(!JSON.stringify(r.events).includes('IS-TEST-KEY'));
 });
 test('Clarity never loads inside the Prep Sarthi app, but does on its landing page',()=>{

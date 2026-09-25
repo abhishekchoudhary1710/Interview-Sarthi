@@ -1,6 +1,6 @@
 """Buying must not depend on the interview setup. Three journeys, sandbox only:
 
-1. The pricing page's "Get the 7-day pass" opens the app at checkout for that
+1. The pricing page's "Get the 30-day pass" opens the app at checkout for that
    pass; with no Gemini key anywhere, sign in, pay, land in the account, and
    "Start practising" leads into the interview setup.
 2. The same buyer on a brand-new browser finds "Already bought a pass? Sign in"
@@ -58,7 +58,7 @@ def main() -> int:
         # The very first paint must already be the pass screen: no flash of the
         # CV step on the way there.
         first = browser.new_context(viewport={"width": 420, "height": 900}, is_mobile=True).new_page()
-        first.goto(f"{BASE}/prep/app/?buy=w", wait_until="commit")
+        first.goto(f"{BASE}/prep/app/?buy=m", wait_until="commit")
         first.wait_for_selector(".screen.on", timeout=10000)
         shown = first.evaluate("document.querySelector('.screen.on').id + '|' + (document.getElementById('checkout-plan')||{}).textContent")
         print("   first paint           :", shown)
@@ -70,8 +70,8 @@ def main() -> int:
         page.wait_for_selector("#checkout", state="visible", timeout=10000)
         print("   opens at checkout     :", page.text_content("#checkout-plan"), "| url cleaned:", "buy=" not in page.url)
         page.screenshot(path=str(OUT / "direct-1-checkout.png"), full_page=True)
-        if "7-Day" not in (page.text_content("#checkout-plan") or ""):
-            failures.append("the pricing button did not open checkout for the 7-day pass")
+        if "30-Day" not in (page.text_content("#checkout-plan") or ""):
+            failures.append("the pricing button did not open checkout for the 30-day pass")
         page.fill("#testlogin-email", EMAIL)
         page.click("#testlogin-go")
         page.wait_for_selector("#pass-pay", state="visible", timeout=15000)
