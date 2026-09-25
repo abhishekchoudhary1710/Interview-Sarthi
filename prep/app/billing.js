@@ -38,6 +38,17 @@ export function rememberInvite() {
   return mem.get("ps_ref");
 }
 
+// ---- where this visitor came from. ApplySarthi's links carry from=applysarthi, which earns a key the server
+// has never met 10 extra free minutes. Remembered like an invite: the first value wins.
+export function rememberSource() {
+  try {
+    const from = new URLSearchParams(location.search).get("from");
+    if (from === "applysarthi" && !mem.get("ps_from")) mem.set("ps_from", from);
+  } catch (_) { /* no URL */ }
+  return mem.get("ps_from");
+}
+const from = () => mem.get("ps_from") || undefined;
+
 export const session = {
   get: () => mem.get("ps_session"),
   set: (v) => mem.set("ps_session", v),
@@ -67,7 +78,8 @@ function shape(r, hash) {
   const hasTrial = !!(r.trial && typeof r.trial.seconds_left === "number");
   const trialLeft = hasTrial ? Math.max(0, Number(r.trial.seconds_left)) : 0;
   if (hasTrial && hash) localTrial.set(hash, Number(r.trial.total) - trialLeft);   // keep the local mirror honest
-  const base = { invite: r.invite || null, account: r.account || null, plans: r.plans || null, trialLeft, hasTrial, source: "server" };
+  const base = { invite: r.invite || null, account: r.account || null, plans: r.plans || null, trialLeft, hasTrial,
+                 welcome: r.welcome || null, source: "server" };
   if (r.pass && r.pass.valid) return { ...base, kind: "pass", secondsLeft: Math.max(0, Number(r.pass.seconds_left)), expiresAt: r.pass.expires_at };
   if (!hasTrial) return { ...base, kind: "none", secondsLeft: 0 };
   return { ...base, kind: trialLeft > 0 ? "trial" : "none", secondsLeft: trialLeft };
@@ -79,7 +91,7 @@ function shape(r, hash) {
  */
 export async function entitlement(hash) {
   try {
-    const r = await post("/mock/status", { hash, session: session.get() || undefined, ref: mem.get("ps_ref") || undefined });
+    const r = await post("/mock/status", { hash, session: session.get() || undefined, ref: mem.get("ps_ref") || undefined, from: from() });
     if (session.get() && !r.account) session.clear();            // expired or unknown session
     return shape(r, hash);
   } catch (_) {
@@ -103,7 +115,7 @@ export async function entitlementBySession() {
 export async function tick(hash, seconds) {
   localTrial.add(hash, seconds);
   try {
-    const r = await post("/mock/trial/tick", { hash, seconds, ref: mem.get("ps_ref") || undefined });
+    const r = await post("/mock/trial/tick", { hash, seconds, ref: mem.get("ps_ref") || undefined, from: from() });
     return { secondsLeft: Math.max(0, Number(r.seconds_left)), reward: r.reward || null, source: "server" };
   } catch (_) {
     return { secondsLeft: Math.max(0, TRIAL_SECONDS - localTrial.used(hash)), reward: null, source: "local" };
@@ -117,7 +129,7 @@ export const config = () => post("/mock/config", {});
 /* `hash` is optional: someone buying straight from the pricing page has no
  * Gemini key in this browser yet. The invite code rides along so it still counts. */
 export async function signIn(idToken, hash) {
-  const r = await post("/mock/auth/google", { id_token: idToken, hash: hash || undefined, ref: mem.get("ps_ref") || undefined });
+  const r = await post("/mock/auth/google", { id_token: idToken, hash: hash || undefined, ref: mem.get("ps_ref") || undefined, from: from() });
   session.set(r.session);
   return shape(r, hash || null);
 }

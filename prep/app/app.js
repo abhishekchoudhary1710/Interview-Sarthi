@@ -21,7 +21,7 @@ import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { generateInterviewPlan } from "./plan-request.js";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite } from "./billing.js";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource } from "./billing.js";
 import { initPasses, openPasses, renderInvite } from "./pass.js";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
@@ -91,7 +91,7 @@ function renderEntitlement() {
   const e = S.ent, el = $("entitle");
   // Nothing known yet: a dash while the server is being asked, and the honest
   // default for a first-time visitor once it is clear nobody is signed in.
-  if (!e) { el.textContent = booted ? "20 min free" : "\u2026"; el.className = "chip"; return; }
+  if (!e) { el.textContent = booted ? (store.get("ps_from") === "applysarthi" ? "30 min free" : "20 min free") : "\u2026"; el.className = "chip"; return; }
   if (e.kind === "pass") { el.textContent = `Pass · ${fmtLong(e.secondsLeft)} left`; el.className = "chip ok"; }
   else if (e.kind === "trial") { el.textContent = `Free · ${fmtLong(e.secondsLeft)} left`; el.className = "chip"; }
   // Signed in, but no Gemini key in this browser yet: no free-minute count to show.
@@ -102,7 +102,11 @@ function renderEntitlement() {
 /* What the pass screen and the invite card need from this page. */
 const passCtx = {
   state: S, passesOn: false, show, track, log,
-  setEntitlement(ent) { S.ent = ent; renderEntitlement(); },
+  setEntitlement(ent) {
+    S.ent = ent; renderEntitlement();
+    // The server says this once, on the call that created the trial: tell the person where the minutes came from.
+    if (ent && ent.welcome) showApplyWelcome(`ApplySarthi bonus added: ${ent.welcome.minutes} extra free minutes, so you have ${Math.round(ent.secondsLeft / 60)} in total.`);
+  },
   refresh: () => entitlement(S.hash),
   // An interview keeps running while someone looks at passes; coming back must
   // return to it, never reset it.
@@ -780,6 +784,45 @@ $("copydiag").onclick = async () => {
 $("live-offer-go").onclick = () => { track("mock_offer_click", { where: "interview" }); openPasses(); };
 $("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses(); };
 
+/* ApplySarthi's "Practise this interview" arrives as ?from=applysarthi&job=source:id. The job's public listing is
+ * read from ApplySarthi and put in the JD box, so the mock interview is for that exact role. Only the public
+ * job crosses over, never anything from the person's ApplySarthi account. The address is cleaned afterwards. */
+const APPLY_API = "https://apply.interviewsarthi.com";
+function showApplyWelcome(text) {
+  let el = document.getElementById("apply-welcome");
+  if (!el) {
+    const lede = document.querySelector("#s-cv .lede"); if (!lede) return;
+    el = document.createElement("div"); el.id = "apply-welcome"; el.className = "notice ok";
+    el.style.cssText = "margin:12px 0 0;padding:10px 14px;border:1px solid currentColor;border-radius:10px;font-weight:500";
+    lede.after(el);
+  }
+  el.textContent = text;
+}
+async function loadJobFromApply() {
+  const q = new URLSearchParams(location.search);
+  const job = q.get("job") || "", fromApply = q.get("from") === "applysarthi";
+  if (q.has("job") || q.has("from")) {
+    const clean = new URL(location.href); clean.searchParams.delete("job"); clean.searchParams.delete("from");
+    history.replaceState(null, "", clean.pathname + clean.search + clean.hash);
+  }
+  if (fromApply) showApplyWelcome("Welcome from ApplySarthi. New to Prep Sarthi? You get 30 free minutes instead of 20.");
+  const i = job.indexOf(":");
+  if (i <= 0) return;
+  try {
+    const res = await fetch(`${APPLY_API}/api/jd?source=${encodeURIComponent(job.slice(0, i))}&source_id=${encodeURIComponent(job.slice(i + 1))}`, { cache: "no-store" });
+    if (!res.ok) return;
+    const j = await res.json();
+    if (!j.text) return;
+    const title = String(j.title || "").trim(), company = String(j.company || "").trim();
+    const head = [title, company && `at ${company}`, j.location && `(${j.location})`].filter(Boolean).join(" ");
+    $("jd").value = `${head}\n\n${j.text}`; store.set("ps_jd", $("jd").value);
+    updateNoJdOptions();
+    notice("jd-notice", `Loaded from ApplySarthi: ${title || "your job"}${company ? " at " + company : ""}. Your interviewer will ask about this job.`, "ok");
+    track("apply_job_loaded", {});
+  } catch (_) { /* the box stays as it was; the JD can still be pasted by hand */ }
+}
+
 window.addEventListener("pagehide", () => { planController?.abort(); hidePreparation(); if (live) live.close(); });
 rememberInvite();
-restore().then(() => initPasses(passCtx)).then(renderEntitlement);
+rememberSource();
+restore().then(loadJobFromApply).then(() => initPasses(passCtx)).then(renderEntitlement);
