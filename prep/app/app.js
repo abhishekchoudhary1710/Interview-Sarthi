@@ -93,7 +93,8 @@ function renderEntitlement() {
   const e = S.ent, el = $("entitle");
   // Nothing known yet: a dash while the server is being asked, and the honest
   // default for a first-time visitor once it is clear nobody is signed in.
-  if (!e) { el.textContent = booted ? (store.get("ps_from") === "applysarthi" ? "30 min free" : "20 min free") : "\u2026"; el.className = "chip"; return; }
+  // A first-time visitor is offered the 7-minute demo (25 Sep 2026); the free minutes need a saved key.
+  if (!e) { el.textContent = !booted ? "\u2026" : passCtx.demoOn ? "Free demo \u00b7 7 min" : (store.get("ps_from") === "applysarthi" ? "30 min free" : "20 min free"); el.className = "chip"; return; }
   if (e.kind === "demo") { el.textContent = "Free demo · 7 min"; el.className = "chip ok"; return; }
   if (e.kind === "pass") { el.textContent = `Pass · ${fmtLong(e.secondsLeft)} left`; el.className = "chip ok"; }
   else if (e.kind === "trial") { el.textContent = `Free · ${fmtLong(e.secondsLeft)} left`; el.className = "chip"; }
