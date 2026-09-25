@@ -22,7 +22,7 @@ import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-
 import { generateInterviewPlan } from "./plan-request.js?v=20260925-demo";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed } from "./billing.js?v=20260925-demo";
-import { initPasses, openPasses, renderInvite } from "./pass.js?v=20260925-demo";
+import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260926-offer";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
 
@@ -336,6 +336,23 @@ $("anyway").onclick = () => {
 };
 
 function showOffer(id, text) { $(id + "-text").textContent = text; $(id).style.display = "flex"; }
+const weekPrice = () => priceOf("w") || "Rs 99";
+const clip = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+
+/* The report is where someone decides whether to keep practising. From 20 to 25 Sep 2026 about seven
+ * strangers saw the old offer, a small grey "See passes" box below the whole report, and none tapped it.
+ * Now it sits right under their score, names their own weakest answer and puts the price on the button. */
+function showReportOffer(lead, rep) {
+  const scored = (rep.questions || []).filter((q) => Number.isFinite(Number(q.score)) && q.question);
+  const weakest = scored.reduce((a, q) => (!a || Number(q.score) < Number(a.score) ? q : a), null);
+  const ask = weakest && Number(weakest.score) < 7
+    ? ` Your weakest answer was "${clip(weakest.question, 90)}" (${Number(weakest.score)}/10). Practise it again tonight, as many times as you like.`
+    : " Practise again tonight, as many times as you like.";
+  showOffer("report-offer", `${lead}${ask} A 7-day pass gives you unlimited mock interviews.`);
+  $("report-offer-go").textContent = `Get 7 days for ${weekPrice()}`;
+  const score = $("report").firstElementChild;
+  if (score) score.after($("report-offer"));
+}
 function hideOffer(id) { $(id).style.display = "none"; }
 
 function preLive() {
@@ -670,7 +687,7 @@ async function onSecond() {
   // Free time is nearly gone: this is the moment someone decides to buy.
   if (S.ent.kind === "trial" && passCtx.passesOn && !offerShown && trialLeftAtStart - elapsed <= LOW_FREE_SECONDS) {
     offerShown = true;
-    showOffer("live-offer", `About ${Math.max(1, Math.round((trialLeftAtStart - elapsed) / 60))} free minutes left. A pass gives you unlimited mocks, from Rs 99 for a week.`);
+    showOffer("live-offer", `About ${Math.max(1, Math.round((trialLeftAtStart - elapsed) / 60))} free minutes left. A pass gives you unlimited mocks, ${weekPrice()} for a week.`);
     track("mock_offer_shown", { where: "interview" });
   }
   if (remaining <= 0) { endInterview("time"); return; }
@@ -782,7 +799,7 @@ async function writeReport(turns, elapsed, usage) {
     demo = null;
     S.ent = { kind: "none", secondsLeft: 0, hasTrial: false }; renderEntitlement();   // spent: the chip now says "Get a pass"
     if (passCtx.passesOn) {
-      showOffer("report-offer", "That was your free demo. A pass gives you unlimited mock interviews, from Rs 99 for a week.");
+      showReportOffer("That was your free demo.", result.report);
       track("mock_offer_shown", { where: "demo_report" });
     } else hideOffer("report-offer");
     track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
@@ -792,9 +809,7 @@ async function writeReport(turns, elapsed, usage) {
   renderInvite($("invite-report"), result.report.overall_score);
   if (S.ent.kind !== "pass" && passCtx.passesOn) {
     const left = Math.round((S.ent.secondsLeft || 0) / 60);
-    showOffer("report-offer", left > 0
-      ? `You have ${left} free minute${left === 1 ? "" : "s"} left. A pass gives you unlimited mocks, from Rs 99 for a week.`
-      : "Your free minutes are used up. A pass gives you unlimited mocks, from Rs 99 for a week.");
+    showReportOffer(left > 0 ? `You have ${left} free minute${left === 1 ? "" : "s"} left.` : "Your free minutes are used up.", result.report);
     track("mock_offer_shown", { where: "report" });
   } else hideOffer("report-offer");
   track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
@@ -823,6 +838,7 @@ function renderReport(r) {
     </div>`;
   }).join("");
   const d = rep.delivery || {};
+  $("s-report").insertBefore($("report-offer"), $("invite-report"));
   $("report").innerHTML = `
     <div class="card">
       <span class="label">Practice score · assessed areas</span>
@@ -881,7 +897,7 @@ $("copydiag").onclick = async () => {
 };
 
 $("live-offer-go").onclick = () => { track("mock_offer_click", { where: "interview" }); openPasses(); };
-$("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses(); };
+$("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses("", { plan: "w" }); };
 
 /* ApplySarthi's "Practise this interview" arrives as ?from=applysarthi&job=source:id. The job's public listing is
  * read from ApplySarthi and put in the JD box, so the mock interview is for that exact role. Only the public

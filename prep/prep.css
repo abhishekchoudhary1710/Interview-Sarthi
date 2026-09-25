@@ -175,5 +175,10 @@ button.chip{border:0;cursor:pointer}
 .offer p{margin:0;flex:1 1 220px;font-size:14.5px;color:var(--ink)}
 .offer .pill{flex:0 0 auto}
 .offer.warn{background:#FBEFD9}
+/* The report's pass offer: the main action once someone has read their score (app.js showReportOffer). */
+.offer.sell{background:var(--card);box-shadow:inset 0 0 0 2px var(--accent);padding:18px;gap:14px 18px}
+.offer.sell p{font-size:15.5px;line-height:1.5}
+.offer.sell .pill{background:var(--accent);color:#fff}
+@media (max-width:560px){.offer.sell .pill{flex:1 1 100%}}
 button.chip::after{content:" \203A";opacity:.7}
 

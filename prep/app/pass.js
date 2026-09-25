@@ -64,6 +64,9 @@ function money(plan) {
   return intl() ? "$" + (Number(plan.usd || 0) / 100).toFixed(2) : "Rs " + plan.amount;
 }
 
+// The price of a pass as the pass sheet shows it (rupees in India, dollars elsewhere), or "" before config loads.
+export function priceOf(id) { return money(planOf(id)); }
+
 export async function initPasses(context) {
   ctx = context;
   try { cfg = await config(); } catch (_) { cfg = null; }
