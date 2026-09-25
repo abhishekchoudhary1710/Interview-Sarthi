@@ -362,7 +362,7 @@ test("the free demo plans through the licence server and calls with a one-time t
   assert.deepEqual(planArgs.transport, { demoId: "d".repeat(24) });
   assert.equal(ctx.liveOptions.authToken, "auth_tokens/abc");
   assert.equal(ctx.plannedSeconds, 420);
-  assert.equal(ctx.demoMarked, true);
+  assert.equal(ctx.demoMarked, undefined);     // only a finished report uses the demo up; a busy Google must not
   assert.equal(ctx.started, true);
 });
 

@@ -551,7 +551,7 @@ async function startCall() {
       demo = await requestDemo();
       if (controller.signal.aborted || planController !== controller) return;
       if (!demo.ok) { const why = demo.reason; demo = null; planController = null; await demoRefused(why); return; }
-      demoUsed.set();
+      // Not marked used here: if Google is too busy to prepare it, pressing Start again resumes the same demo.
       track("mock_demo_start", {});
     }
     const plan = await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
@@ -742,6 +742,7 @@ async function writeReport(turns, elapsed, usage) {
   if (S.ent.kind === "demo") {
     // The demo is over: this is the moment to offer the pass. A second demo is not offered.
     track("mock_demo_end", { score: result.report.overall_score });
+    demoUsed.set();
     demo = null;
     S.ent = { kind: "none", secondsLeft: 0, hasTrial: false }; renderEntitlement();   // spent: the chip now says "Get a pass"
     if (passCtx.passesOn) {
