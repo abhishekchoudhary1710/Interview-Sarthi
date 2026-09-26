@@ -37,6 +37,14 @@
   <link rel="stylesheet" href="../prep.css?v=20260926-offer">
   <style>
     .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
+    /* the free demo's report: what a pass unlocks is shown as locked, never as blurred real text */
+    .lockbar{display:grid;gap:8px;margin-top:10px}
+    .lockbar i{display:block;height:12px;border-radius:6px;background:var(--line);opacity:.8}
+    .lockbar i:nth-child(2){width:88%} .lockbar i:nth-child(3){width:64%}
+    .q.locked h3{color:var(--muted)}
+    .card.locked{opacity:.85}
+    .card.unlock{border:1.5px solid var(--accent);background:var(--wash)}
+    .card.unlock ul{margin:10px 0 4px}
     /* the first paint, before app.js has loaded */
     html.ps-pass #s-cv{display:none}
     html.ps-pass #s-pass{display:block}
@@ -235,6 +243,7 @@
     <h1 id="pass-title">Unlimited mocks, <em>one payment.</em></h1>
     <p class="lede" id="pass-lede">No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.</p>
     <div class="notice" id="pass-notice"></div>
+    <button class="pill" id="see-full-report" style="display:none;margin:0 0 16px">See your full report →</button>
     <script>
       /* Fill in what the head decided, as these elements appear. */
       (function () {
@@ -342,6 +351,6 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20260926-fail"></script>
+<script type="module" src="./app.js?v=20260926-unlock"></script>
 </body>
 </html>

@@ -108,6 +108,7 @@ const passCtx = {
   state: S, passesOn: false, show, track, log,
   setEntitlement(ent) {
     S.ent = ent; renderEntitlement();
+    if (ent && ent.kind === "pass") unlockSavedReport();
     // The server says this once, on the call that created the trial: tell the person where the minutes came from.
     if (ent && ent.welcome) showApplyWelcome(`ApplySarthi bonus added: ${ent.welcome.minutes} extra free minutes, so you have ${Math.round(ent.secondsLeft / 60)} in total.`);
   },
@@ -344,14 +345,19 @@ const clip = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n
 /* The report is where someone decides whether to keep practising. From 20 to 25 Sep 2026 about seven
  * strangers saw the old offer, a small grey "See passes" box below the whole report, and none tapped it.
  * Now it sits right under their score, names their own weakest answer and puts the price on the button. */
-function showReportOffer(lead, rep) {
+function showReportOffer(lead, rep, locked = false) {
   const scored = (rep.questions || []).filter((q) => Number.isFinite(Number(q.score)) && q.question);
   const weakest = scored.reduce((a, q) => (!a || Number(q.score) < Number(a.score) ? q : a), null);
   const ask = weakest && Number(weakest.score) < 7
     ? ` Your weakest answer was "${clip(weakest.question, 90)}" (${Number(weakest.score)}/10). Practise it again tonight, as many times as you like.`
     : " Practise again tonight, as many times as you like.";
-  showOffer("report-offer", `${lead}${ask} A 30-day pass gives you unlimited mock interviews.`);
-  $("report-offer-go").textContent = `Get 30 days for ${monthPrice()}`;
+  if (locked) {
+    showOffer("report-offer", `${lead} Your score and your weakest answer are below. A 30-day pass unlocks the rest of your report and gives you unlimited mock interviews.`);
+    $("report-offer-go").textContent = `Unlock for ${monthPrice()}`;
+  } else {
+    showOffer("report-offer", `${lead}${ask} A 30-day pass gives you unlimited mock interviews.`);
+    $("report-offer-go").textContent = `Get 30 days for ${monthPrice()}`;
+  }
   const score = $("report").firstElementChild;
   if (score) score.after($("report-offer"));
 }
@@ -797,6 +803,9 @@ async function writeReport(turns, elapsed, usage) {
   }
   waitWheel.stop(); $("report-wait").style.display = "none";
   const record = { at: new Date().toISOString(), elapsed, language: S.language, model: result.model, report: result.report, metrics, transcript: turns, usage };
+  // Owner, 26 Sep 2026: a free demo shows the score, the verdict and the weakest answer in full; the rest
+  // of the report is written and saved now, and unlocks the moment a pass is bought.
+  if (S.ent.kind === "demo") record.locked = true;
   window.__lastReport = record;
   saveHistory(record);
   renderReport(record);
@@ -807,7 +816,7 @@ async function writeReport(turns, elapsed, usage) {
     demo = null;
     S.ent = { kind: "none", secondsLeft: 0, hasTrial: false }; renderEntitlement();   // spent: the chip now says "Get a pass"
     if (passCtx.passesOn) {
-      showReportOffer("That was your free demo.", result.report);
+      showReportOffer("That was your free demo.", result.report, true);
       track("mock_offer_shown", { where: "demo_report" });
     } else hideOffer("report-offer");
     track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
@@ -823,8 +832,17 @@ async function writeReport(turns, elapsed, usage) {
   track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
 }
 
+/* A report from the free demo stays locked until a pass is bought: the score, the verdict and the weakest
+ * answer in full are free; the other answers, the delivery numbers and the advice are what the pass unlocks. */
+const isLocked = (r) => !!(r && r.locked) && !(S.ent && S.ent.kind === "pass");
+const LOCK_BAR = `<div class="lockbar" aria-hidden="true"><i></i><i></i><i></i></div>`;
+
 function renderReport(r) {
   const rep = r.report, m = r.metrics;
+  const locked = isLocked(r);
+  const qs = rep.questions || [];
+  const scoreOf = (q) => Math.max(0, Math.min(10, Number(q.score) || 0));
+  const weakest = qs.reduce((w, q, i) => (w < 0 || scoreOf(q) < scoreOf(qs[w]) ? i : w), -1);
   const li = (arr) => (arr || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("");
   const tiles = [
     m.avgResponseDelay !== null ? [`${m.avgResponseDelay}s`, "Pause before answering"] : null,
@@ -833,8 +851,12 @@ function renderReport(r) {
     m.longestPause >= 2 ? [`${m.longestPause}s`, "Longest silence"] : null,
     [fmt(r.elapsed), "Interview length"],
   ].filter(Boolean).map(([b, s]) => `<div class="tile"><b>${b}</b><span>${s}</span></div>`).join("");
-  const questions = (rep.questions || []).map((q, i) => {
-    const score = Math.max(0, Math.min(10, Number(q.score) || 0));
+  const questions = qs.map((q, i) => {
+    const score = scoreOf(q);
+    if (locked && i !== weakest) return `<div class="q locked">
+      <span class="label">Question ${i + 1} · locked</span>
+      <h3>${escapeHtml(q.question)}</h3>${LOCK_BAR}
+    </div>`;
     const tone = score >= 7 ? "good" : score >= 5 ? "mid" : "";
     return `<div class="q">
       <span class="label">Question ${i + 1} · ${score} / 10</span>
@@ -847,6 +869,31 @@ function renderReport(r) {
   }).join("");
   const d = rep.delivery || {};
   $("s-report").insertBefore($("report-offer"), $("invite-report"));
+  if (locked) {
+    const more = qs.length - (weakest >= 0 ? 1 : 0);
+    const unlock = [
+      more > 0 ? `${more} more answer${more === 1 ? "" : "s"} scored, each with a stronger version` : null,
+      "How you sounded: your pauses, pace and filler words",
+      "What worked, what hurt, and what to practise next",
+      "Unlimited mock interviews for 30 days",
+    ].filter(Boolean);
+    $("report").innerHTML = `
+    <div class="card">
+      <span class="label">Practice score · assessed areas</span>
+      <div class="score"><b>${rep.overall_score === null ? "—" : escapeHtml(rep.overall_score)}</b><span>${rep.overall_score === null ? "Not enough evidence" : "out of 100"}</span></div>
+      <p class="verdict">${escapeHtml(rep.verdict)}</p>
+    </div>
+    <div class="card"><span class="label">Question by question · your weakest answer, in full</span>${questions || "<p class='muted'>No scored questions.</p>"}</div>
+    <div class="card unlock"><span class="label">Your full report is ready</span>
+      <ul class="clean">${unlock.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
+      <div class="actions"><button class="pill wide" id="unlock-report">Unlock for ${escapeHtml(monthPrice())} →</button></div>
+      <p class="muted" style="font-size:13px;margin:12px 0 0">One payment, never renews. The report is saved in this browser and opens the moment you pay.</p>
+    </div>
+    <div class="card locked"><span class="label">How you sounded · locked</span>${LOCK_BAR}</div>
+    <div class="card locked"><span class="label">What worked, what hurt, practise next · locked</span>${LOCK_BAR}</div>`;
+    $("unlock-report").onclick = () => { track("mock_unlock_click", { where: "report" }); openPasses("", { plan: "m", checkout: true }); };
+    return;
+  }
   $("report").innerHTML = `
     <div class="card">
       <span class="label">Practice score · assessed areas</span>
@@ -867,7 +914,22 @@ function renderReport(r) {
       <p><b>Structure</b>${escapeHtml(d.structure || "")}</p>
     </div>
     <div class="card"><span class="label">Practise next</span><ol class="next">${li(rep.practice_next)}</ol>
-      <p class="muted" style="font-size:13px;margin:14px 0 0">Report written by ${escapeHtml(r.model)} on your own key.</p></div>`;
+      <p class="muted" style="font-size:13px;margin:14px 0 0">Report written by ${escapeHtml(r.model)}${r.locked ? "" : " on your own key"}.</p></div>`;
+}
+
+/* A pass was just bought (or found): the demo report saved in this browser opens in full. The payment
+ * page reloads the app, so the report is read back from storage rather than from memory. */
+function unlockSavedReport() {
+  let r = window.__lastReport;
+  if (!r || !r.report) { try { r = JSON.parse(store.get("ps_last_report", "null")); } catch (_) { r = null; } }
+  if (!r || !r.report || !r.locked) return;
+  r.locked = false;
+  window.__lastReport = r;
+  try { store.set("ps_last_report", JSON.stringify(r)); } catch (_) { /* storage off */ }
+  renderReport(r);
+  hideOffer("report-offer");
+  const btn = $("see-full-report");
+  if (btn) { btn.style.display = "inline-flex"; btn.onclick = () => { track("mock_unlock_view", {}); show("s-report"); window.scrollTo(0, 0); }; }
 }
 
 function saveHistory(record) {
@@ -884,7 +946,11 @@ $("download").onclick = () => {
   const r = window.__lastReport;
   if (!r) return;
   const lines = [`Prep Sarthi report, ${new Date(r.at || Date.now()).toLocaleString()}`, ""];
-  if (r.report) {
+  if (r.report && isLocked(r)) {
+    // What the free demo shows on screen, and no more: the rest is what the pass unlocks.
+    lines.push(`Practice score: ${r.report.overall_score === null ? "Not enough evidence" : `${r.report.overall_score}/100`}`, r.report.verdict, "",
+      "The full report (every answer scored with a stronger version, how you sounded, what to practise next) opens with a 30-day pass: https://interviewsarthi.com/prep/", "");
+  } else if (r.report) {
     lines.push(`Practice score: ${r.report.overall_score === null ? "Not enough evidence" : `${r.report.overall_score}/100`}`, r.report.verdict, "", assessmentText(r.report), "", "What worked:", ...(r.report.strengths || []).map((x) => "- " + x), "", "What hurt:", ...(r.report.weaknesses || []).map((x) => "- " + x), "");
     for (const q of r.report.questions || []) lines.push(`Q: ${q.question}`, `  Score ${q.score}/10. You said: ${q.answer_gist}`, `  Missing: ${q.what_was_missing}`, `  Stronger: ${q.better_answer}`, "");
     lines.push("Practise next:", ...(r.report.practice_next || []).map((x, i) => `${i + 1}. ${x}`), "");
