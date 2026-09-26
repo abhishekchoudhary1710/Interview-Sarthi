@@ -264,6 +264,8 @@ function preparationHarness(generate, extra = {}) {
     phase: "miccheck", planController: null, assessmentPlan: null, planCoverage: null,
     // The free demo (billing.js): off unless a test turns it on.
     demo: null, requestDemo: async () => ({ ok: false, reason: "unavailable" }), demoTransport: (id) => ({ demoId: id }),
+    // The Groq backup for pass holders (billing.js backupTransport): none unless a test supplies one.
+    passBackup: () => undefined,
     demoUsed: { set() { context.demoMarked = true; } }, passCtx: { passesOn: false }, openPasses(text) { context.passes = text; },
     showDemoFull() { context.fullChoice = true; },
     S: { key: "test", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "trial", secondsLeft: 1200 } },
@@ -391,4 +393,30 @@ test("when both demo keys are full, the visitor is offered a choice and nothing 
   assert.equal(planned, false);
   assert.equal(ctx.started, undefined);
   assert.equal(ctx.demoMarked, undefined);
+});
+
+// Owner, 26 Sep 2026: Gemini stays first; the licence server's Groq backup writes the plan or report only when
+// both Gemini models have failed on a pass holder's own key.
+test("the backup writes the plan only after both Gemini models fail, and never when Gemini answers", async ctx => {
+  const bodies = [];
+  const backup = async (body) => { bodies.push(JSON.parse(body)); return modelResponse(rawPlan()); };
+  ctx.mock.method(globalThis, "fetch", async () => ({ ok: false, status: 503 }));
+  assert.equal((await generateInterviewPlan({ apiKey: "test", ...documents, backup })).requirements.length, 2);
+  assert.equal(bodies.length, 1);
+  assert.ok(bodies[0].generationConfig.responseSchema, "the backup gets the exact plan format");
+  ctx.mock.restoreAll();
+  ctx.mock.method(globalThis, "fetch", async () => modelResponse(rawPlan()));
+  await generateInterviewPlan({ apiKey: "test", ...documents, backup });
+  assert.equal(bodies.length, 1, "Gemini answered, so the backup was not asked");
+});
+
+test("the backup writes the report when Gemini fails or hangs on both models, and a failed backup keeps Gemini's error", async ctx => {
+  const report = { requirements: [{ id: "r1", status: "assessed", score: 6, evidence_turns: [2], explanation: "Checked the plan." }] };
+  ctx.mock.method(globalThis, "fetch", async () => { throw Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }); });
+  const backed = await generateReport({ apiKey: "test", ...documents, transcript: conversation, metrics: computeMetrics([], []), minutes: 10,
+    assessmentPlan: plan(), backup: async () => { const r = modelResponse(report); r.json = async () => ({ ...(await modelResponse(report).json()), served_by: "openai/gpt-oss-120b" }); return r; } });
+  assert.equal(backed.model, "openai/gpt-oss-120b");
+  assert.equal(backed.report.requirements[0].score, 6);
+  await assert.rejects(generateReport({ apiKey: "test", ...documents, transcript: conversation, metrics: computeMetrics([], []), minutes: 10,
+    assessmentPlan: plan(), backup: async () => ({ ok: false, status: 429 }) }), /Gemini unreachable/);
 });

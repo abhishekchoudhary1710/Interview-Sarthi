@@ -157,6 +157,17 @@ export function demoDevice() {
 }
 export const demoUsed = { get: () => mem.get("ps_demo_used") === "1", set: () => mem.set("ps_demo_used", "1") };
 
+/* A pass holder's plan or report when Gemini has failed on both models with their own key: the licence
+ * server writes it with Groq instead (owner, 26 Sep 2026). Same Gemini-shaped request and answer. */
+export function backupTransport() {
+  const s = session.get();
+  if (!s) return undefined;
+  return (body, signal) => fetch(LICENSE_API + "/mock/backup/generate", {
+    method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", signal,
+    body: `{"session":${JSON.stringify(s)},"request":${body}}`,
+  });
+}
+
 /* { ok, demo, token, model, seconds } or { ok: false, reason: used|day_full|network|busy|unavailable }. */
 export async function requestDemo(demo, failed) {
   try { return await post("/mock/demo/start", { device: demoDevice(), demo, failed: !!failed }); }

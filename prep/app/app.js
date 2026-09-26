@@ -16,12 +16,12 @@ import { GeminiLive } from "./live.js?v=20260925-demo";
 import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260923-jd-plan";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { generateReport } from "./report.js?v=20260925-demo";
+import { generateReport } from "./report.js?v=20260926-backup";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
-import { generateInterviewPlan } from "./plan-request.js?v=20260926-fast";
+import { generateInterviewPlan } from "./plan-request.js?v=20260926-backup";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed } from "./billing.js?v=20260925-demo";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport } from "./billing.js?v=20260926-backup";
 import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260926-offer";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
@@ -36,6 +36,9 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* private mode */ } },
   del(k) { try { localStorage.removeItem(k); } catch (_) { /* ignore */ } },
 };
+/* Groq writes the plan or report through the licence server if Gemini fails on a pass holder's own key.
+ * Not for the demo (the server's relay already has it) and not for a free trial (no pass to vouch for it). */
+const passBackup = () => (!demo && S.ent && S.ent.kind === "pass") ? backupTransport() : undefined;
 const track = (name, params) => { try { if (window.gtag) window.gtag("event", name, params || {}); } catch (_) { /* analytics off */ } };
 const nowS = () => performance.now() / 1000;
 const TICK_SECONDS = 30;
@@ -612,7 +615,7 @@ async function startCall() {
     }
     const plan = await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
       minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal,
-      transport: demo ? demoTransport(demo.demo) : undefined });
+      transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup() });
     if (controller.signal.aborted || planController !== controller) return;
     $("prep-status").textContent = "Your interview plan is ready. Checking your available practice time…";
     // Refresh after preparation: a pass can expire while the plan is being made. A demo has no key to look up.
@@ -793,7 +796,7 @@ async function writeReport(turns, elapsed, usage) {
   const metrics = computeMetrics(turns, voiceLog);
   let result;
   try {
-    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan });
+    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup(), cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan });
   } catch (err) {
     track("mock_fail_report", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
     waitWheel.stop(); $("report-wait").style.display = "none";

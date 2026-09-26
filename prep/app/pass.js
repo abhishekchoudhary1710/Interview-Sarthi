@@ -13,7 +13,7 @@
  * score worth showing.
  */
 
-import { LOCAL, config, inviteLink, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260925-demo";
+import { LOCAL, config, inviteLink, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260926-backup";
 
 const $ = (id) => document.getElementById(id);
 const PENDING = "ps_pending_order";
