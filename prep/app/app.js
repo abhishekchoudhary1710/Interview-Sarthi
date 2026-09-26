@@ -19,7 +19,7 @@ import { computeMetrics } from "./metrics.js";
 import { generateReport } from "./report.js?v=20260925-demo";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
-import { generateInterviewPlan } from "./plan-request.js?v=20260925-demo";
+import { generateInterviewPlan } from "./plan-request.js?v=20260926-fast";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed } from "./billing.js?v=20260925-demo";
 import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260926-offer";
@@ -618,6 +618,9 @@ async function startCall() {
   } catch (err) {
     if (controller.signal.aborted || planController !== controller) return;
     await cancelMicCheck();
+    // Each way a visitor can get stuck has its own event, so the funnel shows where (26 Sep 2026: two real
+    // demos failed and left no trace at all).
+    track("mock_fail_plan", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
     notice("live-notice", `Interview preparation failed: ${err.message} Your interview timer did not start. Please retry.`, "bad");
     return;
   }
@@ -750,6 +753,7 @@ async function endInterview(reason) {
     if (S.ent.secondsLeft <= 0) S.ent.kind = "none";
     renderEntitlement();
   }
+  if (reason === "failed" && turns.length === 0) track("mock_fail_connect", { demo: !!demo });
   if (reason === "failed" && turns.length === 0 && demo) {
     // Google refused the connection (a key at its limit): the same choice as a full server, never a key message.
     ending = false; preLive(); notice("live-notice", ""); showDemoFull();
@@ -764,6 +768,7 @@ async function endInterview(reason) {
   if (turns.filter((u) => u.who === "candidate").length === 0) {
     ending = false; preLive();
     const deaf = micStats.maxRms < 0.002;
+    track("mock_fail_nomic", { demo: !!demo, deaf, seconds: elapsed });
     notice("live-notice", deaf
       ? "Your microphone sent only silence for the whole call, so there is nothing to score. It was muted, or the browser used the wrong one. Check it and try again."
       : "Google did not pick up any of your answers, so there is nothing to score. Check your microphone and try again. If it happens again, contact support@interviewsarthi.com.", "bad");
@@ -784,6 +789,7 @@ async function writeReport(turns, elapsed, usage) {
   try {
     result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan });
   } catch (err) {
+    track("mock_fail_report", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
     waitWheel.stop(); $("report-wait").style.display = "none";
     $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">The report could not be written</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Your transcript is safe. Download it below and try again later.</p></div>`;
     window.__lastReport = { turns, metrics, elapsed };
@@ -939,7 +945,12 @@ async function loadJobFromApply() {
   } catch (_) { /* the box stays as it was; the JD can still be pasted by hand */ }
 }
 
-window.addEventListener("pagehide", () => { planController?.abort(); hidePreparation(); if (live) live.close(); });
+window.addEventListener("pagehide", () => {
+  // Leaving while the interview is being prepared, or in the middle of it, is the drop-off to watch.
+  if (phase === "preparing") track("mock_abandon_preparing", { demo: !!demo });
+  else if (live && !ending) track("mock_abandon_call", { demo: !!demo, seconds: Math.round(live.activeSeconds || 0) });
+  planController?.abort(); hidePreparation(); if (live) live.close();
+});
 rememberInvite();
 rememberSource();
 const booting = restore().then(loadJobFromApply).then(() => initPasses(passCtx)).then(renderEntitlement);
