@@ -976,7 +976,8 @@ $("copydiag").onclick = async () => {
 $("live-offer-go").onclick = () => { track("mock_offer_click", { where: "interview" }); openPasses(); };
 $("report-offer-go").onclick = () => { track("mock_offer_click", { where: "report" }); openPasses("", { plan: "m" }); };
 
-/* ApplySarthi's "Practise this interview" arrives as ?from=applysarthi&job=source:id. The job's public listing is
+/* ApplySarthi's "Practise this interview" arrives as ?from=applysarthi&job=source:id, and the Windows app's
+ * try-it guide as ?from=livesarthi. The job's public listing is
  * read from ApplySarthi and put in the JD box, so the mock interview is for that exact role. Only the public
  * job crosses over, never anything from the person's ApplySarthi account. The address is cleaned afterwards. */
 const APPLY_API = "https://apply.interviewsarthi.com";
@@ -992,12 +993,19 @@ function showApplyWelcome(text) {
 }
 async function loadJobFromApply() {
   const q = new URLSearchParams(location.search);
-  const job = q.get("job") || "", fromApply = q.get("from") === "applysarthi";
+  const job = q.get("job") || "", fromApply = q.get("from") === "applysarthi", fromLive = q.get("from") === "livesarthi";
   if (q.has("job") || q.has("from")) {
     const clean = new URL(location.href); clean.searchParams.delete("job"); clean.searchParams.delete("from");
     history.replaceState(null, "", clean.pathname + clean.search + clean.hash);
   }
-  if (fromApply) showApplyWelcome("Welcome from ApplySarthi. New to Prep Sarthi? You get 30 free minutes instead of 20.");
+  if (fromApply) showApplyWelcome("Welcome from ApplySarthi. Your free 7-minute mock interview is ready.");
+  // The Windows app's try-it guide sends new users here to test it on one PC (26 Sep 2026): Prep's interviewer
+  // asks, Interview Sarthi hears her through the PC's sound and shows answers. One line, so nobody is lost.
+  if (fromLive) {
+    showApplyWelcome("Testing Interview Sarthi? Keep it running and wear earphones. Paste your resume, press Start, "
+      + "and answer her out loud. Interview Sarthi shows suggested answers as she asks.");
+    track("mock_from_live", {});
+  }
   const i = job.indexOf(":");
   if (i <= 0) return;
   try {
