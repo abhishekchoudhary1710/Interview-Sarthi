@@ -14,7 +14,7 @@ The biggest concrete corrections are consistent 30-minute trial copy, the closin
 
 ## Product facts used
 
-The current homepage pricing cards, offers and FAQ support a 30-minute trial per computer; ₹99/2 days/1 device; ₹399/7 days/1 device; ₹999/30 days/2 devices; ₹1,999/90 days/2 devices. Passes do not automatically renew. Windows 10 version 2004+ and Windows 11; English, Hindi and Hinglish; user-supplied Gemini key. Google quotas and paid usage are separate.
+The current homepage pricing cards, offers and FAQ support a 30-minute trial per computer; ₹99/2 days/1 device; ₹299/30 days/2 devices (the 7-day, ₹999 month and 90-day passes were retired on 25 Sep 2026). Passes do not automatically renew. Windows 10 version 2004+ and Windows 11; English, Hindi and Hinglish; user-supplied Gemini key. Google quotas and paid usage are separate.
 
 These are verified **advertised website facts**. Desktop enforcement, Store text and Dodo settings were not independently tested. `SITE_FACTS.md` records evidence and these boundaries. No desktop behavior or billing product configuration was changed.
 

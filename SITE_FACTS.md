@@ -9,7 +9,7 @@ This records the current advertised offer, not a certification of the desktop bi
 InterviewSarthi is the shared brand. Its root homepage explains three products and links to their existing websites:
 
 - `/apply/`: Apply Sarthi brings together jobs from multiple portals, with CV matching and application autofill.
-- `/prep/`: Prep Sarthi runs spoken AI mock interviews, follow-up questions and feedback. The browser app is at `/prep/app/`. Free 7-minute demo with no sign-up, then one pass only: ₹99 ($9.99 outside India) for 30 days of unlimited mock interviews, paid once, never renews (since 25 September 2026; the 7-Day Pass is withdrawn).
+- `/prep/`: Prep Sarthi runs spoken AI mock interviews, follow-up questions and feedback. The browser app is at `/prep/app/`. Free 7-minute demo with no sign-up, then one pass only: ₹99 ($9.99 outside India) for 30 days of unlimited mock interviews, paid once, never renews (since 25 September 2026; the 7-Day Pass is withdrawn). Invites (since 27 September 2026): give a week, get a week, a friend who buys through your link gets 37 days on their first pass and you get 7 free days per friend who buys.
 - `/live/`: Live Sarthi is the existing Windows AI interview assistant, with CV-based suggestions during a call.
 
 The platform details and passes below describe **Live Sarthi**, previously presented on the root homepage as Interview Sarthi. It can support mock calls and permitted live use; Prep is the separate AI mock interviewer. Moving the product page does not change the desktop app's name or access terms.

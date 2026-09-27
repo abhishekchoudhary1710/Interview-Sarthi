@@ -10,8 +10,8 @@ The approved homepage stays the umbrella: **find jobs, practise interviews, get 
 
 | Product | User problem and clear promise | Entry offer | Best next action |
 | --- | --- | --- | --- |
-| Apply Sarthi | Stop switching between job portals. Find jobs from multiple sources, match your CV and fill applications faster | Free during early access | Browse jobs; create an account for CV matching and application tools |
-| Prep Sarthi | Stop practising alone without feedback. Take a spoken mock interview from your CV and target job, then work on weak answers | 20 minutes free; ₹99 for seven days; ₹249 for 30 days | Start a relevant mock interview |
+| Apply Sarthi | Stop switching between job portals. Find jobs from multiple sources, match your CV and fill applications faster | Always free | Browse jobs; create an account for CV matching and application tools |
+| Prep Sarthi | Stop practising alone without feedback. Take a spoken mock interview from your CV and target job, then work on weak answers | Free 7-minute demo; ₹99 for 30 days | Start a relevant mock interview |
 | Live Sarthi | Get suggested answers on your Windows screen during a permitted interview call | 30 minutes free per device; ₹99 for two days | Watch the existing demo and install the Windows app |
 
 Live's roughly 1.5-second response start is a product claim with variable real-world timing. Its panel is hidden from supported Windows capture; that does not establish invisibility to every recorder, camera or monitoring system. Prep and Live require a Gemini key, with separate provider limits and possible charges. Apply browsing does not need a key; initial CV reading can use platform capacity, while tailoring uses the user's key. No tool or page can guarantee an offer.

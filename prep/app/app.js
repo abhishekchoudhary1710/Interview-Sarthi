@@ -248,7 +248,7 @@ function showKeyStep() {
   const paid = S.ent && S.ent.kind === "pass";
   $("key-lede").textContent = paid
     ? "Your pass is active. One last step, about a minute: the interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google."
-    : "The interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google. If you use Interview Sarthi or ApplySarthi, it is the same key.";
+    : "The interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google. If you use Live Sarthi or ApplySarthi, it is the same key.";
   show("s-key");
   if (!$("key").value) $("key").focus();
 }
@@ -390,7 +390,7 @@ function preLive() {
     notice("live-notice", `Your free demo: a ${Math.round(cap / 60)}-minute interview, then your report. It runs on Google Gemini, which may use it to improve its services.`);
   } else if (S.ent.kind === "none") {
     $("start").disabled = true;
-    if (passCtx.passesOn) { openPasses("Your free minutes are used up. A pass gives you unlimited mocks, or invite a friend for 20 more free minutes."); return; }
+    if (passCtx.passesOn) { openPasses("Your free minutes are used up. A 30-day pass gives you unlimited mock interviews. Or invite friends: 7 free days for each friend who buys a pass."); return; }
     notice("live-notice", "Your free minutes are used up. Passes open in a few days.", "bad");
   } else {
     $("start").disabled = false;
@@ -622,7 +622,7 @@ async function startCall() {
     const fresh = demo ? S.ent : await entitlement(S.hash);
     if (controller.signal.aborted || planController !== controller) return;
     S.ent = fresh;
-    if (S.ent.secondsLeft <= 0) throw new Error("Your practice time has expired. Get a pass or more free minutes before starting.");
+    if (S.ent.secondsLeft <= 0) throw new Error("Your practice time has expired. Get a pass before starting.");
     assessmentPlan = plan; planCoverage = new PlanCoverage(plan);
   } catch (err) {
     if (controller.signal.aborted || planController !== controller) return;
@@ -1011,8 +1011,8 @@ async function loadJobFromApply() {
   // The Windows app's try-it guide sends new users here to test it on one PC (26 Sep 2026): Prep's interviewer
   // asks, Interview Sarthi hears her through the PC's sound and shows answers. One line, so nobody is lost.
   if (fromLive) {
-    showApplyWelcome("Testing Interview Sarthi? Keep it running and wear earphones. Paste your resume, press Start, "
-      + "and answer her out loud. Interview Sarthi shows suggested answers as she asks.");
+    showApplyWelcome("Testing Live Sarthi? Keep it running and wear earphones. Paste your resume, press Start, "
+      + "and answer her out loud. Live Sarthi shows suggested answers as she asks.");
     track("mock_from_live", {});
   }
   const i = job.indexOf(":");
