@@ -88,7 +88,7 @@
       if (!ok) { save(""); carry(""); return false; }
       save(code);
       showApplied(code);
-      track("referral_applied", { method: how });
+      if (how !== "remembered") track("referral_applied", { method: how });   // once per code, not per visit
       return true;
     }).catch(function () { /* offline or the server is busy: the code still rides on the buy links */ });
   }

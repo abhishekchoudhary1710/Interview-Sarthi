@@ -37,6 +37,18 @@
   var onThanks = /\/thanks\.html$/.test(location.pathname);
   var SITE = "https://interviewsarthi.com/live/?utm_source=self_share&utm_medium=mobile_handoff" +
     "&utm_content=" + (onThanks ? "post_purchase" : "free");
+  /* A friend's invite code (assets/ref.js) lives in this phone's browser. The link sent to the PC
+   * carries it, so the checkout there still knows the friend; otherwise the code would have to be
+   * typed again on the laptop. Read at share time: ref.js loads after this script. */
+  function site() {
+    var code = "";
+    try {
+      var q = new URLSearchParams(location.search).get("ref") || "";
+      var saved = JSON.parse(localStorage.getItem("sarthi_ref") || "null");
+      code = (q || (saved && saved.code) || "").toUpperCase().replace(/[\s-]/g, "");
+    } catch (e) { }
+    return /^[A-HJ-NP-Z2-9]{7}$/.test(code) ? SITE + "&ref=" + code : SITE;
+  }
 
   /* On thanks.html the buyer's key is in the URL (analytics.js and the page
    * itself read it the same way); carrying it in the share message means the
@@ -44,9 +56,11 @@
   var key = onThanks
     ? (new URLSearchParams(location.search).get("license_key") || "").split(",")[0].trim()
     : "";
-  var shareText = key
-    ? "Interview Sarthi license key: " + key + ". Install on your Windows PC: " + SITE
-    : "Interview Sarthi: real-time interview help on your Windows PC. Install from here: " + SITE;
+  function shareText() {
+    return key
+      ? "Interview Sarthi license key: " + key + ". Install on your Windows PC: " + site()
+      : "Interview Sarthi: real-time interview help on your Windows PC. Install from here: " + site();
+  }
 
   var CSS = [
     ".pf-note{margin-top:10px;font-size:13px;color:#b45309;text-align:center}",
@@ -114,11 +128,11 @@
     sheet.addEventListener("click", function (ev) {
       var act = ev.target.getAttribute && ev.target.getAttribute("data-act");
       if (act === "share") {
-        navigator.share({ title: "Interview Sarthi", text: shareText, url: SITE })
+        navigator.share({ title: "Interview Sarthi", text: shareText(), url: site() })
           .then(function () { report("mobile_link_sent", { method: "share" }); closeSheet(); })
           .catch(function () { /* cancelled the share sheet, not an event */ });
       } else if (act === "copy") {
-        copy(shareText, ev.target);
+        copy(shareText(), ev.target);
       } else if (act === "anyway") {
         /* Leave the click alone: the href is the real .exe, and analytics.js
          * counts it as download_click because this anchor is not data-gated. */
