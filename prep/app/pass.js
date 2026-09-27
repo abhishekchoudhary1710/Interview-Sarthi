@@ -13,7 +13,7 @@
  * score worth showing.
  */
 
-import { LOCAL, config, inviteLink, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260926-backup";
+import { LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260927-invite";
 
 const $ = (id) => document.getElementById(id);
 const PENDING = "ps_pending_order";
@@ -150,7 +150,7 @@ export async function openPasses(message, opts = {}) {
   if (opts.checkout) { step = "checkout"; if (ctx.state.ent && ctx.state.ent.kind === "pass") extendOpen = true; }
   if (!ctx.passesOn) {
     $("pass-body").style.display = "none";
-    say("Passes open in a few days. Until then, invite a friend: you both get 20 free minutes.", "");
+    say("Passes open in a few days.", "");
     return;
   }
   $("pass-body").style.display = "block";
@@ -226,6 +226,10 @@ function paint() {
   $("pass-lede").textContent = live
     ? "Practise as much as you like until it ends. Buying again adds the days on top, and nothing renews by itself."
     : "No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.";
+
+  // Arrived through a friend's link: the first pass is a week longer, so say so where the price is.
+  const note = $("invited-note");
+  if (note) note.style.display = !live && invitedBy() ? "block" : "none";
 
   const banked = (ent.invite && ent.invite.banked_days) || 0;
   $("freedays").style.display = banked > 0 ? "block" : "none";
@@ -369,29 +373,43 @@ async function startDays() {
 
 // ------------------------------------------------------------------ invites
 
-export function openInvite() {
-  if (!ctx.state.ent || !ctx.state.ent.invite || !ctx.state.ent.invite.code) {
-    ctx.show("s-key");
-    const el = $("key-notice"); el.textContent = "Add your Gemini key first. Your invite link is tied to it."; el.className = "notice";
-    return;
-  }
+export async function openInvite() {
   ctx.show("s-invite");
+  // Nobody is sent to the key screen for this: the key comes up only after a pass is bought (owner, 25 Sep 2026).
+  if (!currentInvite()) {
+    try { ctx.state.deviceInvite = (await deviceInvite()).invite; }
+    catch (err) {
+      $("invite-full").innerHTML = `<div class="card invite"><span class="label">Invite a friend</span><h2>Give a week, get a week.</h2>
+        <p class="muted">${err.status === 403 ? "Do your free 7-minute demo first. Then you get a link to send your friends."
+          : "Your invite link could not be loaded just now. Please try again in a minute."}</p></div>`;
+      ctx.track("mock_invite_view", { from: "nav", code: false });
+      return;
+    }
+  }
   renderInvite($("invite-full"), null);
   ctx.track("mock_invite_view", { from: "nav" });
 }
 
+/* The invite this person shares: their key's (a pass holder who has set up the app), else their browser's (the demo). */
+export function currentInvite() {
+  const ent = ctx.state.ent;
+  if (ent && ent.invite && ent.invite.code) return ent.invite;
+  return ctx.state.deviceInvite && ctx.state.deviceInvite.code ? ctx.state.deviceInvite : null;
+}
+
 /** Draw the invite card into `host`. `score` is only ever used if the person ticks the box. */
 export function renderInvite(host, score) {
-  const inv = ctx.state.ent && ctx.state.ent.invite;
-  if (!inv || !inv.code) { host.innerHTML = ""; return; }   // never show a link without a code
+  const inv = currentInvite();
+  if (!inv) { host.innerHTML = ""; return; }   // never show a link without a code
   const link = inviteLink(inv.code);
-  const rules = inv.rules || { minutes: 20, max_friends: 5, inviter_days: 3, friend_days: 1 };
+  // "Give a week, get a week" (owner, 27 Sep 2026): made for the one-month pass.
+  const rules = inv.rules || { inviter_days: 7, friend_days: 7 };
   const brag = Number(score) >= SCORE_WORTH_SHARING;
   host.innerHTML = `
     <div class="card invite">
       <span class="label">Invite a friend</span>
-      <h2>You both get ${rules.minutes} free minutes.</h2>
-      <p class="muted">When a friend does their first mock through your link, ${rules.minutes} free minutes land for both of you, for your first ${rules.max_friends} friends. If they buy a pass, you get ${rules.inviter_days} free days and they get ${rules.friend_days} extra day.</p>
+      <h2>Give a week, get a week.</h2>
+      <p class="muted">Send your link to friends with interviews coming up. They get the free demo like you did, and if they buy a pass, their first month lasts ${30 + Number(rules.friend_days)} days and you get ${rules.inviter_days} free days. You don't need a pass of your own: your free days wait for you until you start them. Every friend who buys counts.</p>
       <input type="text" class="invite-link" readonly value="${escapeHtml(link)}">
       ${brag ? `<label class="check"><input type="checkbox" class="with-score"> Include my score (${Number(score)}) in the message</label>` : ""}
       <div class="actions">
@@ -399,13 +417,13 @@ export function renderInvite(host, score) {
         <button class="pill ghost share-copy">Copy link</button>
         ${navigator.share ? `<button class="pill ghost share-more">More…</button>` : ""}
       </div>
-      <p class="muted invite-stats">${inv.friends_tried} friend${inv.friends_tried === 1 ? "" : "s"} tried it · ${inv.friends_bought} bought a pass · you earned ${inv.minutes_earned} free minutes${inv.banked_days ? ` and ${inv.banked_days} free days` : ""}</p>
+      <p class="muted invite-stats">${Number(inv.friends_bought || 0)} friend${Number(inv.friends_bought) === 1 ? "" : "s"} bought a pass through your link${inv.banked_days ? ` · ${inv.banked_days} free days waiting for you: open Passes to start them` : ""}</p>
     </div>`;
   const text = () => {
     const withScore = brag && host.querySelector(".with-score") && host.querySelector(".with-score").checked;
     return (withScore
-      ? `I scored ${Number(score)}/100 in a mock interview with an AI that had read my CV. Try yours, it's free: `
-      : `I just did a mock interview with an AI that had actually read my CV. It asks follow-ups like a real interviewer. Try yours, it's free: `) + link;
+      ? `I scored ${Number(score)}/100 in a mock interview with an AI that had read my CV. Try yours, the first one is free (and through my link a pass gives you an extra week): `
+      : `I just did a mock interview with an AI that had actually read my CV. It asks follow-ups like a real interviewer. Try yours, the first one is free (and through my link a pass gives you an extra week): `) + link;
   };
   const wa = host.querySelector(".share-wa");
   const setWa = () => { wa.href = "https://wa.me/?text=" + encodeURIComponent(text()); };

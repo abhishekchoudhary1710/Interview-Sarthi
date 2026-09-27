@@ -105,7 +105,7 @@ export async function entitlement(hash) {
 export async function entitlementBySession() {
   if (!session.get()) return null;
   try {
-    const r = await post("/mock/status", { session: session.get() });
+    const r = await post("/mock/status", { session: session.get(), device: demoDevice() });
     if (!r.account) { session.clear(); return null; }
     return shape(r, null);
   } catch (_) { return null; }
@@ -129,7 +129,7 @@ export const config = () => post("/mock/config", {});
 /* `hash` is optional: someone buying straight from the pricing page has no
  * Gemini key in this browser yet. The invite code rides along so it still counts. */
 export async function signIn(idToken, hash) {
-  const r = await post("/mock/auth/google", { id_token: idToken, hash: hash || undefined, ref: mem.get("ps_ref") || undefined, from: from() });
+  const r = await post("/mock/auth/google", { id_token: idToken, hash: hash || undefined, ref: mem.get("ps_ref") || undefined, from: from(), device: demoDevice() });
   session.set(r.session);
   return shape(r, hash || null);
 }
@@ -145,7 +145,13 @@ export async function orderStatus(orderId, hash, paymentId) {
 
 export const startFreeDays = () => post("/mock/days/start", { session: session.get() });
 
-export const inviteLink = (code) => `https://interviewsarthi.com/mock/?ref=${encodeURIComponent(code)}`;
+// Straight to /prep/ (was the retired /mock/, whose redirect page gave WhatsApp the preview "Moved to /prep/").
+export const inviteLink = (code) => `https://interviewsarthi.com/prep/?ref=${encodeURIComponent(code)}`;
+/* The invite of a visitor on the free demo: no key, no sign-in, tied to this browser's demo device. The server
+   answers 403 until this browser has had a demo. Signed in, the session lets its earned days reach the account. */
+export const deviceInvite = () => post("/mock/invite", { device: demoDevice(), session: session.get() || undefined });
+/* The invite code this visitor arrived through, if any: their first pass is a week longer. */
+export const invitedBy = () => mem.get("ps_ref");
 
 // ── The free demo (license-server src/demo.js) ─────────────────────────────
 // One short interview on our key, before any setup. The device id is what "one demo per device" counts;

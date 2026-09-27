@@ -21,8 +21,8 @@ import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { generateInterviewPlan } from "./plan-request.js?v=20260927-planlite";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport } from "./billing.js?v=20260926-backup";
-import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260926-offer";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport, deviceInvite } from "./billing.js?v=20260927-invite";
+import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260927-invite";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
 
@@ -391,7 +391,7 @@ function preLive() {
   } else if (S.ent.kind === "none") {
     $("start").disabled = true;
     if (passCtx.passesOn) { openPasses("Your free minutes are used up. A pass gives you unlimited mocks, or invite a friend for 20 more free minutes."); return; }
-    notice("live-notice", "Your free minutes are used up. Passes open in a few days. Until then, tap Invite at the top: you and a friend both get 20 free minutes.", "bad");
+    notice("live-notice", "Your free minutes are used up. Passes open in a few days.", "bad");
   } else {
     $("start").disabled = false;
     const cap = Math.min(S.minutes * 60, S.ent.secondsLeft);
@@ -830,6 +830,8 @@ async function writeReport(turns, elapsed, usage) {
       track("mock_offer_shown", { where: "demo_report" });
     } else hideOffer("report-offer");
     track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
+    // Just seen their score: the moment to pass the app on. The link is this browser's, no key or sign-in needed.
+    deviceInvite().then((r) => { S.deviceInvite = r.invite; renderInvite($("invite-report"), result.report.overall_score); }).catch(() => {});
     return;
   }
   if (S.ent.kind !== "pass") { const fresh = await entitlement(S.hash); if (fresh.source === "server") { S.ent = fresh; renderEntitlement(); } }
