@@ -1,4 +1,10 @@
-import { REPORT_MODELS } from "./report.js?v=20260926-backup";
+// The plan is made while the visitor watches a spinner, so the steadier model goes first. Measured through the
+// demo relay on 27 Sep 2026: flash-lite 5.7-7.1 s on every try; 3.6-flash 7.9-16 s, up to a minute when Google
+// answers "high demand", and ~20 free requests a day. Both produce plans that pass validatePlan; the report,
+// where depth matters more than waiting, still leads with 3.6-flash (report.js REPORT_MODELS). On the free demo the
+// licence worker hands a failed flash-lite call to its Groq backup (demo.js: the backup follows its LAST text model),
+// so a demo plan goes flash-lite -> Groq, never waiting on a busy 3.6-flash.
+export const PLAN_MODELS = ["gemini-3.1-flash-lite", "gemini-3.6-flash"];
 import { PLAN_CATEGORIES, validatePlan, interviewContext } from "./interview-plan.js";
 
 const strings = { type: "ARRAY", items: { type: "STRING" } };
@@ -26,7 +32,7 @@ Mark an ability requiring executed code, a written artifact, design deliverable 
     contents: [{ role: "user", parts: [{ text: JSON.stringify({ selectedMinutes: minutes, language, context, jd: jd || "", cv: cv || "" }) }] }],
     generationConfig: { temperature: 0.2, maxOutputTokens: 7000, responseMimeType: "application/json", responseSchema: schema },
   };
-  for (const model of REPORT_MODELS) {
+  for (const model of PLAN_MODELS) {
     // The visitor waits on this with nothing on screen but a spinner. Low thinking on the main model
     // took 6.5 s against 9 to 14 s by default, with the same number and kind of questions (26 Sep 2026).
     const body = JSON.stringify(model === "gemini-3.6-flash"

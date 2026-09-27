@@ -19,7 +19,7 @@ import { computeMetrics } from "./metrics.js";
 import { generateReport } from "./report.js?v=20260926-backup";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
-import { generateInterviewPlan } from "./plan-request.js?v=20260926-backup";
+import { generateInterviewPlan } from "./plan-request.js?v=20260927-planlite";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport } from "./billing.js?v=20260926-backup";
 import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260926-offer";
@@ -670,7 +670,14 @@ async function startCall() {
       refreshWheel();
     },
     onNotice: (m) => { notice("live-notice", m); log("notice", { m }); },
-    onEvent: log,
+    onEvent: (name, data) => {
+      // Why a call reconnects, for everyone (the diagnostics log is on only with ?diagnostics=1): the owner's
+      // own test on 27 Sep 2026 reconnected mid-call and nothing outside the browser could say why.
+      if (name === "reconnect") track("mock_reconnect", { reason: data && data.reason, demo: !!demo });
+      else if (name === "socket_closed" && data && data.wasConnected)
+        track("mock_reconnect", { reason: `closed_${data.code}`, message: String(data.reason || "").slice(0, 90), demo: !!demo });
+      log(name, data);
+    },
   });
   live.start();
   track("mock_start", { minutes: Math.round(plannedSeconds / 60), language: S.language, entitlement: S.ent.kind });
