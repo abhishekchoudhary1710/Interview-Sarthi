@@ -94,6 +94,9 @@
   var key=(q.get("license_key")||"").split(",")[0].trim();
   var email=q.get("email")||"";
   var order=q.get("order_id")||"";
+  // A Dodo buyer of Live comes back with ?payment_id= too: the server checks that payment with Dodo, so the key
+  // shows here even before Dodo's webhook lands.
+  var pid=q.get("payment_id")||"";
   var sub=document.getElementById("sub");
   function show(key,email){
     document.getElementById("keyval").textContent=key;
@@ -123,7 +126,7 @@
   // later via the license server, so poll for it instead of relying on email.
   function poll(n,s){
     s=s||0;
-    fetch(SERVERS[s]+"/orders/"+encodeURIComponent(order)).then(function(r){
+    fetch(SERVERS[s]+"/orders/"+encodeURIComponent(order)+(pid?"?payment_id="+encodeURIComponent(pid):"")).then(function(r){
       if(r.status===404&&s+1<SERVERS.length){return poll(n,s+1);}
       return r.json();
     }).then(function(d){
