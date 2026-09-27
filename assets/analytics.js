@@ -62,7 +62,9 @@
    * before the redirect fires must not be recorded either. */
   var inPrepApp = location.pathname.indexOf("/prep/app") === 0 ||
                   location.pathname.indexOf("/mock/app") === 0;
-  if (clarityOn && !privateReturn && !inPrepApp && location.pathname !== "/thanks.html") {
+  /* The refer-a-friend page takes a licence key to look up the invite code: never recorded either. */
+  var keyPage = location.pathname === "/thanks.html" || location.pathname === "/live/invite.html";
+  if (clarityOn && !privateReturn && !inPrepApp && !keyPage) {
     (function (c, l, a, r, i, t, y) {
       c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
       t = l.createElement(r); t.async = 1;

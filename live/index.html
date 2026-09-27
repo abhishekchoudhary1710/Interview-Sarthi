@@ -958,6 +958,116 @@
       text-align: center
     }
 
+    /* refer a friend (assets/ref.js fills the code box) */
+    .refbox {
+      max-width: 880px;
+      margin: 34px auto 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+      gap: 24px;
+      padding: 24px 26px;
+      border: 1px solid var(--line2);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, .06), rgba(5, 150, 105, .07));
+      text-align: left
+    }
+
+    .refbox h3 {
+      margin: 2px 0 8px;
+      font-size: 22px;
+      letter-spacing: -.01em
+    }
+
+    .refbox p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 14.5px
+    }
+
+    .refbox ol {
+      margin: 0 0 16px;
+      padding-left: 20px;
+      font-size: 14px
+    }
+
+    .refbox li {
+      margin: 4px 0
+    }
+
+    .refcode {
+      align-self: start;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px
+    }
+
+    .refcode label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 14px
+    }
+
+    .refcode .row {
+      display: flex;
+      gap: 8px
+    }
+
+    .refcode input {
+      flex: 1;
+      min-width: 0;
+      font: inherit;
+      font-size: 15px;
+      padding: 10px 12px;
+      border: 1px solid var(--line2);
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em
+    }
+
+    .refcode button {
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer
+    }
+
+    .refcode .msg {
+      min-height: 1em;
+      margin: 8px 0 0;
+      font-size: 13px
+    }
+
+    .refcode .applied {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid #a7d9c4;
+      border-radius: 10px;
+      background: #ecfdf5;
+      color: #065f46;
+      font-size: 13.5px
+    }
+
+    .refcode .fine {
+      margin: 10px 0 0;
+      font-size: 12.5px;
+      border-left: 0;
+      padding-left: 0
+    }
+
+    @media (max-width: 760px) {
+      .refbox {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 20px 18px
+      }
+    }
+
     .refer {
       max-width: 560px;
       margin: 18px auto 0;
@@ -1575,6 +1685,7 @@
   <script defer src="/assets/analytics.js"></script>
   <script defer src="/assets/wa.js"></script>
   <script defer src="/assets/platform.js"></script>
+  <script defer src="/assets/ref.js"></script>
   <style>
     .shots {
       margin-top: 14px
@@ -1879,6 +1990,7 @@
           </div>
           <div class="trust"><b>30 minutes free</b> · no card · no signup · runs on your own free Google Gemini key
           </div>
+          <div class="trust" style="margin-top:8px">&#127873; <b>Refer a friend:</b> you both get a free interview day. <a href="#refer">How it works</a></div>
           <div class="trust" style="margin-top:8px">Installs with no security warning and updates itself. Prefer the
             installer? <a href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">Download the .exe</a>.</div>
           <div class="trust" style="margin-top:8px">Wondering if it's safe? <a
@@ -2127,6 +2239,28 @@
           id="askcopied" hidden>copied</span>, answered the same day by the person who built it.</p>
       <p class="pay" data-intl="Secure checkout by Dodo Payments · Cards, Apple Pay, Google Pay · Prices in USD, shown in your currency at checkout · 7-day money-back on your first pass · &lt;a href=&quot;/refunds.html&quot;&gt;policy&lt;/a&gt;">Secure checkout by Cashfree · UPI (GPay / PhonePe / Paytm) · Cards · Netbanking · 7-day money-back on
         your first pass · <a href="/refunds.html">policy</a></p>
+      <div class="refbox" id="refer">
+        <div>
+          <p class="eyebrow">Refer a friend</p>
+          <h3>You both get a free interview day.</h3>
+          <p>When a friend buys any pass with your invite code and activates it, you each get a <b>Free Interview Day</b>: 24 hours of Live Sarthi on one computer. It waits until you activate it, so keep it for your next round.</p>
+          <ol>
+            <li>Buy a pass. Your invite code comes in the same email as your key.</li>
+            <li>Share your link with friends on WhatsApp.</li>
+            <li>A friend buys and activates: you both get a free day by email.</li>
+          </ol>
+          <a class="cta ghost" href="/live/invite.html">Get your invite link</a>
+        </div>
+        <div class="refcode">
+          <p class="applied" id="ref-applied" hidden>&#10003; Your friend's code <b id="ref-applied-code"></b> is applied. Buy any pass above and activate it: you both get a free interview day.</p>
+          <form id="ref-form" novalidate>
+            <label for="ref-input">Got a code from a friend?</label>
+            <div class="row"><input id="ref-input" name="ref" autocomplete="off" spellcheck="false" maxlength="12" placeholder="e.g. K7M2QXA" aria-describedby="ref-msg"><button type="submit">Apply</button></div>
+            <p class="msg" id="ref-msg" aria-live="polite"></p>
+          </form>
+          <p class="fine">For new customers. Your friend activates on their own computer. No limit on friends. <a href="/terms.html#refer">Rules</a></p>
+        </div>
+      </div>
     </div>
   </section>
   <script>
@@ -2518,6 +2652,10 @@
       <details class="rv">
         <summary>What happens when my pass ends?</summary>
         <p>The app shows a renew screen. Buy a new pass, paste the new key, continue. Nothing auto-charges, ever.</p>
+      </details>
+      <details class="rv">
+        <summary>Is there a refer-a-friend offer?</summary>
+        <p>Yes. Every pass comes with an invite code. When a friend buys any pass with your code and activates it on their own computer, you both get a Free Interview Day: a separate key for 24 hours on one computer. It starts only when you activate it, so you can keep it for your next round; activate it within 30 days of getting it. It is for new customers, and there is no limit on how many friends you invite. <a href="/live/invite.html">Get your invite link</a>.</p>
       </details>
       <details class="rv">
         <summary>Which systems?</summary>

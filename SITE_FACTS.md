@@ -33,6 +33,7 @@ The platform details and passes below describe **Live Sarthi**, previously prese
 - 1-Month Pass: ₹299 once ($29.99 outside India), 30 days, 2 devices; `pdt_0NmHQqaKlKiZ57ISIRzdn`.
 - Outside India the 2-Day Pass is $9.99. Since 25 September 2026 these are the only two passes; the 7-Day and 3-Month passes are withdrawn and must not be offered or linked (`plan=7d`, `plan=90d`).
 - Paid passes advertise unlimited sessions during validity, without automatic renewal. Google API quotas/billing are separate.
+- Refer a friend (since 27 September 2026): every pass comes with a 7-character invite code, in the key email and on the thanks page. When a new customer buys any pass with it and activates it on their own computer, both people get one Free Interview Day key (24 hours, 1 device, starts at activation, must be activated within 30 days of being issued). No cap on friends; codes do not expire. Link format `/live/?ref=CODE`; invite page `/live/invite.html` (noindex); rules `terms.html#refer`. Never describe it as cash, a discount, or extra days on the friend's pass.
 - Evidence: `live/index.html` pricing cards, JSON-LD offers, FAQ and matching checkout URLs. Older About/guide session-count copy is stale.
 - Refund claims remain governed by `refunds.html`; do not change commercial policy as an SEO edit.
 

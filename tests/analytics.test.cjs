@@ -71,6 +71,10 @@ test('Clarity never loads inside the Prep Sarthi app, but does on its landing pa
   assert.ok(run('https://interviewsarthi.com/prep/app/').scripts.some(s=>s.includes('googletagmanager')));
   assert.ok(run('https://interviewsarthi.com/prep/').scripts.some(s=>s.includes('clarity.ms')));
 });
+test('Clarity never records the invite page, where a licence key is typed',()=>{
+  assert.ok(!run('https://interviewsarthi.com/live/invite.html?code=K7M2QXA').scripts.some(s=>s.includes('clarity.ms')));
+  assert.ok(run('https://interviewsarthi.com/live/').scripts.some(s=>s.includes('clarity.ms')));
+});
 test('the old /mock/app path is still excluded from Clarity while its stub redirects',()=>{
   assert.ok(!run('https://interviewsarthi.com/mock/app/').scripts.some(s=>s.includes('clarity.ms')));
 });

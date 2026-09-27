@@ -45,6 +45,14 @@
   .help{margin-top:20px;text-align:center;color:var(--muted);font-size:13.5px}
   footer{margin-top:34px;text-align:center;color:var(--muted);font-size:13px}
   footer a{color:var(--muted);text-decoration:none;margin:0 8px}
+  .refwrap{margin:22px 0 0;padding:16px 18px;border:1px dashed #b9c6ea;border-radius:12px;background:#f5f8ff}
+  .refwrap h2{margin:0 0 6px;font-size:16px}
+  .refwrap p{margin:0 0 12px;font-size:14.5px;color:#334155}
+  .refwrap code{font:700 16px Consolas,monospace;letter-spacing:.08em;color:var(--accent);background:#fff;border:1px solid var(--line2);border-radius:6px;padding:2px 8px}
+  .refbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .refbtns .wa{background:#25D366;color:#0b2e18}
+  .refnote{margin:14px 0 0;padding:12px 14px;border-radius:10px;background:var(--okbg);border:1px solid var(--okline);font-size:14px;color:#065f46}
+  [hidden]{display:none!important}
 </style>
 <script defer src="assets/analytics.js"></script>
 <script defer src="assets/wa.js"></script>
@@ -78,7 +86,15 @@
       <li><div><b>Finish the 2-minute setup</b><span>Add your free Google Gemini key (the wizard shows how, no card needed) and your resume, then you're interview-ready.</span></div></li>
     </ol>
 
+    <p class="refnote" id="refnote" hidden>You used a friend's invite code. Once you activate this key, you and your friend each get a Free Interview Day by email.</p>
+
     <div class="dl"><a class="cta" href="https://apps.microsoft.com/detail/9NMKQPSQ1KS8"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Get it from Microsoft Store</a></div>
+
+    <div class="refwrap" id="refwrap" hidden>
+      <h2>&#127873; Refer a friend: you both get a free interview day</h2>
+      <p>Your invite code is <code id="refcode"></code>. When a friend buys a pass with it and activates it, you each get a Free Interview Day: 24 hours, kept until you activate it, for your next round.</p>
+      <div class="refbtns"><a class="cta wa" id="refwa" target="_blank" rel="noopener">Share on WhatsApp</a><a class="copy" id="refmore" href="/live/invite.html" style="display:inline-flex;align-items:center;text-decoration:none">Your invite link</a></div>
+    </div>
 
     <p class="help">Stuck? The <a href="help.html">help page</a> covers activation and audio setup, or email <a href="mailto:support@interviewsarthi.com">support</a>, replies usually same day.</p>
   </div>
@@ -115,6 +131,23 @@
     });
   }
   function noKey(){document.getElementById("nokey").style.display="block";}
+  // Refer-a-friend: the buyer's own invite code, and a note when they came with a friend's.
+  function refer(code,referred){
+    if(referred){document.getElementById("refnote").hidden=false;}
+    if(!/^[A-HJ-NP-Z2-9]{7}$/.test(code||"")){return;}
+    var link="https://interviewsarthi.com/live/?ref="+code;
+    var text="I use Live Sarthi in online interviews: it shows answer suggestions from my CV on screen during the call. 30 minutes free. "+
+      "If you buy a pass with my code "+code+", we both get a free interview day: "+link;
+    document.getElementById("refcode").textContent=code;
+    document.getElementById("refwa").href="https://wa.me/?text="+encodeURIComponent(text);
+    document.getElementById("refmore").href="/live/invite.html?code="+code;
+    document.getElementById("refwrap").hidden=false;
+    document.getElementById("refwa").addEventListener("click",function(){if(window.sarthiTrack){window.sarthiTrack("referral_share",{channel:"whatsapp_thanks"});}});
+  }
+  function referByKey(key){
+    fetch(SERVERS[0]+"/referral?key="+encodeURIComponent(key)).then(function(r){return r.ok?r.json():null;})
+      .then(function(d){if(d&&d.code){refer(d.code,false);}}).catch(function(){});
+  }
   // analytics.js is deferred; on a fast reply it may not have run yet.
   function report(name,key,plan,n){
     n=n||0;
@@ -131,7 +164,7 @@
       return r.json();
     }).then(function(d){
       if(!d){return;}
-      if(d.status==="paid"&&d.key){show(d.key,d.email||"");report("purchase",d.key,d.plan);}
+      if(d.status==="paid"&&d.key){show(d.key,d.email||"");report("purchase",d.key,d.plan);refer(d.ref_code,d.referred);}
       else if(d.status==="failed"){
         document.querySelector("h1").textContent="Payment did not complete";
         sub.innerHTML='Nothing was charged. <a href="/live/#pricing">Try again from the pricing page</a>, or email <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a> and we will sort it out.';
@@ -141,7 +174,7 @@
       else{noKey();}
     }).catch(function(){if(n<30){setTimeout(function(){poll(n+1);},2000);}else{noKey();}});
   }
-  if(key){show(key,email);}
+  if(key){show(key,email);referByKey(key);}
   else if(order){poll(0);}
   else{noKey();}
 })();
