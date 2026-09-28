@@ -14,6 +14,7 @@
  */
 
 import { LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260927-invite";
+import { reportPaidOrder } from "./purchase-analytics.js?v=20260928";
 
 const $ = (id) => document.getElementById(id);
 const PENDING = "ps_pending_order";
@@ -269,6 +270,7 @@ async function pay() {
       localStorage.setItem(PENDING, JSON.stringify({
         order_id: order.order_id, hash: ctx.state.hash || null,
         gateway: order.gateway || "cashfree", at: Date.now(),
+        amount: order.amount, currency: order.currency || "INR",
       }));
       if (!abroad) localStorage.setItem(PHONE, phone.slice(-10));
     } catch (_) { /* private mode */ }
@@ -301,11 +303,14 @@ async function resumePendingOrder() {
   const fromUrl = (window.__ps || {}).order;
   const paymentId = (window.__ps || {}).payment;
   if (fromUrl) {
+    const sameOrder = pending && pending.order_id === fromUrl;
     pending = {
       order_id: fromUrl, hash: (pending && pending.hash) || null,
       at: (pending && pending.at) || Date.now(),
       gateway: (pending && pending.gateway) || null,
       payment_id: paymentId || (pending && pending.payment_id) || null,
+      amount: sameOrder ? pending.amount : undefined,
+      currency: sameOrder ? pending.currency : undefined,
     };
     // Written back because Dodo's payment_id lives only in the URL, and the head
     // script clears the URL: a reload would otherwise lose the reference.
@@ -330,7 +335,7 @@ async function resumePendingOrder() {
     if (r.status === "paid") {
       try { localStorage.removeItem(PENDING); } catch (_) { /* ignore */ }
       ctx.setEntitlement(r.entitlement);
-      ctx.track("purchase", { product: "prep-sarthi", plan: r.plan });
+      await reportPaidOrder(pending, r, ctx.track);
       step = "choose"; extendOpen = false;
       $("pass-body").style.display = "block"; paint();
       say(`Paid. Your ${r.plan} is live. Practise as much as you like.`, "ok");

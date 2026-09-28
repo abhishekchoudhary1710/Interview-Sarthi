@@ -22,7 +22,7 @@ import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-
 import { generateInterviewPlan } from "./plan-request.js?v=20260927-planlite";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport, deviceInvite } from "./billing.js?v=20260927-invite";
-import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260927-invite";
+import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260928-analytics";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
 
