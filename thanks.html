@@ -90,6 +90,8 @@
 
     <div class="dl"><a class="cta" href="https://apps.microsoft.com/detail/9NMKQPSQ1KS8"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Get it from Microsoft Store</a></div>
 
+    <div id="heardfrom"></div>
+
     <div class="refwrap" id="refwrap" hidden>
       <h2>&#127873; Refer a friend: you both get a free interview day</h2>
       <p>Your invite code is <code id="refcode"></code>. When a friend buys a pass with it and activates it, you each get a Free Interview Day: 24 hours, kept until you activate it, for your next round.</p>
@@ -102,6 +104,7 @@
   <footer>© 2026 Interview Sarthi · <a href="terms.html">Terms</a> · <a href="privacy.html">Privacy</a> · <a href="refunds.html">Refunds</a></footer>
 </div>
 
+<script src="assets/heard-from.js?v=20260928"></script>
 <script>
 (function(){
   // Production first; sandbox orders (test purchases) live on the test server.
@@ -114,6 +117,10 @@
   // shows here even before Dodo's webhook lands.
   var pid=q.get("payment_id")||"";
   var sub=document.getElementById("sub");
+  // "Where did you hear about us?", once the payment is confirmed. It goes to the server that knows the order.
+  function survey(api){
+    if(window.sarthiHeardFrom){window.sarthiHeardFrom({mount:document.getElementById("heardfrom"),api:api,order:order,key:order?"":key,product:"Interview Sarthi"});}
+  }
   function show(key,email){
     document.getElementById("keyval").textContent=key;
     document.getElementById("keywrap").style.display="block";
@@ -164,7 +171,7 @@
       return r.json();
     }).then(function(d){
       if(!d){return;}
-      if(d.status==="paid"&&d.key){show(d.key,d.email||"");report("purchase",d.key,d.plan);refer(d.ref_code,d.referred);}
+      if(d.status==="paid"&&d.key){show(d.key,d.email||"");report("purchase",d.key,d.plan);refer(d.ref_code,d.referred);survey(SERVERS[s]);}
       else if(d.status==="failed"){
         document.querySelector("h1").textContent="Payment did not complete";
         sub.innerHTML='Nothing was charged. <a href="/live/#pricing">Try again from the pricing page</a>, or email <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a> and we will sort it out.';
@@ -174,7 +181,7 @@
       else{noKey();}
     }).catch(function(){if(n<30){setTimeout(function(){poll(n+1);},2000);}else{noKey();}});
   }
-  if(key){show(key,email);referByKey(key);}
+  if(key){show(key,email);referByKey(key);survey(SERVERS[0]);}
   else if(order){poll(0);}
   else{noKey();}
 })();

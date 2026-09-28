@@ -13,7 +13,7 @@
  * score worth showing.
  */
 
-import { LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260927-invite";
+import { LICENSE_API, LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260927-invite";
 import { reportPaidOrder } from "./purchase-analytics.js?v=20260928";
 
 const $ = (id) => document.getElementById(id);
@@ -296,6 +296,14 @@ async function pay() {
   }
 }
 
+/* "Where did you first hear about us?", once, below the pass card after a payment (assets/heard-from.js, src/survey.js).
+ * Loaded only now, and any failure is silent: it must never stand between a buyer and their pass. */
+function askHeardFrom(orderId) {
+  import("/assets/heard-from.js?v=20260928").then(() => {
+    if (window.sarthiHeardFrom) window.sarthiHeardFrom({ mount: $("heard-from"), api: LICENSE_API, order: orderId, product: "Prep Sarthi", track: ctx.track });
+  }).catch(() => { /* no survey */ });
+}
+
 /* Back from Cashfree (or the tab was closed mid-payment): ask until it is settled. */
 async function resumePendingOrder() {
   let pending = null;
@@ -339,6 +347,7 @@ async function resumePendingOrder() {
       step = "choose"; extendOpen = false;
       $("pass-body").style.display = "block"; paint();
       say(`Paid. Your ${r.plan} is live. Practise as much as you like.`, "ok");
+      askHeardFrom(pending.order_id);
       $("pass-back").textContent = "Back";
       return true;
     }
