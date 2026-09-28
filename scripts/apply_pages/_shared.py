@@ -73,5 +73,6 @@ def sarthi_handoff(prefix='../'):
         '<a href="{p}prep/mock-interview-from-resume.html">an AI mock interview with Prep Sarthi</a>. '
         'Practise weak answers before the real round. For assistance during a call where it is '
         'permitted, <a href="{p}live/">Live Sarthi</a> shows CV-based answer suggestions. '
-        'The apps use your Gemini key; Google’s usage limits apply.</p></div>'
+        'Live Sarthi and a Prep Sarthi pass use your own Gemini key (Prep\'s free demo needs none); '
+        'Google’s usage limits apply.</p></div>'
     ).format(p=prefix)

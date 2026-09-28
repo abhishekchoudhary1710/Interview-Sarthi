@@ -138,7 +138,7 @@ COMPARE = {
 
 <h2>The comparison</h2>
 {table(['Product', 'Published price', 'Presses submit?', 'Reaches Naukri / Shine / Internshala?'], [
-  ('<b>ApplySarthi</b>', 'Always free; you bring your own Gemini key',
+  ('<b>ApplySarthi</b>', 'Always free; first tailored CV free, then your own Gemini key',
    'No, unless you switch Autopilot on', '<b>Yes</b> &mdash; plus Foundit, Wellfound, LinkedIn, Indeed'),
   ('<a href="vs-lazyapply.html">LazyApply</a>', '$99, $149 or $999 a year',
    'Yes, by design', 'No &mdash; Greenhouse, Dice, Indeed, ZipRecruiter'),
