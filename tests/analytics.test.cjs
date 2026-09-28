@@ -19,6 +19,24 @@ function run(url, referrer='', session=storage(), local=storage(), disabled=fals
   return {get events(){return window.dataLayer.map(x=>Array.from(x));},scripts,location,listeners,window};
 }
 const referral = r => r.events.filter(e=>e[0]==='event' && e[1]==='ai_referral_visit');
+test('LinkedIn campaign survives URL sanitisation without unrelated query data',()=>{
+  const r=run('https://interviewsarthi.com/prep/?utm_source=linkedin&utm_medium=social&utm_campaign=linkedin_product_growth&utm_content=li-20260929-prep-project&email=private@example.test');
+  const c=r.events.find(e=>e[0]==='config')[2];
+  assert.equal(c.campaign_source,'linkedin');
+  assert.equal(c.campaign_medium,'social');
+  assert.equal(c.campaign_name,'linkedin_product_growth');
+  assert.equal(c.campaign_content,'li-20260929-prep-project');
+  assert.equal(c.page_location,'https://interviewsarthi.com/prep/');
+  assert.ok(!JSON.stringify(r.events).includes('private@example.test'));
+});
+test('arbitrary campaign values and receipt return parameters remain excluded',()=>{
+  for(const suffix of ['li-20260929-prep-project&license_key=SECRET','private@example.test','li-20260929-prep-x%20private']) {
+    const r=run('https://interviewsarthi.com/prep/?utm_source=linkedin&utm_medium=social&utm_campaign=linkedin_product_growth&utm_content='+suffix);
+    assert.equal(r.events.find(e=>e[0]==='config')[2].campaign_source,undefined);
+    assert.ok(!JSON.stringify(r.events).includes('SECRET'));
+    assert.ok(!JSON.stringify(r.events).includes('private'));
+  }
+});
 test('known UTM and referrer sources; UTM takes precedence',()=>{
   assert.equal(referral(run('https://interviewsarthi.com/?utm_source=chatgpt.com','https://claude.ai/chat/private'))[0][2].ai_source,'chatgpt');
   assert.equal(referral(run('https://interviewsarthi.com/guides/','https://www.perplexity.ai/search/private'))[0][2].ai_source,'perplexity');

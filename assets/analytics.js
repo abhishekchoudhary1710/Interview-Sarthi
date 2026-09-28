@@ -46,11 +46,26 @@
     s.src = "https://www.googletagmanager.com/gtag/js?id=" + GA4_ID;
     document.head.appendChild(s);
     gtag("js", new Date());
-    gtag("config", GA4_ID, {
+    var gaConfig = {
       anonymize_ip: true,
       page_location: location.origin + location.pathname,
       page_referrer: safeReferrer(document.referrer)
-    });
+    };
+    /* Preserve the known LinkedIn product campaign without exposing arbitrary query
+     * values, receipt keys or email addresses in page_location. GA4 uses these
+     * campaign fields for session attribution and subsequent funnel events. */
+    var socialCreative = incomingParams.get("utm_content") || "";
+    if (!privateReturn && location.pathname !== "/thanks.html" &&
+        incomingParams.get("utm_source") === "linkedin" &&
+        incomingParams.get("utm_medium") === "social" &&
+        incomingParams.get("utm_campaign") === "linkedin_product_growth" &&
+        /^li-\d{8}-(?:apply|prep|live|jobs)-[a-z0-9-]{1,80}$/.test(socialCreative)) {
+      gaConfig.campaign_source = "linkedin";
+      gaConfig.campaign_medium = "social";
+      gaConfig.campaign_name = "linkedin_product_growth";
+      gaConfig.campaign_content = socialCreative;
+    }
+    gtag("config", GA4_ID, gaConfig);
   }
 
   /* ---- Microsoft Clarity ---- */
