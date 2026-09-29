@@ -12,11 +12,11 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20260925-demo";
-import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260923-jd-plan";
+import { GeminiLive } from "./live.js?v=20260929-progress";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260929-progress";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { generateReport } from "./report.js?v=20260926-backup";
+import { RUBRIC_VERSION, generateReport } from "./report.js?v=20260929-progress";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { generateInterviewPlan } from "./plan-request.js?v=20260927-planlite";
@@ -25,6 +25,12 @@ import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, remem
 import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260928-survey";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
+// Progress across the month (plan approved 29 Sep 2026). These modules hold the logic; the screens that show
+// it are drawn elsewhere and reach this page through window.prepApp and the prep:* events below.
+import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries, saveInterview, saveItem } from "./history.js";
+import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
+import { refreshAnalyses } from "./insights.js";
+import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js";
 
 const $ = (id) => document.getElementById(id);
 // Technical output is available only when support explicitly requests this URL.
@@ -63,6 +69,8 @@ const bubbles = new Map();
 const logLines = [];
 const DEMO_SECONDS = 7 * 60;   // the licence server's DEMO.SECONDS; its answer caps the call too
 let demo = null;               // the free demo in progress: { demo, token, seconds } from /mock/demo/start
+let focusCarried = null;       // the habit the last report set, tested in this interview (progress.js carryFocus)
+let redrill = null;            // { source } while one question is being answered again (redrill.js)
 const wheel = new Wheel($("wheel"));
 const waitWheel = new Wheel($("wheel-wait"));
 
@@ -72,6 +80,7 @@ function show(id) {
   if (id !== "s-pass" && id !== "s-invite") lastScreen = id;
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
   window.scrollTo({ top: 0 });
+  window.dispatchEvent(new CustomEvent("prep:screen", { detail: { id } }));
 }
 function notice(id, text, cls = "") { const el = $(id); el.textContent = text || ""; el.className = "notice " + cls; }
 function log(name, data) {
@@ -111,7 +120,9 @@ const passCtx = {
   state: S, passesOn: false, show, track, log,
   setEntitlement(ent) {
     S.ent = ent; renderEntitlement();
+    window.dispatchEvent(new CustomEvent("prep:account"));
     if (ent && ent.kind === "pass") unlockSavedReport();
+    if (ent && ent.account) flushOutbox().catch(() => {});
     // The server says this once, on the call that created the trial: tell the person where the minutes came from.
     if (ent && ent.welcome) showApplyWelcome(`ApplySarthi bonus added: ${ent.welcome.minutes} extra free minutes, so you have ${Math.round(ent.secondsLeft / 60)} in total.`);
   },
@@ -126,6 +137,7 @@ const passCtx = {
     else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen);
   },
   practise() {
+    redrill = null;
     $("pass-back").textContent = "Back";
     if (["call", "miccheck", "preparing"].includes(phase)) { show("s-live"); return; }
     if (S.key && S.ent) preLive(); else if (S.cv || $("cv").value) showKeyStep(); else show("s-cv");
@@ -224,6 +236,7 @@ function readForm() {
   S.language = currentLanguage(); S.minutes = Number($("minutes").value) || 12; S.voice = $("voice").value;
 }
 $("to-key").onclick = async () => {
+  redrill = null;
   readForm();
   if (S.cv.length < 80) { notice("cv-notice", "Add your CV first: a file or pasted text.", "bad"); return; }
   try { interviewContext(S); }
@@ -376,7 +389,8 @@ function preLive() {
   $("pre-live").style.display = "grid"; $("youbar").style.display = "none";
   hideMicFix(); $("youline").textContent = "";
   $("transcript").innerHTML = ""; bubbles.clear();
-  $("clock").textContent = fmt(S.minutes * 60); $("clock").classList.remove("low");
+  const length = redrill ? REDRILL_SECONDS : S.minutes * 60;
+  $("clock").textContent = fmt(length); $("clock").classList.remove("low");
   setLink("idle", "Ready");
   const p = who();
   setCaption("Your interviewer", `${p.They} speaks first. Answer out loud, like a real call.`);
@@ -394,10 +408,11 @@ function preLive() {
     notice("live-notice", "Your free minutes are used up. Passes open in a few days.", "bad");
   } else {
     $("start").disabled = false;
-    const cap = Math.min(S.minutes * 60, S.ent.secondsLeft);
+    const cap = Math.min(length, S.ent.secondsLeft);
     $("clock").textContent = fmt(cap);
     const why = S.ent.kind === "pass" ? `Your pass ends in ${fmtLong(S.ent.secondsLeft)}` : `You have ${fmtLong(S.ent.secondsLeft)} free left`;
-    notice("live-notice", cap < S.minutes * 60 ? `${why}, so this interview will be ${fmtLong(cap)}.` : "");
+    notice("live-notice", cap < length ? `${why}, so this interview will be ${fmtLong(cap)}.`
+      : redrill ? `Answer this again: "${clip(redrill.source.question, 160)}"` : "");
   }
 }
 
@@ -613,7 +628,8 @@ async function startCall() {
       // Not marked used here: if Google is too busy to prepare it, pressing Start again resumes the same demo.
       track("mock_demo_start", {});
     }
-    const plan = await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
+    // A re-answer asks one question from an earlier report: nothing to plan.
+    const plan = redrill ? null : await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
       minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal,
       transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup() });
     if (controller.signal.aborted || planController !== controller) return;
@@ -623,7 +639,7 @@ async function startCall() {
     if (controller.signal.aborted || planController !== controller) return;
     S.ent = fresh;
     if (S.ent.secondsLeft <= 0) throw new Error("Your practice time has expired. Get a pass before starting.");
-    assessmentPlan = plan; planCoverage = new PlanCoverage(plan);
+    assessmentPlan = plan; planCoverage = plan ? new PlanCoverage(plan) : null;
   } catch (err) {
     if (controller.signal.aborted || planController !== controller) return;
     await cancelMicCheck();
@@ -640,19 +656,25 @@ async function startCall() {
   startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
   trialLeftAtStart = S.ent.secondsLeft;
-  plannedSeconds = Math.min(S.minutes * 60, S.ent.secondsLeft, demo ? demo.seconds : Infinity);   // free minutes, passes and the demo all stop on the second
+  plannedSeconds = Math.min(redrill ? REDRILL_SECONDS : S.minutes * 60, S.ent.secondsLeft, demo ? demo.seconds : Infinity);   // free minutes, passes and the demo all stop on the second
+  // A pass holder's last report named one habit to fix: this interview gives them a chance to show it.
+  focusCarried = !redrill && S.ent.kind === "pass" && assessmentPlan
+    ? carryFocus(knownSummaries(), trackKey({ mode: assessmentPlan.mode, role: assessmentPlan.role, level: assessmentPlan.level })) : null;
   log("call_start", { planned: plannedSeconds });
   setLink("busy", "Connecting");
   setCaption("I can hear you", "Calling your interviewer…", true);
   $("left").textContent = "You're on";
   wheel.setState("reconnecting");
 
-  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60, assessmentPlan };
+  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60, assessmentPlan, focus: focusCarried };
   live = new GeminiLive({
     apiKey: S.key,
     authToken: demo ? demo.token : "",
     voice: S.voice,
-    instructions: () => buildInterviewerInstructions(brief),
+    instructions: () => redrill
+      ? buildRedrillInstructions({ candidateName: S.name, language: S.language, voice: S.voice, source: redrill.source, cv: S.cv })
+      : buildInterviewerInstructions(brief),
+    notes: redrill ? redrillNotes() : undefined,
     getInterviewProgress: currentProgress,
     onAudio: (pcm) => audio && audio.play(pcm),
     onInterrupted: () => audio && audio.clear(),
@@ -680,11 +702,12 @@ async function startCall() {
     },
   });
   live.start();
-  track("mock_start", { minutes: Math.round(plannedSeconds / 60), language: S.language, entitlement: S.ent.kind });
+  track(redrill ? "mock_redrill_start" : "mock_start", { minutes: Math.round(plannedSeconds / 60), language: S.language, entitlement: S.ent.kind, focus: !!focusCarried });
   timer = setInterval(onSecond, 1000);
 }
 
 function currentProgress(args = {}) {
+  if (redrill) return redrillProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0 });
   const progress = interviewProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0,
     entitlementSeconds: S.ent.kind === "pass" ? trialLeftAtStart - (nowS() - startedAt) : Infinity });
   if (!planCoverage) return progress;
@@ -791,7 +814,8 @@ async function endInterview(reason) {
     return;
   }
   wheel.stop();
-  await writeReport(turns, elapsed, usage);
+  if (redrill) await writeRedrill(turns, elapsed);
+  else await writeReport(turns, elapsed, usage);
 }
 
 // ------------------------------------------------------------- 4. Report
@@ -803,7 +827,7 @@ async function writeReport(turns, elapsed, usage) {
   const metrics = computeMetrics(turns, voiceLog);
   let result;
   try {
-    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup(), cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan });
+    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup(), cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan, previousFocus: focusCarried });
   } catch (err) {
     track("mock_fail_report", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
     waitWheel.stop(); $("report-wait").style.display = "none";
@@ -812,13 +836,18 @@ async function writeReport(turns, elapsed, usage) {
     return;
   }
   waitWheel.stop(); $("report-wait").style.display = "none";
-  const record = { at: new Date().toISOString(), elapsed, language: S.language, model: result.model, report: result.report, metrics, transcript: turns, usage };
+  const record = { id: "iv-" + crypto.randomUUID(), at: new Date().toISOString(), elapsed, language: S.language, model: result.model,
+    rubric: RUBRIC_VERSION, demo: S.ent.kind === "demo", report: result.report, metrics, transcript: turns, usage,
+    ...(focusCarried ? { focus_carried: focusCarried } : {}) };
   // Owner, 26 Sep 2026: a free demo shows the score, the verdict and the weakest answer in full; the rest
   // of the report is written and saved now, and unlocks the moment a pass is bought.
   if (S.ent.kind === "demo") record.locked = true;
+  // "+8 since last time": against this person's earlier interviews in the current pass (progress.js).
+  try { record.changes = reportChanges(summarize(record), knownSummaries(), currentPeriod()); } catch (_) { /* no badges */ }
   window.__lastReport = record;
   saveHistory(record);
   renderReport(record);
+  announceReport(record);
   if (S.ent.kind === "demo") {
     // The demo is over: this is the moment to offer the pass. A second demo is not offered.
     track("mock_demo_end", { score: result.report.overall_score });
@@ -842,6 +871,42 @@ async function writeReport(turns, elapsed, usage) {
     track("mock_offer_shown", { where: "report" });
   } else hideOffer("report-offer");
   track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
+}
+
+/* One question answered again (redrill.js): judged against the old answer, saved to the account with history
+ * on, and handed to the page as prep:redrill. A page that draws it calls preventDefault(); otherwise a plain
+ * card is shown so the flow never ends on an empty screen. */
+async function writeRedrill(turns, elapsed) {
+  const source = redrill.source;
+  redrill = null;
+  show("s-report");
+  $("report").innerHTML = ""; $("report-wait").style.display = "block";
+  waitWheel.start(); waitWheel.setState("thinking");
+  let out;
+  try {
+    out = await compareAnswers({ apiKey: S.key, source, transcript: turns, language: S.language, backup: passBackup() });
+  } catch (err) {
+    track("mock_fail_redrill", { message: String(err && err.message || "").slice(0, 90) });
+    waitWheel.stop(); $("report-wait").style.display = "none";
+    $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">Your new answer could not be judged</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Try again in a minute.</p></div>`;
+    window.__lastReport = { turns, elapsed };
+    return;
+  }
+  waitWheel.stop(); $("report-wait").style.display = "none";
+  const item = redrillItem({ id: "rd-" + crypto.randomUUID(), at: new Date().toISOString(), source, transcript: turns, model: out.model, result: out.result, elapsed });
+  window.__lastRedrill = item;
+  window.__lastReport = { at: item.at, turns };                 // Download gives the new transcript
+  track("mock_redrill_done", { before: item.summary.score_before, after: item.summary.score_after });
+  const drawn = !window.dispatchEvent(new CustomEvent("prep:redrill", { cancelable: true, detail: { item } }));
+  if (!drawn) {
+    const r = item.summary, li = (arr) => (arr || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("");
+    $("report").innerHTML = `<div class="card"><span class="label">Answered again</span><h3>${escapeHtml(r.question)}</h3>
+      <p><b>Before:</b> ${r.score_before ?? "?"} / 10 · <b>Now:</b> ${r.score_after ?? "?"} / 10</p><p class="verdict">${escapeHtml(r.verdict)}</p>
+      <p class="said">Last time: ${escapeHtml(source.before.text || source.before.gist)}</p><p class="said">This time: ${escapeHtml(item.body.after.text)}</p>
+      ${r.improved.length ? `<span class="label">Better</span><ul class="clean">${li(r.improved)}</ul>` : ""}
+      ${r.still_missing.length ? `<span class="label">Still missing</span><ul class="clean bad">${li(r.still_missing)}</ul>` : ""}</div>`;
+  }
+  saveItem(item).catch(() => {});
 }
 
 /* A report from the free demo stays locked until a pass is bought: the score, the verdict and the weakest
@@ -870,7 +935,7 @@ function renderReport(r) {
       <h3>${escapeHtml(q.question)}</h3>${LOCK_BAR}
     </div>`;
     const tone = score >= 7 ? "good" : score >= 5 ? "mid" : "";
-    return `<div class="q">
+    return `<div class="q" data-qi="${i}">
       <span class="label">Question ${i + 1} · ${score} / 10</span>
       <h3>${escapeHtml(q.question)}</h3>
       <div class="meter"><i class="${tone}" style="width:${score * 10}%"></i></div>
@@ -904,6 +969,7 @@ function renderReport(r) {
     <div class="card locked"><span class="label">How you sounded · locked</span>${LOCK_BAR}</div>
     <div class="card locked"><span class="label">What worked, what hurt, practise next · locked</span>${LOCK_BAR}</div>`;
     $("unlock-report").onclick = () => { track("mock_unlock_click", { where: "report" }); openPasses("", { plan: "m", checkout: true }); };
+    window.dispatchEvent(new CustomEvent("prep:report-rendered", { detail: { record: r, locked: true } }));
     return;
   }
   $("report").innerHTML = `
@@ -927,6 +993,7 @@ function renderReport(r) {
     </div>
     <div class="card"><span class="label">Practise next</span><ol class="next">${li(rep.practice_next)}</ol>
       <p class="muted" style="font-size:13px;margin:14px 0 0">Report written by ${escapeHtml(r.model)}${r.locked ? "" : " on your own key"}.</p></div>`;
+  window.dispatchEvent(new CustomEvent("prep:report-rendered", { detail: { record: r, locked: false } }));
 }
 
 /* A pass was just bought (or found): the demo report saved in this browser opens in full. The payment
@@ -937,23 +1004,36 @@ function unlockSavedReport() {
   if (!r || !r.report || !r.locked) return;
   r.locked = false;
   window.__lastReport = r;
-  try { store.set("ps_last_report", JSON.stringify(r)); } catch (_) { /* storage off */ }
+  saveHistory(r);
   renderReport(r);
   hideOffer("report-offer");
   const btn = $("see-full-report");
   if (btn) { btn.style.display = "inline-flex"; btn.onclick = () => { track("mock_unlock_view", {}); show("s-report"); window.scrollTo(0, 0); }; }
 }
 
+/* This browser keeps the latest full report and a short list of summaries (history.js); the account keeps
+ * every report once the person has switched history on. A locked demo report goes to the account only
+ * after a pass unlocks it (unlockSavedReport). */
 function saveHistory(record) {
-  try {
-    const list = JSON.parse(store.get("ps_history", "[]"));
-    list.unshift({ at: record.at, score: record.report.overall_score, elapsed: record.elapsed, language: record.language });
-    store.set("ps_history", JSON.stringify(list.slice(0, 20)));
-    store.set("ps_last_report", JSON.stringify(record));
-  } catch (_) { /* storage full or off */ }
+  // Reports from before 29 Sep 2026 have no id: the same one history.js gives them when importing.
+  if (!record.id) record.id = `iv-l-${String(record.at).replace(/[^0-9TZ]/g, "")}`;
+  try { store.set("ps_last_report", JSON.stringify(record)); } catch (_) { /* storage full or off */ }
+  return saveInterview(record).then((r) => r.state).catch(() => "retry");
 }
 
-$("again").onclick = () => { ending = false; preLive(); };
+/* A finished report, for the progress screens: prep:report carries the record (with .changes, the badges)
+ * and, once known, where its save stands (history.js statusOf / HISTORY_EVENTS give live updates). A pass
+ * holder's month analysis is brought up to date in the background afterwards. */
+function announceReport(record) {
+  window.dispatchEvent(new CustomEvent("prep:report", { detail: { record } }));
+  if (S.ent && S.ent.kind === "pass" && S.key && !record.demo) {
+    refreshAnalyses({ apiKey: S.key, language: S.language }).catch((err) => log("analysis_failed", { message: String(err && err.message || err) }));
+  }
+}
+
+const currentPeriod = () => { const p = knownPeriods().find((x) => x.current); return p ? { start: p.start, end: p.end, ...("from" in p ? { from: p.from } : {}) } : null; };
+
+$("again").onclick = () => { ending = false; redrill = null; preLive(); };
 $("download").onclick = () => {
   const r = window.__lastReport;
   if (!r) return;
@@ -1031,6 +1111,53 @@ async function loadJobFromApply() {
   } catch (_) { /* the box stays as it was; the JD can still be pasted by hand */ }
 }
 
+/* What the progress screens can ask of this page. Everything else they need is in history.js (saved
+ * interviews, settings, delete, export), progress.js (the numbers) and insights.js (the month analysis). */
+async function startRedrill(interviewId, questionIndex) {
+  if (!S.ent || S.ent.kind !== "pass") throw new Error("Answering a question again needs a pass.");
+  if (["call", "miccheck", "preparing"].includes(phase)) throw new Error("An interview is running.");
+  const record = await getInterview(interviewId);
+  const source = record && redrillSource(record, Number(questionIndex));
+  if (!source) throw new Error("That question could not be found in the saved interview.");
+  redrill = { source };
+  track("mock_redrill_open", {});
+  if (!S.key) { showKeyStep(); return source; }         // the key screen's check leads on to preLive
+  preLive();
+  return source;
+}
+async function openInterview(id) {
+  const r = await getInterview(id);
+  if (!r || !r.report) throw new Error("That interview could not be found.");
+  window.__lastReport = r;
+  $("report-wait").style.display = "none";
+  hideOffer("report-offer");
+  renderReport(r);
+  show("s-report");
+  return r;
+}
+window.prepApp = {
+  startRedrill, openInterview,
+  navigate(id) {
+    if (!["s-progress", "s-comparison", "s-cv"].includes(id)) return;
+    if (["call", "miccheck", "preparing"].includes(phase) || ending && $("report-wait").style.display !== "none") {
+      throw new Error("Finish your interview and wait for its report before opening progress.");
+    }
+    if (id === "s-cv") { redrill = null; ending = false; }
+    show(id);
+  },
+  openPasses: () => openPasses(),
+  cancelRedrill() { redrill = null; },
+  /** Who is here and what they own, for deciding what the progress screens show. */
+  state: () => ({
+    signedIn: !!(S.ent && S.ent.account), account: (S.ent && S.ent.account) || null,
+    pass: !!(S.ent && S.ent.kind === "pass"), expiresAt: (S.ent && S.ent.expiresAt) || null,
+    hasKey: !!S.key, language: S.language, name: S.name, phase, redrill: redrill ? redrill.source : null,
+  }),
+  /** Bring the saved month analyses up to date now (force: even if the saved one is recent). */
+  refreshAnalyses: (o = {}) => refreshAnalyses({ apiKey: S.key, language: S.language, ...o }),
+  events: HISTORY_EVENTS,
+};
+
 window.addEventListener("pagehide", () => {
   // Leaving while the interview is being prepared, or in the middle of it, is the drop-off to watch.
   if (phase === "preparing") track("mock_abandon_preparing", { demo: !!demo });
@@ -1040,3 +1167,9 @@ window.addEventListener("pagehide", () => {
 rememberInvite();
 rememberSource();
 const booting = restore().then(loadJobFromApply).then(() => initPasses(passCtx)).then(renderEntitlement);
+// Saves that could not reach the server last time, and any weekly or end-of-pass review now due.
+booting.then(() => {
+  flushOutbox().catch(() => {});
+  if (S.ent && S.ent.kind === "pass" && S.key) refreshAnalyses({ apiKey: S.key, language: S.language }).catch(() => {});
+  window.dispatchEvent(new CustomEvent("prep:ready"));
+});

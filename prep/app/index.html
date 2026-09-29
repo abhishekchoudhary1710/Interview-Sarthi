@@ -35,6 +35,7 @@
   })();
   </script>
   <link rel="stylesheet" href="../prep.css?v=20260926-offer">
+  <link rel="stylesheet" href="./progress-view.css?v=20260929-ui">
   <style>
     .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
     /* the free demo's report: what a pass unlocks is shown as locked, never as blurred real text */
@@ -102,14 +103,14 @@
 <div class="narrow">
   <div class="nav">
     <a class="wm" href="/prep/"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(32 32)"><circle r="25" fill="none" stroke="currentColor" stroke-width="4.6"/><g stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M0-21.2V21.2M-21.2 0H21.2M-15-15l30 30M-15 15l30-30"/></g><circle r="6" fill="currentColor"/></g></svg>Prep <i>Sarthi</i></a>
-    <span class="navright"><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button></span>
+    <span class="navright"><button class="navlink" id="open-progress" data-pg="open">My progress</button><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button></span>
   </div>
 
   <!-- 1. CV -->
   <section class="screen on" id="s-cv">
     <span class="label">Step 1 of 3</span>
     <h1>Practise for <em>your</em> next role.</h1>
-    <p class="lede">Add your CV and an optional job description. Your interviewer adapts questions to your experience, answers and chosen role. When you start, your documents are used only to prepare and run this interview, and are never stored. Preparation does not use your practice minutes.</p>
+    <p class="lede">Add your CV and an optional job description. Your interviewer adapts questions to your experience, answers and chosen role. When you start, your documents are used only to prepare and run this interview; the documents themselves are never stored. Preparation does not use your practice minutes.</p>
     <div class="card" style="margin-top:22px">
       <div class="fhead" style="margin-top:0">
         <label class="f" for="cv">CV</label>
@@ -349,10 +350,17 @@
     <p class="muted" style="margin-top:22px;font-size:14.5px">Real interview coming up? <a href="/live/" target="_blank">Live Sarthi</a> gives you live help on the call itself. Still looking? <a href="/apply/" target="_blank">ApplySarthi</a> finds jobs that match your CV and fills the application for you.</p>
   </section>
 
+  <!-- /prep/app/#progress opens My progress (progress-view.js reads the hash); this anchor gives the link a target. -->
+  <span id="progress" hidden></span>
+  <section class="screen pg" id="s-progress" aria-labelledby="pg-title"></section>
+  <section class="screen pg" id="s-comparison" aria-label="Answer comparison"></section>
+  <dialog id="pg-dialog" class="pg-dialog" aria-labelledby="pg-dialog-title"></dialog>
+  <div id="pg-toast" class="pg-toast" role="status" aria-live="polite" hidden></div>
   <details class="diag" id="diagnostics" hidden><summary>Diagnostics</summary><p style="margin:10px 0 0"><button class="pill small ghost" id="copydiag">Copy diagnostics</button> <span id="copydiag-note"></span></p><div id="transcript"></div><div id="log"></div></details>
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20260928-survey"></script>
+<script type="module" src="./app.js?v=20260929-progress"></script>
+<script type="module" src="./progress-view.js?v=20260929-ui"></script>
 </body>
 </html>

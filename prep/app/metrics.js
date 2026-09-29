@@ -5,7 +5,10 @@
  * "you took 4 seconds before every technical question", not lab grade.
  */
 
-const FILLERS = /\b(um+|uh+|erm|hmm+|like|basically|actually|literally|you know|i mean|sort of|kind of|matlab|haan|toh|wo|yaani|acha)\b/gi;
+// "toh", "wo" and "haan" were in this list until 29 Sep 2026, but in Hindi they are ordinary words (then, that,
+// yes), so every Hinglish answer counted as full of fillers. Version 2 of the numbers leaves them out.
+const FILLERS = /\b(um+|uh+|erm|hmm+|like|basically|actually|literally|you know|i mean|sort of|kind of|matlab|yaani|acha)\b/gi;
+export const METRICS_VERSION = 2;
 
 /**
  * @param {Array} turns   transcript utterances {who, text, start, end, interrupted} (seconds)
@@ -33,6 +36,7 @@ export function computeMetrics(turns, voice) {
   const totalWords = answers.reduce((s, a) => s + a.words, 0);
   const totalSeconds = answers.reduce((s, a) => s + a.seconds, 0);
   return {
+    v: METRICS_VERSION,
     answers,
     avgResponseDelay: withDelay.length ? round(withDelay.reduce((s, a) => s + a.responseDelay, 0) / withDelay.length) : null,
     avgWpm: totalSeconds ? Math.round(totalWords / (totalSeconds / 60)) : null,

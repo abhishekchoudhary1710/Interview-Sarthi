@@ -10,6 +10,8 @@ import { interviewProgress } from "../prep/app/assessment.js";
 import { assessmentHtml, assessmentText } from "../prep/app/assessment-view.js";
 import { computeMetrics } from "../prep/app/metrics.js";
 import { GeminiLive } from "../prep/app/live.js";
+import { trackKey } from "../prep/app/progress.js";
+import { buildRedrillInstructions, redrillNotes } from "../prep/app/redrill.js";
 
 function criterion(extra = {}) {
   return { label: "Database diagnosis", category: "problem_solving", priority: "essential",
@@ -277,6 +279,9 @@ function preparationHarness(generate, extra = {}) {
     notice(_id, message) { context.error = message; },
     nowS: () => 100, log() {}, track() {}, wheel: { setState() {} },
     buildInterviewerInstructions, currentProgress: () => ({}), onTranscript() {},
+    // Progress across the month (29 Sep 2026): no saved interviews and no re-answer unless a test sets them.
+    redrill: null, focusCarried: null, REDRILL_SECONDS: 180, knownSummaries: () => [], carryFocus: () => null, trackKey,
+    buildRedrillInstructions, redrillNotes,
     GeminiLive: class { constructor(o) { context.liveOptions = o; } start() { context.started = true; } },
     setInterval() { context.timerStarted = true; return 1; }, onSecond() {},
     ...extra,
@@ -296,6 +301,32 @@ test("preparation does not start the clock or socket until the plan is ready", a
   assert.equal(ctx.started, true);
   assert.equal(ctx.timerStarted, true);
   assert.equal(ctx.plannedSeconds, 720);
+});
+
+test("a pass holder's last focus reaches the interviewer; a free interview carries none", async () => {
+  const focus = { group: "ownership", issue: "Says we instead of I", drill: "d" };
+  const pass = preparationHarness(async () => plan(), { carryFocus: (_items, track) => (track ? focus : null),
+    entitlement: async () => ({ kind: "pass", secondsLeft: 86400 }), S: { key: "k", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "pass", secondsLeft: 86400 } } });
+  await pass.startCall();
+  assert.equal(pass.focusCarried, focus);
+  assert.match(pass.liveOptions.instructions(), /PRACTICE FOCUS[^\n]*Says we instead of I/);
+  const trial = preparationHarness(async () => plan(), { carryFocus: () => focus });
+  await trial.startCall();
+  assert.equal(trial.focusCarried, null);
+  assert.ok(!trial.liveOptions.instructions().includes("PRACTICE FOCUS"));
+});
+
+test("answering one question again makes no plan and runs three minutes on its own brief", async () => {
+  let planned = 0;
+  const source = { interview_id: "iv-1", question: "Walk me through the retry project.", before: {} };
+  const ctx = preparationHarness(async () => { planned++; return plan(); }, { redrill: { source },
+    entitlement: async () => ({ kind: "pass", secondsLeft: 86400 }), S: { key: "k", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "pass", secondsLeft: 86400 } } });
+  await ctx.startCall();
+  assert.equal(planned, 0);
+  assert.equal(ctx.plannedSeconds, 180);
+  assert.equal(ctx.assessmentPlan, null);
+  assert.match(ctx.liveOptions.instructions(), /Walk me through the retry project/);
+  assert.match(ctx.liveOptions.notes.opening, /ask the question/);
 });
 
 test("cancelling preparation prevents a late model response from starting the interview", async () => {

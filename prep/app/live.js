@@ -19,7 +19,7 @@
  * Google.
  */
 
-import { NOTES } from "./interviewer.js?v=20260923-jd-plan";
+import { NOTES } from "./interviewer.js?v=20260929-progress";
 
 // The desktop app's proven model first; the non-preview one if Google retires it.
 export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
@@ -95,11 +95,13 @@ export class GeminiLive {
    * @param {function} [o.onStatus]      ("connecting"|"live"|"reconnecting"|"failed"|"closed") => void
    * @param {function} [o.onNotice]      (text) => void   human-readable
    * @param {function} [o.onEvent]       (name, data) => void   diagnostics
+   * @param {{opening?:string, reconnect?:string}} [o.notes]  replaces the full interview's stage notes (a re-answer call)
    */
   constructor(o) {
     this.apiKey = o.apiKey;
     this.authToken = o.authToken || "";
     this.instructions = o.instructions;
+    this.notes = { ...NOTES, ...(o.notes || {}) };
     this.getInterviewProgress = o.getInterviewProgress;
     this.model = o.model || DEFAULT_MODEL;
     this.voice = o.voice || "";
@@ -414,7 +416,7 @@ export class GeminiLive {
           if (this._replyPendingAt !== null) this._replyPendingAt = t;
         } else {
           const resumed = this.transcript.turns.length > 0;
-          this.sendText(resumed ? NOTES.reconnect : NOTES.opening);
+          this.sendText(resumed ? this.notes.reconnect : this.notes.opening);
         }
       }
       return;

@@ -7,9 +7,14 @@
 
 import { describeMetrics } from "./metrics.js";
 import { COMPETENCIES, ASSESSMENT_BRIEF, normalizeAssessment } from "./assessment.js";
-import { normalizeRequirements } from "./interview-plan.js";
+import { PLAN_CATEGORIES, evidenceTurns, normalizeRequirements } from "./interview-plan.js";
+import { FOCUS_STATUSES, normalizeFocus } from "./progress.js";
 
 export const REPORT_MODELS = ["gemini-3.6-flash", "gemini-3.1-flash-lite"];
+/* The scoring rules in force: this prompt, the assessment anchors in assessment.js and the plan rules in
+ * plan-request.js. Saved with every report so the progress page can tell a change in the rules from a change
+ * in the person. Change it whenever any of those rules change. */
+export const RUBRIC_VERSION = "2026-09-29";
 const URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
 
 const SCHEMA = {
@@ -38,8 +43,9 @@ const SCHEMA = {
           score: { type: "INTEGER", description: "0-10" },
           what_was_missing: { type: "STRING" },
           better_answer: { type: "STRING", description: "a stronger answer in the candidate's own voice, 40-90 words, using only facts from the CV or the transcript" },
+          answer_turns: { type: "ARRAY", items: { type: "INTEGER" }, description: "1-based transcript turn numbers of the candidate's answer to this question" },
         },
-        required: ["question", "answer_gist", "score", "what_was_missing", "better_answer"],
+        required: ["question", "answer_gist", "score", "what_was_missing", "better_answer", "answer_turns"],
       },
     },
     delivery: {
@@ -50,15 +56,37 @@ const SCHEMA = {
       required: ["pace", "fillers", "confidence", "structure"],
     },
     practice_next: { type: "ARRAY", items: { type: "STRING" }, description: "exactly three concrete drills for the next mock" },
+    next_focus: {
+      type: "OBJECT",
+      description: "the ONE habit that would most improve the next interview, seen in more than one answer where possible",
+      properties: {
+        group: { type: "STRING", enum: PLAN_CATEGORIES },
+        issue: { type: "STRING", description: "one sentence naming the habit, grounded in what the candidate actually said" },
+        drill: { type: "STRING", description: "one concrete thing to do differently in the next interview" },
+      },
+      required: ["group", "issue", "drill"],
+    },
   },
-  required: ["overall_score", "competencies", "verdict", "strengths", "weaknesses", "questions", "delivery", "practice_next"],
+  required: ["overall_score", "competencies", "verdict", "strengths", "weaknesses", "questions", "delivery", "practice_next", "next_focus"],
+};
+
+// Only asked for when the last interview left a focus: did this interview show it fixed?
+const FOCUS_CHECK = {
+  type: "OBJECT",
+  properties: {
+    status: { type: "STRING", enum: FOCUS_STATUSES },
+    evidence_turns: { type: "ARRAY", items: { type: "INTEGER" }, description: "1-based candidate turn numbers that show it" },
+    note: { type: "STRING", description: "one sentence: what this interview showed about the focus" },
+  },
+  required: ["status", "evidence_turns", "note"],
 };
 
 function systemPrompt(language) {
   return `You are a blunt, kind senior interviewer writing the debrief after a mock interview. Judge only what the transcript shows. Be specific: quote the candidate's own words when pointing out a problem. Never invent facts about the candidate. Do not infer competence or personality from accent, identity, language choice or speaking speed. Evaluate each answer against the question actually asked and the candidate's experience: an introduction needs a clear relevant background, a project walkthrough needs purpose and personal contribution, a technical answer needs sound reasoning, and a behavioural answer needs actions and outcomes. Reward specific evidence where relevant, but do not require numbers or technical depth in an introduction. Do not penalize skills or stages that were never assessed, candidate questions at the close, or answers cut off by the session time limit. If the session only covered background or one project, explicitly describe the assessment as limited instead of claiming technical readiness was established. Write in ${language && language.toLowerCase() !== "auto" ? language : "the language the candidate mostly spoke"}; keep technical terms in English.`;
 }
 
-export async function generateReport({ apiKey, cv, jd, language, transcript, metrics, minutes, assessmentPlan, transport, backup }) {
+export async function generateReport({ apiKey, cv, jd, language, transcript, metrics, minutes, assessmentPlan, transport, backup, previousFocus }) {
+  const focus = normalizeFocus(previousFocus);
   const lines = transcript.map((u, i) => `[${i + 1}] ${u.who === "interviewer" ? "INTERVIEWER" : "CANDIDATE"}: ${u.text}${u.interrupted ? " [cut off]" : ""}`);
   const user = [
     `Mock interview length: ${minutes} minutes. ${jd ? "The role:\n" + jd + "\n" : ""}`,
@@ -72,19 +100,26 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
     ...(assessmentPlan ? [] : [
     `ASSESSMENT AREAS:\n${ASSESSMENT_BRIEF}\nReturn exactly one competencies entry per area. Mark assessed only with a relevant substantive answer, limited for thin but relevant evidence, and not_assessed with score=null and no evidence_turns when it was not meaningfully tested. A CV claim alone, a greeting, an unanswered question or interviewer speech is not answer evidence. Link only candidate turn numbers that actually demonstrate the area; do not reuse an introduction as evidence of technical ability. Score the evidence using common anchors: 0-2 fundamentally incorrect or no relevant substance in an attempted answer; 3-4 partial understanding with major gaps; 5-6 adequate approach with missing detail; 7-8 clear, sound reasoning with a specific example; 9-10 strong depth, justified decisions and appropriate verification or reflection. Apply these to the role and question, without demanding numeric achievements. Do not infer confidence, competence or personality from accent, language choice or speaking speed. The overall score is an equal-weight mean of scored areas only, not a hiring prediction. State coverage limits in the verdict. Recommend unassessed important JD skills for a later round, including a work sample or coding task when a voice interview cannot test them.`,
     ]),
-    "Produce the debrief as JSON matching the schema. One entry in `questions` per real interviewer question that got an answer (skip greetings and small talk).",
+    ...(focus ? [`THE FOCUS SET AFTER THE CANDIDATE'S PREVIOUS INTERVIEW (${focus.group}): ${focus.issue}${focus.drill ? ` Drill: ${focus.drill}` : ""}\nIn focus_check, judge only from this transcript whether it is fixed (the habit is gone where it mattered), improved (better but not consistent), still_open (the same habit appears again) or not_tested (no answer gave a chance to show it). Cite candidate turn numbers. Do not let the focus change any score.`] : []),
+    "Produce the debrief as JSON matching the schema. One entry in `questions` per real interviewer question that got an answer (skip greetings and small talk); answer_turns lists the candidate turns that answer it. next_focus is the single habit to work on next, taken from this interview's evidence.",
   ].join("\n\n");
   const { competencies: _broadCompetencies, ...roleProperties } = SCHEMA.properties;
+  const base = focus ? { ...SCHEMA, properties: { ...SCHEMA.properties, focus_check: FOCUS_CHECK }, required: [...SCHEMA.required, "focus_check"] } : SCHEMA;
   const schema = assessmentPlan ? {
-    ...SCHEMA, properties: { ...roleProperties, requirements: {
+    ...base, properties: { ...roleProperties, ...(focus ? { focus_check: FOCUS_CHECK } : {}), requirements: {
       ...SCHEMA.properties.competencies,
       items: { ...SCHEMA.properties.competencies.items,
         properties: { ...SCHEMA.properties.competencies.items.properties,
           id: { type: "STRING", enum: assessmentPlan.requirements.map(r => r.id) },
         },
       },
-    } }, required: [...SCHEMA.required.filter(name => name !== "competencies"), "requirements"],
-  } : SCHEMA;
+    } }, required: [...base.required.filter(name => name !== "competencies"), "requirements"],
+  } : base;
+  // Scores, evidence and the new progress fields are checked against the transcript, whoever wrote them.
+  const finish = (raw) => {
+    const report = normalizeProgressFields(normalizeAssessment(raw, transcript), transcript, !!focus);
+    return assessmentPlan ? normalizeRequirements(report, assessmentPlan, transcript) : report;
+  };
   const body = JSON.stringify({
     systemInstruction: { parts: [{ text: systemPrompt(language) }] },
     contents: [{ role: "user", parts: [{ text: user }] }],
@@ -111,8 +146,7 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
     const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
     if (!text) { last = "Gemini returned no report"; continue; }
     try {
-      const report = normalizeAssessment(JSON.parse(text), transcript);
-      return { model, report: assessmentPlan ? normalizeRequirements(report, assessmentPlan, transcript) : report };
+      return { model, report: finish(JSON.parse(text)) };
     }
     catch { last = "Gemini returned malformed JSON"; continue; }
   }
@@ -123,10 +157,26 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
       if (res.ok) {
         const payload = await res.json();
         const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
-        const report = normalizeAssessment(JSON.parse(text), transcript);
-        return { model: payload.served_by || "backup", report: assessmentPlan ? normalizeRequirements(report, assessmentPlan, transcript) : report };
+        return { model: payload.served_by || "backup", report: finish(JSON.parse(text)) };
       }
     } catch { /* keep Gemini's own error below */ }
   }
   throw new Error(last);
+}
+
+/* The fields the progress page relies on: answer turns must be real candidate turns, a focus must name one of
+ * the eight skill groups, and a focus check exists only when a focus was set. Anything else is dropped rather
+ * than trusted. */
+export function normalizeProgressFields(report, transcript, focusAsked) {
+  const questions = (report.questions || []).map((q) => ({ ...q, answer_turns: evidenceTurns(q.answer_turns, transcript) }));
+  const c = report.focus_check;
+  let check = null;
+  if (focusAsked && c && FOCUS_STATUSES.includes(c.status)) {
+    const evidence = evidenceTurns(c.evidence_turns, transcript);
+    // "Fixed" or "still open" with no answer to point at is a guess: it counts as not tested.
+    check = c.status !== "not_tested" && !evidence.length
+      ? { status: "not_tested", evidence_turns: [], note: "" }
+      : { status: c.status, evidence_turns: evidence, note: String(c.note || "") };
+  }
+  return { ...report, questions, next_focus: normalizeFocus(report.next_focus), focus_check: check };
 }
