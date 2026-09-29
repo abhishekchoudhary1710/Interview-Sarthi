@@ -21,6 +21,7 @@ export const ANALYSIS = {
   MAX_INTERVIEWS: 8,          // the most recent ones; a month review takes the first two and the last six
   REFRESH_HOURS: 12,
   REFRESH_AFTER: 3,           // new interviews that force a fresh analysis sooner
+  RETRY_DELAY_MS: 20_000,     // Google answers "high demand" on both models at once some minutes: wait, try once more
   MAX_PATTERNS: 6, MAX_STRONG: 3,
 };
 const URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
@@ -142,7 +143,7 @@ export function facts(summaries) {
  * Analyse full items (summary + body, any order). Fewer than two interviews: no call, enough: false.
  * @returns {Promise<object>} the analysis as saved: {enough, scope, based_on, model, summary, patterns, ...}
  */
-export async function analyse({ apiKey, items, scope = "latest", window = null, language = "", transport, context = null, now = new Date() }) {
+export async function analyse({ apiKey, items, scope = "latest", window = null, language = "", transport, context = null, now = new Date(), retryDelayMs = ANALYSIS.RETRY_DELAY_MS }) {
   const list = items.filter((it) => it && it.body && it.kind === "interview").sort(byAt);
   // The numbers cover every interview in the window (context), not only the few the model reads.
   const all = context || list.map((it) => ({ ...it.summary, id: it.id, at: it.at, kind: "interview" }));
@@ -152,7 +153,12 @@ export async function analyse({ apiKey, items, scope = "latest", window = null, 
       message: list.length ? "One interview so far. Patterns across interviews appear after your second." : "No interviews in this period yet." };
   }
   const body = JSON.stringify(prompt(list, scope, language));
-  let last = "no model answered";
+  let last = "no model answered", busy = true;
+  // Measured 29 Sep 2026: gemini-3.6-flash and flash-lite both answered 503 "high demand" for the same minute, and
+  // the analysis (unlike the report) has no Groq backup. It runs in the background, so a second round is cheap.
+  for (let round = 0; round < 2 && busy; round++) {
+  if (round) await new Promise((r) => setTimeout(r, retryDelayMs));
+  busy = false;
   for (const model of ANALYSIS_MODELS) {
     let res;
     try {
@@ -160,16 +166,18 @@ export async function analyse({ apiKey, items, scope = "latest", window = null, 
         : await fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
             method: "POST", headers: { "content-type": "application/json" }, body, signal: AbortSignal.timeout(60000),
           });
-    } catch (err) { last = `Gemini unreachable (${err.message})`; continue; }
+    } catch (err) { last = `Gemini unreachable (${err.message})`; busy = true; continue; }
     if (!res.ok) {
       last = `Gemini HTTP ${res.status}`;
-      if ([404, 429, 500, 503].includes(res.status)) continue;
+      if ([429, 500, 503].includes(res.status)) { busy = true; continue; }
+      if (res.status === 404) continue;
       throw new Error(last);
     }
     const payload = await res.json();
     const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
     try { return { ...base, enough: true, model, ...validateAnalysis(JSON.parse(text), list) }; }
     catch { last = "Gemini returned malformed JSON"; }
+  }
   }
   throw new Error(last);
 }

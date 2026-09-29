@@ -26,6 +26,7 @@ export function redrillSource(record, questionIndex) {
   const own = evidenceTurns(q.answer_turns, turns);
   return {
     interview_id: record.id, question_index: questionIndex, question: String(q.question),
+    language: record.language || "",           // asked again in the language of the original interview
     role: (rep.plan && rep.plan.role) || "", level: (rep.plan && rep.plan.level) || "",
     before: {
       text: own.length ? own.map((n) => turns[n - 1].text).join(" ") : "", turns: own,

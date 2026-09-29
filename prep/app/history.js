@@ -251,7 +251,8 @@ export async function getItems(ids) {
 export async function getInterview(id) {
   const [item] = await getItems([id]);
   if (!item || !item.body) return null;
-  return { ...item.body, id: item.id, at: item.at };
+  // saved_at marks a copy that came from the account (the page labels it "Saved to your account").
+  return { ...item.body, id: item.id, at: item.at, ...(item.saved_at ? { saved_at: item.saved_at } : {}) };
 }
 
 // ---------------------------------------------------------------- deleting and exporting

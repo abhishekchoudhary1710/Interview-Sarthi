@@ -322,3 +322,19 @@ test("the free demo before buying is day 0 of the first pass; a renewal starts w
   assert.equal(buildProgress([demo, first], { period: { start: day(2), end: day(32) }, now: new Date(day(4)), timeZone: TZ }).totals.interviews, 1, "no from: the period starts at its start");
   assert.equal(reportChanges(first, [demo], { start: day(2), end: day(32), from: null }).score.since_first, 15);
 });
+
+test("analysis waits and tries once more when Google is busy on both models", async () => {
+  let calls = 0;
+  const transport = async () => { calls++; return calls <= 2 ? new Response("{}", { status: 503 })
+    : new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ summary: "ok", patterns: [], strong_answers: [], next_priorities: ["a", "b", "c"] }) }] } }] })); };
+  const out = await analyse({ items: [full({ id: "a" }), full({ id: "b", at: day(2) })], transport, retryDelayMs: 0 });
+  assert.equal(calls, 3);
+  assert.equal(out.enough, true);
+  let n = 0;
+  await assert.rejects(analyse({ items: [full({ id: "a" }), full({ id: "b", at: day(2) })], transport: async () => { n++; return new Response("{}", { status: 503 }); }, retryDelayMs: 0 }), /503/);
+  assert.equal(n, 4, "two rounds of two models, then it gives up until the next report or visit");
+});
+
+test("a re-answer keeps the original interview's language", () => {
+  assert.equal(redrillSource({ ...record(), language: "Hinglish" }, 0).language, "Hinglish");
+});

@@ -512,8 +512,12 @@ function wireAudio() {
 }
 
 $("start").onclick = async () => {
-  try { interviewContext(S); }
-  catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
+  // A full interview needs a role or a JD; answering one saved question again does not (it may be on a
+  // device where the form was never filled in).
+  if (!redrill) {
+    try { interviewContext(S); }
+    catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
+  }
   $("start").disabled = true;
   notice("live-notice", "");
   audio = new AudioIO();
@@ -672,7 +676,7 @@ async function startCall() {
     authToken: demo ? demo.token : "",
     voice: S.voice,
     instructions: () => redrill
-      ? buildRedrillInstructions({ candidateName: S.name, language: S.language, voice: S.voice, source: redrill.source, cv: S.cv })
+      ? buildRedrillInstructions({ candidateName: S.name, language: redrill.source.language || S.language, voice: S.voice, source: redrill.source, cv: S.cv })
       : buildInterviewerInstructions(brief),
     notes: redrill ? redrillNotes() : undefined,
     getInterviewProgress: currentProgress,
@@ -884,7 +888,7 @@ async function writeRedrill(turns, elapsed) {
   waitWheel.start(); waitWheel.setState("thinking");
   let out;
   try {
-    out = await compareAnswers({ apiKey: S.key, source, transcript: turns, language: S.language, backup: passBackup() });
+    out = await compareAnswers({ apiKey: S.key, source, transcript: turns, language: source.language || S.language, backup: passBackup() });
   } catch (err) {
     track("mock_fail_redrill", { message: String(err && err.message || "").slice(0, 90) });
     waitWheel.stop(); $("report-wait").style.display = "none";
