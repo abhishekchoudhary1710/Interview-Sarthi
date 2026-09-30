@@ -1,3 +1,4 @@
+import { diagnosticEvent, measuredRequest } from './diagnostics.js';
 // The plan is made while the visitor watches a spinner, so the steadier model goes first. Measured through the
 // demo relay on 27 Sep 2026: flash-lite 5.7-7.1 s on every try; 3.6-flash 7.9-16 s, up to a minute when Google
 // answers "high demand", and ~20 free requests a day. Both produce plans that pass validatePlan; the report,
@@ -33,6 +34,7 @@ Mark an ability requiring executed code, a written artifact, design deliverable 
     generationConfig: { temperature: 0.2, maxOutputTokens: 7000, responseMimeType: "application/json", responseSchema: schema },
   };
   for (const model of PLAN_MODELS) {
+    if (model !== PLAN_MODELS[0]) diagnosticEvent('model_fallback', { stage: 'plan', model });
     // The visitor waits on this with nothing on screen but a spinner. Low thinking on the main model
     // took 6.5 s against 9 to 14 s by default, with the same number and kind of questions (26 Sep 2026).
     const body = JSON.stringify(model === "gemini-3.6-flash"
@@ -42,10 +44,10 @@ Mark an ability requiring executed code, a written artifact, design deliverable 
     const timeout = AbortSignal.timeout(45000);
     const both = signal ? AbortSignal.any([signal, timeout]) : timeout;
     // `transport` is the free demo's: the same request, sent through the licence server on our key.
-    const response = transport ? await transport(model, body, both)
-      : await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    const response = await measuredRequest('plan', model, request_id => transport ? transport(model, body, both, request_id)
+      : fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
           method: "POST", headers: { "content-type": "application/json" }, body, signal: both,
-        });
+        }));
     if (!response.ok) {
       if ([404, 429, 500, 503].includes(response.status)) continue;
       throw new Error(`Could not prepare the interview (HTTP ${response.status}). Check your Gemini key and retry.`);
@@ -53,12 +55,14 @@ Mark an ability requiring executed code, a written artifact, design deliverable 
     const payload = await response.json();
     const text = (payload.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
     try { return validatePlan(JSON.parse(text), { cv, jd, context }); }
-    catch { /* Try the fallback model with the same pre-interview criteria. */ }
+    catch { diagnosticEvent('request_error', { stage: 'plan', model, error: 'invalid_response' }); }
   }
   // Both Gemini models failed on the buyer's own key: the licence server's backup writer (Groq) tries once.
   if (backup) {
     try {
-      const response = await backup(JSON.stringify(request), signal ? AbortSignal.any([signal, AbortSignal.timeout(45000)]) : AbortSignal.timeout(45000));
+      diagnosticEvent('backup_start', { stage: 'plan', model: 'backup' });
+      const response = await measuredRequest('plan', 'backup', request_id => backup(JSON.stringify(request), signal ? AbortSignal.any([signal, AbortSignal.timeout(45000)]) : AbortSignal.timeout(45000), request_id));
+      diagnosticEvent('backup_end', { stage: 'plan', model: 'backup', status: response.status });
       if (response.ok) {
         const payload = await response.json();
         const text = (payload.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");

@@ -400,6 +400,7 @@ function transport(ctx) {
 
 test("setup that never completes times out, retries, and ignores a retired socket", (ctx) => {
   const { live, advance } = transport(ctx);
+  const events = []; live.onEvent = (name, data) => events.push({ name, data });
   live.start();
   const old = live.ws;
   old.open();
@@ -413,6 +414,12 @@ test("setup that never completes times out, retries, and ignores a retired socke
   old.message({ serverContent: { inputTranscription: { text: "stale" } } });
   assert.equal(live.connected, true);
   assert.equal(live.transcript.turns.length, 0);
+  assert.equal(events.filter(e => e.name === 'connection_attempt').length, 2);
+  assert.ok(events.some(e => e.name === 'reconnect' && e.data.reason === 'setup_timeout'));
+  assert.ok(events.some(e => e.name === 'retry_scheduled' && e.data.delay_ms === 1000));
+  assert.ok(events.some(e => e.name === 'connected' && e.data.duration_ms === 0));
+  advance(2); next.message(audioReply);
+  assert.ok(events.some(e => e.name === 'first_audio' && e.data.duration_ms === 2000));
 });
 
 test("closing during backoff cancels the queued reconnect", (ctx) => {

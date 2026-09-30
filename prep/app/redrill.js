@@ -1,3 +1,4 @@
+import { diagnosticEvent, measuredRequest } from './diagnostics.js';
 /* Prep Sarthi: answer one question again, then see the old and the new answer side by side.
  *
  * The interviewer asks exactly the question from an earlier report, in a short call of its own, and one
@@ -120,12 +121,13 @@ export async function compareAnswers({ apiKey, source, transcript, language, tra
   };
   let last = "no model answered";
   for (const model of REDRILL_MODELS) {
+    if (model !== REDRILL_MODELS[0]) diagnosticEvent('model_fallback', { stage: 'redrill', model });
     let res;
     try {
-      res = transport ? await transport(model, body)
-        : await fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
+      res = await measuredRequest('redrill', model, request_id => transport ? transport(model, body, undefined, request_id)
+        : fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
             method: "POST", headers: { "content-type": "application/json" }, body, signal: AbortSignal.timeout(60000),
-          });
+          }));
     } catch (err) { last = `Gemini unreachable (${err.message})`; continue; }
     if (!res.ok) {
       last = `Gemini HTTP ${res.status}`;
@@ -134,11 +136,13 @@ export async function compareAnswers({ apiKey, source, transcript, language, tra
     }
     const payload = await res.json();
     const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
-    try { return finish(JSON.parse(text), model); } catch { last = "Gemini returned malformed JSON"; }
+    try { return finish(JSON.parse(text), model); } catch { diagnosticEvent('request_error', { stage: 'redrill', model, error: 'invalid_response' }); last = "Gemini returned malformed JSON"; }
   }
   if (backup) {
     try {
-      const res = await backup(body, AbortSignal.timeout(60000));
+      diagnosticEvent('backup_start', { stage: 'redrill', model: 'backup' });
+      const res = await measuredRequest('redrill', 'backup', request_id => backup(body, AbortSignal.timeout(60000), request_id));
+      diagnosticEvent('backup_end', { stage: 'redrill', model: 'backup', status: res.status });
       if (res.ok) {
         const payload = await res.json();
         const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();

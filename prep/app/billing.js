@@ -11,6 +11,7 @@
 
 // Local preview (python -m http.server) talks to the sandbox worker, whose CORS
 // allows 127.0.0.1:8765; the live site talks to production.
+import { diagnosticContext } from './diagnostics.js';
 export const LOCAL = typeof location !== "undefined" && /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
 export const LICENSE_API = LOCAL
   ? "https://interview-sarthi-license-test.interview-sarthi-license.workers.dev"
@@ -165,26 +166,26 @@ export const demoUsed = { get: () => mem.get("ps_demo_used") === "1", set: () =>
 
 /* A pass holder's plan or report when Gemini has failed on both models with their own key: the licence
  * server writes it with Groq instead (owner, 26 Sep 2026). Same Gemini-shaped request and answer. */
-export function backupTransport() {
+export function backupTransport(stage = 'report') {
   const s = session.get();
   if (!s) return undefined;
-  return (body, signal) => fetch(LICENSE_API + "/mock/backup/generate", {
+  return (body, signal, request_id) => fetch(LICENSE_API + "/mock/backup/generate", {
     method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", signal,
-    body: `{"session":${JSON.stringify(s)},"request":${body}}`,
+    body: JSON.stringify({ session: s, request: JSON.parse(body), diagnostics: diagnosticContext(request_id), stage }),
   });
 }
 
 /* { ok, demo, token, model, seconds } or { ok: false, reason: used|day_full|network|busy|unavailable }. */
 export async function requestDemo(demo, failed) {
-  try { return await post("/mock/demo/start", { device: demoDevice(), demo, failed: !!failed }); }
+  try { return await post("/mock/demo/start", { device: demoDevice(), demo, failed: !!failed, diagnostics: diagnosticContext() }); }
   catch (_) { return { ok: false, reason: "unavailable" }; }
 }
 
 /* The plan and report requests, sent through the licence server on our key. `body` is the JSON string the
    app would have sent to Google; the answer is Google's own, so the callers need no other change. */
-export function demoTransport(demo) {
-  return (model, body, signal) => fetch(LICENSE_API + "/mock/demo/generate", {
+export function demoTransport(demo, stage = 'report') {
+  return (model, body, signal, request_id) => fetch(LICENSE_API + "/mock/demo/generate", {
     method: "POST", headers: { "content-type": "application/json" }, cache: "no-store", signal,
-    body: `{"demo":${JSON.stringify(demo)},"device":${JSON.stringify(demoDevice())},"model":${JSON.stringify(model)},"request":${body}}`,
+    body: JSON.stringify({ demo, device: demoDevice(), model, request: JSON.parse(body), diagnostics: diagnosticContext(request_id), stage }),
   });
 }

@@ -252,6 +252,8 @@ export class GeminiLive {
     if (this.stopped) return;
     clearTimeout(this._retryTimer); this._retryTimer = null;
     this._attemptAt = this._now();
+    this._firstAudioAt = null;
+    this._event('connection_attempt', { model: this.model, attempt: this._failures + 1, resumed: !!this._resumeHandle });
     this._resuming = !!this._resumeHandle;
     this._status(this.sessions ? "reconnecting" : "connecting");
     let ws;
@@ -269,24 +271,26 @@ export class GeminiLive {
       // A retired socket must never mark its replacement disconnected.
       if (this.ws !== ws || this.stopped) return;
       const wasConnected = this.connected;
+      const connectionDuration = Math.round((this._now() - (wasConnected ? this._connectedAt : this._attemptAt ?? this._now())) * 1000);
       this._disconnect();
       const secret = this.authToken || this.apiKey;       // never replaceAll(""), which would splice "[key]" everywhere
       const reason = secret ? String(e.reason || "").replaceAll(secret, "[key]") : String(e.reason || "");
-      this._event("socket_closed", { code: e.code, reason, wasConnected });
+      this._event("socket_closed", { code: e.code, reason, wasConnected, duration_ms: connectionDuration });
       if (/quota|resource.exhausted|rate.limit|billing/i.test(reason)) {
-        return this._fail("Google's usage limit was reached. Check your Gemini quota and try again later. Your answers are kept.");
+        return this._fail("Google's usage limit was reached. Check your Gemini quota and try again later. Your answers are kept.", 'quota');
       }
       if (!wasConnected && this._resuming && /session|resum|handle/i.test(reason)) {
+        this._event('reconnect', { reason: 'resume_rejected' });
         this._resumeHandle = null;
         this._notice("Restoring the interview from your saved answers…");
         return this._retry();
       }
       if (!wasConnected && /model.*(not found|not supported|unavailable)|not found.*model/i.test(reason)) {
         const next = LIVE_MODELS[LIVE_MODELS.indexOf(this.model) + 1];
-        if (next) { this.model = next; this._resumeHandle = null; return this._retry(); }
+        if (next) { this._event('model_fallback', { model: next, reason: 'model_unavailable' }); this.model = next; this._resumeHandle = null; return this._retry(); }
       }
       if (e.code === 1008 || /invalid.argument|api.key.*(invalid|expired)|permission.denied|unauthenticated|not supported/i.test(reason)) {
-        return this._fail(reason || "Google refused this session. Check the API key and its permissions.");
+        return this._fail(reason || "Google refused this session. Check the API key and its permissions.", 'permission');
       }
       this._notice("Reconnecting to your interviewer. Your answers are kept and the practice timer is paused.");
       this._retry();
@@ -315,7 +319,8 @@ export class GeminiLive {
     this._retry();
   }
 
-  _fail(message) {
+  _fail(message, reason = 'unknown') {
+    this._event('connection_failed', { reason });
     this._disconnect();
     this.stopped = true;
     clearInterval(this._watchdog); this._watchdog = null;
@@ -327,10 +332,11 @@ export class GeminiLive {
   _retry() {
     if (this.stopped || this._retryTimer !== null) return;
     if (++this._failures > MAX_RETRIES) {
-      return this._fail("The connection could not recover. Your answers are kept. Check your connection and Gemini quota, then try again.");
+      return this._fail("The connection could not recover. Your answers are kept. Check your connection and Gemini quota, then try again.", 'exhausted');
     }
     this._status(this.sessions ? "reconnecting" : "connecting");
     const wait = this._backoff;
+    this._event('retry_scheduled', { attempt: this._failures, delay_ms: wait * 1000 });
     this._backoff = Math.min(this._backoff * 2, 8);
     this._retryTimer = setTimeout(() => { this._retryTimer = null; this._connect(); }, wait * 1000);
   }
@@ -402,13 +408,14 @@ export class GeminiLive {
     }
     if (message.setupComplete) {
       if (!this.connected) {
+        const connectMs = this._attemptAt === null ? 0 : Math.round((t - this._attemptAt) * 1000);
         this.connected = true;
         this._attemptAt = null;
         this._connectedAt = t;
         this._lastMicAt = null;
         this._audioEnded = false;
         this.sessions++;
-        this._event("connected", { model: this.model, session: this.sessions });
+        this._event("connected", { model: this.model, session: this.sessions, duration_ms: connectMs, resumed: this._resuming });
         this._status("live");
         if (this._resuming) {
           // An extra user turn would interrupt the restored conversation.
@@ -460,6 +467,10 @@ export class GeminiLive {
     for (const part of parts) {
       const inline = part.inlineData;
       if (inline && inline.data && /audio\/pcm/.test(inline.mimeType || "")) {
+        if (this._firstAudioAt === null) {
+          this._firstAudioAt = t;
+          this._event('first_audio', { model: this.model, session: this.sessions, duration_ms: Math.round((t - this._connectedAt) * 1000) });
+        }
         this._lastOutput = t;
         this._replyPendingAt = null;
         this._failures = 0; this._backoff = 1;

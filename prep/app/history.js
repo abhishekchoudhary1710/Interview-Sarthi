@@ -9,7 +9,7 @@
  * report badges work even with history off; the account's list wins wherever both have an interview.
  */
 
-import { LICENSE_API, session } from "./billing.js?v=20260927-invite";
+import { LICENSE_API, session } from "./billing.js?v=20260930-diagnostics";
 import { summarize } from "./progress.js";
 
 export const HISTORY_EVENTS = new EventTarget();

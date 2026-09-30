@@ -262,7 +262,8 @@ function preparationHarness(generate, extra = {}) {
   const source = readFileSync(new URL("../prep/app/app.js", import.meta.url), "utf8");
   const nodes = new Map();
   const context = vm.createContext({
-    hidePreparation() {}, showPreparation() {},
+    hidePreparation() {}, showPreparation() {}, performance,
+    diagnosticEvent() {}, errorClass: () => 'unknown', flushDiagnostics() {},
     phase: "miccheck", planController: null, assessmentPlan: null, planCoverage: null,
     // The free demo (billing.js): off unless a test turns it on.
     demo: null, requestDemo: async () => ({ ok: false, reason: "unavailable" }), demoTransport: (id) => ({ demoId: id }),
@@ -286,7 +287,7 @@ function preparationHarness(generate, extra = {}) {
     setInterval() { context.timerStarted = true; return 1; }, onSecond() {},
     ...extra,
   });
-  vm.runInContext(source.slice(source.indexOf("async function cancelMicCheck()"), source.indexOf("function currentProgress(")), context);
+  vm.runInContext(source.slice(source.indexOf("async function cancelMicCheck("), source.indexOf("function currentProgress(")), context);
   return context;
 }
 

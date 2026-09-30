@@ -12,25 +12,26 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20260929-progress";
-import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260929-progress";
+import { GeminiLive } from "./live.js?v=20260930-diagnostics";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260930-diagnostics";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { RUBRIC_VERSION, generateReport } from "./report.js?v=20260929-progress";
+import { RUBRIC_VERSION, generateReport } from "./report.js?v=20260930-diagnostics";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
-import { generateInterviewPlan } from "./plan-request.js?v=20260927-planlite";
+import { generateInterviewPlan } from "./plan-request.js?v=20260930-diagnostics";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport, deviceInvite } from "./billing.js?v=20260927-invite";
-import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260928-survey";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport, deviceInvite } from "./billing.js?v=20260930-diagnostics";
+import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260930-diagnostics";
 import { Wheel } from "../wheel.js";
 import { VoiceGate, MIC_HELP } from "./miccheck.js";
+import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
 // Progress across the month (plan approved 29 Sep 2026). These modules hold the logic; the screens that show
 // it are drawn elsewhere and reach this page through window.prepApp and the prep:* events below.
 import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries, saveInterview, saveItem } from "./history.js";
 import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
 import { refreshAnalyses } from "./insights.js";
-import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js";
+import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20260930-diagnostics";
 
 const $ = (id) => document.getElementById(id);
 // Technical output is available only when support explicitly requests this URL.
@@ -44,7 +45,7 @@ const store = {
 };
 /* Groq writes the plan or report through the licence server if Gemini fails on a pass holder's own key.
  * Not for the demo (the server's relay already has it) and not for a free trial (no pass to vouch for it). */
-const passBackup = () => (!demo && S.ent && S.ent.kind === "pass") ? backupTransport() : undefined;
+const passBackup = (stage = 'report') => (!demo && S.ent && S.ent.kind === "pass") ? backupTransport(stage) : undefined;
 const track = (name, params) => { try { if (window.gtag) window.gtag("event", name, params || {}); } catch (_) { /* analytics off */ } };
 const nowS = () => performance.now() / 1000;
 const TICK_SECONDS = 30;
@@ -84,6 +85,8 @@ function show(id) {
 }
 function notice(id, text, cls = "") { const el = $(id); el.textContent = text || ""; el.className = "notice " + cls; }
 function log(name, data) {
+  // The DB timeline uses an allowlist; the optional local support log remains separate.
+  diagnosticEvent(name, { ...data, ...(data?.error ? { error: errorClass(data.error) } : {}) });
   if (!diagnosticsEnabled) return;
   const t = startedAt ? (nowS() - startedAt).toFixed(1) : "0.0";
   const line = `${t.padStart(6)}  ${name}${data && Object.keys(data).length ? " " + JSON.stringify(data) : ""}`;
@@ -518,6 +521,8 @@ $("start").onclick = async () => {
     try { interviewContext(S); }
     catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   }
+  beginDiagnostics({ kind: redrill ? 'redrill' : S.ent?.kind || 'none', minutes: S.minutes,
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20260930-diagnostics' });
   $("start").disabled = true;
   notice("live-notice", "");
   audio = new AudioIO();
@@ -591,7 +596,8 @@ function showPreparation() {
 }
 $("cancel-preparation").onclick = () => cancelMicCheck();
 
-async function cancelMicCheck() {
+async function cancelMicCheck(reason = 'cancelled') {
+  diagnosticEvent('preparation_cancelled', { reason });
   planController?.abort(); planController = null;
   hidePreparation();
   clearTimeout(micHelpTimer);
@@ -602,7 +608,7 @@ async function cancelMicCheck() {
 
 /* No demo for this visitor right now. Nothing here mentions keys: that step comes after a purchase. */
 async function demoRefused(reason) {
-  await cancelMicCheck();
+  await cancelMicCheck(reason);
   track("mock_demo_refused", { reason });
   if (reason === "full") { showDemoFull(); return; }
   if (reason === "busy") { notice("live-notice", "Lots of people are practising right now. Press Start again in about 20 seconds.", "bad"); return; }
@@ -616,6 +622,8 @@ async function demoRefused(reason) {
 async function startCall() {
   if (phase === "preparing" || phase === "call") return;
   phase = "preparing";
+  const preparationStarted = performance.now();
+  diagnosticEvent('preparation_start', { stage: 'plan' });
   const controller = new AbortController();
   planController = controller;
   assessmentPlan = null; planCoverage = null;
@@ -626,16 +634,18 @@ async function startCall() {
   try {
     if (S.ent.kind === "demo") {
       // Asked for only now, at Start: a visitor who never presses it never uses one up.
+      diagnosticEvent('demo_requested', { stage: 'demo' });
       demo = await requestDemo();
       if (controller.signal.aborted || planController !== controller) return;
-      if (!demo.ok) { const why = demo.reason; demo = null; planController = null; await demoRefused(why); return; }
+      if (!demo.ok) { const why = demo.reason; diagnosticEvent('demo_refused', { reason: why }); demo = null; planController = null; await demoRefused(why); return; }
+      diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'demo' });
       // Not marked used here: if Google is too busy to prepare it, pressing Start again resumes the same demo.
       track("mock_demo_start", {});
     }
     // A re-answer asks one question from an earlier report: nothing to plan.
     const plan = redrill ? null : await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
       minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal,
-      transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup() });
+      transport: demo ? demoTransport(demo.demo, 'plan') : undefined, backup: passBackup('plan') });
     if (controller.signal.aborted || planController !== controller) return;
     $("prep-status").textContent = "Your interview plan is ready. Checking your available practice time…";
     // Refresh after preparation: a pass can expire while the plan is being made. A demo has no key to look up.
@@ -644,9 +654,11 @@ async function startCall() {
     S.ent = fresh;
     if (S.ent.secondsLeft <= 0) throw new Error("Your practice time has expired. Get a pass before starting.");
     assessmentPlan = plan; planCoverage = plan ? new PlanCoverage(plan) : null;
+    diagnosticEvent('preparation_ready', { stage: 'plan', duration_ms: Math.round(performance.now() - preparationStarted) });
   } catch (err) {
+    diagnosticEvent('preparation_failed', { stage: 'plan', error: errorClass(err), duration_ms: Math.round(performance.now() - preparationStarted) });
     if (controller.signal.aborted || planController !== controller) return;
-    await cancelMicCheck();
+    await cancelMicCheck('failed');
     // Each way a visitor can get stuck has its own event, so the funnel shows where (26 Sep 2026: two real
     // demos failed and left no trace at all).
     track("mock_fail_plan", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
@@ -702,7 +714,10 @@ async function startCall() {
       if (name === "reconnect") track("mock_reconnect", { reason: data && data.reason, demo: !!demo });
       else if (name === "socket_closed" && data && data.wasConnected)
         track("mock_reconnect", { reason: `closed_${data.code}`, message: String(data.reason || "").slice(0, 90), demo: !!demo });
-      log(name, data);
+      const usage = data?.usage;
+      log(name, { ...data, stage: 'live',
+        ...(name === 'socket_closed' ? { error: errorClass(data?.reason) } : {}),
+        ...(usage ? { input_tokens: usage.promptTokenCount, output_tokens: usage.responseTokenCount, total_tokens: usage.totalTokenCount } : {}) });
     },
   });
   live.start();
@@ -811,6 +826,7 @@ async function endInterview(reason) {
   if (turns.filter((u) => u.who === "candidate").length === 0) {
     ending = false; preLive();
     const deaf = micStats.maxRms < 0.002;
+    diagnosticEvent('no_answers', { deaf, seconds: elapsed });
     track("mock_fail_nomic", { demo: !!demo, deaf, seconds: elapsed });
     notice("live-notice", deaf
       ? "Your microphone sent only silence for the whole call, so there is nothing to score. It was muted, or the browser used the wrong one. Check it and try again."
@@ -825,6 +841,8 @@ async function endInterview(reason) {
 // ------------------------------------------------------------- 4. Report
 
 async function writeReport(turns, elapsed, usage) {
+  const reportStarted = performance.now();
+  diagnosticEvent('report_start', { stage: 'report' });
   show("s-report");
   $("report").innerHTML = ""; $("report-wait").style.display = "block";
   waitWheel.start(); waitWheel.setState("thinking");
@@ -833,6 +851,8 @@ async function writeReport(turns, elapsed, usage) {
   try {
     result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup(), cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan, previousFocus: focusCarried });
   } catch (err) {
+    diagnosticEvent('report_failed', { stage: 'report', error: errorClass(err), duration_ms: Math.round(performance.now() - reportStarted) });
+    void flushDiagnostics();
     track("mock_fail_report", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
     waitWheel.stop(); $("report-wait").style.display = "none";
     $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">The report could not be written</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Your transcript is safe. Download it below and try again later.</p></div>`;
@@ -840,6 +860,8 @@ async function writeReport(turns, elapsed, usage) {
     return;
   }
   waitWheel.stop(); $("report-wait").style.display = "none";
+  diagnosticEvent('report_ready', { stage: 'report', model: result.model, duration_ms: Math.round(performance.now() - reportStarted) });
+  void flushDiagnostics();
   const record = { id: "iv-" + crypto.randomUUID(), at: new Date().toISOString(), elapsed, language: S.language, model: result.model,
     rubric: RUBRIC_VERSION, demo: S.ent.kind === "demo", report: result.report, metrics, transcript: turns, usage,
     ...(focusCarried ? { focus_carried: focusCarried } : {}) };
@@ -881,6 +903,8 @@ async function writeReport(turns, elapsed, usage) {
  * on, and handed to the page as prep:redrill. A page that draws it calls preventDefault(); otherwise a plain
  * card is shown so the flow never ends on an empty screen. */
 async function writeRedrill(turns, elapsed) {
+  const reportStarted = performance.now();
+  diagnosticEvent('report_start', { stage: 'redrill' });
   const source = redrill.source;
   redrill = null;
   show("s-report");
@@ -888,8 +912,10 @@ async function writeRedrill(turns, elapsed) {
   waitWheel.start(); waitWheel.setState("thinking");
   let out;
   try {
-    out = await compareAnswers({ apiKey: S.key, source, transcript: turns, language: source.language || S.language, backup: passBackup() });
+    out = await compareAnswers({ apiKey: S.key, source, transcript: turns, language: source.language || S.language, backup: passBackup('redrill') });
   } catch (err) {
+    diagnosticEvent('report_failed', { stage: 'redrill', error: errorClass(err), duration_ms: Math.round(performance.now() - reportStarted) });
+    void flushDiagnostics();
     track("mock_fail_redrill", { message: String(err && err.message || "").slice(0, 90) });
     waitWheel.stop(); $("report-wait").style.display = "none";
     $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">Your new answer could not be judged</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Try again in a minute.</p></div>`;
@@ -897,6 +923,8 @@ async function writeRedrill(turns, elapsed) {
     return;
   }
   waitWheel.stop(); $("report-wait").style.display = "none";
+  diagnosticEvent('report_ready', { stage: 'redrill', model: out.model, duration_ms: Math.round(performance.now() - reportStarted) });
+  void flushDiagnostics();
   const item = redrillItem({ id: "rd-" + crypto.randomUUID(), at: new Date().toISOString(), source, transcript: turns, model: out.model, result: out.result, elapsed });
   window.__lastRedrill = item;
   window.__lastReport = { at: item.at, turns };                 // Download gives the new transcript

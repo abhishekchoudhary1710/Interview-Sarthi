@@ -1,3 +1,4 @@
+import { diagnosticEvent, measuredRequest } from './diagnostics.js';
 /* Prep Sarthi: the report card, one text call on the candidate's key.
  *
  * Mirrors the desktop app's gemini_text.py: generateContent, first model that
@@ -127,13 +128,14 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
   });
   let last = "no model answered";
   for (const model of REPORT_MODELS) {
+    if (model !== REPORT_MODELS[0]) diagnosticEvent('model_fallback', { stage: 'report', model });
     let res;
     try {
       // A report that has not arrived in a minute has hung, not slowed: move on (26 Sep 2026).
-      res = transport ? await transport(model, body)          // the free demo: through the licence server
-        : await fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
+      res = await measuredRequest('report', model, request_id => transport ? transport(model, body, undefined, request_id)          // the free demo: through the licence server
+        : fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
             method: "POST", headers: { "content-type": "application/json" }, body, signal: AbortSignal.timeout(60000),
-          });
+          }));
     } catch (err) { last = `Gemini unreachable (${err.message})`; continue; }
     if (!res.ok) {
       let detail = "";
@@ -144,16 +146,18 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
     }
     const payload = await res.json();
     const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
-    if (!text) { last = "Gemini returned no report"; continue; }
+    if (!text) { diagnosticEvent('request_error', { stage: 'report', model, error: 'invalid_response' }); last = "Gemini returned no report"; continue; }
     try {
       return { model, report: finish(JSON.parse(text)) };
     }
-    catch { last = "Gemini returned malformed JSON"; continue; }
+    catch { diagnosticEvent('request_error', { stage: 'report', model, error: 'invalid_response' }); last = "Gemini returned malformed JSON"; continue; }
   }
   // Both Gemini models failed on the buyer's own key: the licence server's backup writer (Groq) tries once.
   if (backup) {
     try {
-      const res = await backup(body, AbortSignal.timeout(60000));
+      diagnosticEvent('backup_start', { stage: 'report', model: 'backup' });
+      const res = await measuredRequest('report', 'backup', request_id => backup(body, AbortSignal.timeout(60000), request_id));
+      diagnosticEvent('backup_end', { stage: 'report', model: 'backup', status: res.status });
       if (res.ok) {
         const payload = await res.json();
         const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
