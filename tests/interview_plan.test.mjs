@@ -452,3 +452,23 @@ test("the backup writes the report when Gemini fails or hangs on both models, an
   await assert.rejects(generateReport({ apiKey: "test", ...documents, transcript: conversation, metrics: computeMetrics([], []), minutes: 10,
     assessmentPlan: plan(), backup: async () => ({ ok: false, status: 429 }) }), /Gemini unreachable/);
 });
+
+// 30 Sep 2026: the licence server answers 504 "Gemini too slow" when a model hangs, and two free demos lost their
+// report to it because only a 503 moved on to the next model.
+test("a 504 or 502 from the first model moves on to the next one, for the report and the plan", async () => {
+  const report = { requirements: [{ id: "r1", status: "assessed", score: 6, evidence_turns: [2], explanation: "Checked the plan." }] };
+  for (const status of [504, 502]) {
+    const asked = [];
+    const transport = (answer) => async (model) => {
+      asked.push(model);
+      return asked.length === 1 ? { ok: false, status, json: async () => ({ error: { message: "Gemini too slow" } }) } : answer();
+    };
+    const result = await generateReport({ ...documents, transcript: conversation, metrics: computeMetrics([], []), minutes: 10,
+      assessmentPlan: plan(), transport: transport(() => modelResponse(report)) });
+    assert.equal(asked.length, 2);
+    assert.equal(result.model, asked[1], `report served by the second model after a ${status}`);
+    asked.length = 0;
+    assert.equal((await generateInterviewPlan({ ...documents, transport: transport(() => modelResponse(rawPlan())) })).requirements.length, 2);
+    assert.equal(asked.length, 2, `plan asked the second model after a ${status}`);
+  }
+});

@@ -141,7 +141,9 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
       let detail = "";
       try { detail = (await res.json()).error.message; } catch (_) { /* no body */ }
       last = `Gemini HTTP ${res.status}${detail ? ": " + detail : ""}`;
-      if ([404, 429, 500, 503].includes(res.status)) continue;
+      // 504 is the licence server giving up on a hung model ("Gemini too slow"): on 30 Sep 2026 two free demos
+      // lost their report to it while the next model was fine.
+      if ([404, 429, 500, 502, 503, 504].includes(res.status)) continue;
       throw new Error(last);
     }
     const payload = await res.json();

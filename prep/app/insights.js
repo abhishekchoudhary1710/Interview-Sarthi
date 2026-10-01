@@ -169,7 +169,7 @@ export async function analyse({ apiKey, items, scope = "latest", window = null, 
     } catch (err) { last = `Gemini unreachable (${err.message})`; busy = true; continue; }
     if (!res.ok) {
       last = `Gemini HTTP ${res.status}`;
-      if ([429, 500, 503].includes(res.status)) { busy = true; continue; }
+      if ([429, 500, 502, 503, 504].includes(res.status)) { busy = true; continue; }
       if (res.status === 404) continue;
       throw new Error(last);
     }

@@ -131,7 +131,7 @@ export async function compareAnswers({ apiKey, source, transcript, language, tra
     } catch (err) { last = `Gemini unreachable (${err.message})`; continue; }
     if (!res.ok) {
       last = `Gemini HTTP ${res.status}`;
-      if ([404, 429, 500, 503].includes(res.status)) continue;
+      if ([404, 429, 500, 502, 503, 504].includes(res.status)) continue;
       throw new Error(last);
     }
     const payload = await res.json();

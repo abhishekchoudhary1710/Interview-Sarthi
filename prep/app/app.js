@@ -16,10 +16,10 @@ import { GeminiLive } from "./live.js?v=20260930-diagnostics";
 import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260930-diagnostics";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { RUBRIC_VERSION, generateReport } from "./report.js?v=20260930-diagnostics";
+import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261001-reportfix";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
-import { generateInterviewPlan } from "./plan-request.js?v=20260930-diagnostics";
+import { generateInterviewPlan } from "./plan-request.js?v=20261001-reportfix";
 import { PlanCoverage, interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport, deviceInvite } from "./billing.js?v=20260930-diagnostics";
 import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260930-diagnostics";
@@ -31,7 +31,7 @@ import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from 
 import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries, saveInterview, saveItem } from "./history.js";
 import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
 import { refreshAnalyses } from "./insights.js";
-import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20260930-diagnostics";
+import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261001-reportfix";
 
 const $ = (id) => document.getElementById(id);
 // Technical output is available only when support explicitly requests this URL.
@@ -72,6 +72,7 @@ const DEMO_SECONDS = 7 * 60;   // the licence server's DEMO.SECONDS; its answer 
 let demo = null;               // the free demo in progress: { demo, token, seconds } from /mock/demo/start
 let focusCarried = null;       // the habit the last report set, tested in this interview (progress.js carryFocus)
 let redrill = null;            // { source } while one question is being answered again (redrill.js)
+let reportWriting = false;     // a report is being written: no new interview starts until it has arrived
 const wheel = new Wheel($("wheel"));
 const waitWheel = new Wheel($("wheel-wait"));
 
@@ -515,6 +516,9 @@ function wireAudio() {
 }
 
 $("start").onclick = async () => {
+  if (reportWriting) { notice("live-notice", "Your last report is still being written. Start the next interview once it is ready.", "bad"); return; }
+  // Nothing left to practise with (the demo's report has just arrived): the passes, never a call Google refuses.
+  if (!redrill && S.ent && S.ent.kind === "none") { preLive(); return; }
   // A full interview needs a role or a JD; answering one saved question again does not (it may be on a
   // device where the form was never filled in).
   if (!redrill) {
@@ -522,7 +526,7 @@ $("start").onclick = async () => {
     catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   }
   beginDiagnostics({ kind: redrill ? 'redrill' : S.ent?.kind || 'none', minutes: S.minutes,
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20260930-diagnostics' });
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261001-reportfix' });
   $("start").disabled = true;
   notice("live-notice", "");
   audio = new AudioIO();
@@ -834,11 +838,19 @@ async function endInterview(reason) {
     return;
   }
   wheel.stop();
-  if (redrill) await writeRedrill(turns, elapsed);
-  else await writeReport(turns, elapsed, usage);
+  await whileWriting(() => redrill ? writeRedrill(turns, elapsed) : writeReport(turns, elapsed, usage));
 }
 
 // ------------------------------------------------------------- 4. Report
+
+/* While a report is written the report screen offers nothing to press. On 30 Sep 2026 "Practise again", pressed
+ * seven seconds into the wait, started a second demo; the first report then landed mid-preparation and switched
+ * the demo off, so that interview went to Google with no key: one refused call, then four failed starts. */
+async function whileWriting(write) {
+  reportWriting = true; $("report-actions").style.display = "none";
+  try { await write(); }
+  finally { reportWriting = false; $("report-actions").style.display = ""; }
+}
 
 async function writeReport(turns, elapsed, usage) {
   const reportStarted = performance.now();
@@ -855,7 +867,9 @@ async function writeReport(turns, elapsed, usage) {
     void flushDiagnostics();
     track("mock_fail_report", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
     waitWheel.stop(); $("report-wait").style.display = "none";
-    $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">The report could not be written</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Your transcript is safe. Download it below and try again later.</p></div>`;
+    $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">The report could not be written</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Your answers are kept. Try again now, or download your transcript below.</p><div class="actions"><button class="pill" id="report-retry">Write my report again</button></div></div>`;
+    // The same interview again, not a new one: both Hyderabad demos that lost their report on 30 Sep were redone in full.
+    $("report-retry").onclick = () => { track("mock_report_retry", { demo: !!demo }); void whileWriting(() => writeReport(turns, elapsed, usage)); };
     window.__lastReport = { turns, metrics, elapsed };
     return;
   }

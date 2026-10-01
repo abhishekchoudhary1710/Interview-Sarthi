@@ -49,7 +49,7 @@ Mark an ability requiring executed code, a written artifact, design deliverable 
           method: "POST", headers: { "content-type": "application/json" }, body, signal: both,
         }));
     if (!response.ok) {
-      if ([404, 429, 500, 503].includes(response.status)) continue;
+      if ([404, 429, 500, 502, 503, 504].includes(response.status)) continue;
       throw new Error(`Could not prepare the interview (HTTP ${response.status}). Check your Gemini key and retry.`);
     }
     const payload = await response.json();
