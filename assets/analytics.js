@@ -268,4 +268,17 @@
   window.sarthiReportPurchase = reportPurchase;
   window.sarthiTrack = track;
   if (licenceKey) reportPurchase(licenceKey, "");
+
+  /* ---- Sarthi chat ----
+   * The assistant bubble, served by the chat service on apply.interviewsarthi.com (sarthi-chat, its own
+   * process on the VM). Loaded here because every page loads this file. It waits for the page to finish
+   * loading, and hides itself on the pages its own settings list (the Prep interview app). */
+  /* Like the measurement above, it must never stop the page: any failure here is silent. */
+  try {
+    var chat = document.createElement("script");
+    chat.src = "https://apply.interviewsarthi.com/chat/widget.js";
+    chat.defer = true;
+    if (chat.setAttribute) chat.setAttribute("data-site", "main");
+    (document.body || document.head).appendChild(chat);
+  } catch (e) { /* no chat on this page */ }
 })();
