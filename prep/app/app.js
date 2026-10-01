@@ -23,7 +23,7 @@ import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, deviceInvite } from "./billing.js?v=20260930-diagnostics";
-import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260930-diagnostics";
+import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20261001-what";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';

@@ -215,6 +215,7 @@ function paint() {
   $("have-pass-row").style.display = account ? "none" : "block";
   $("checkout-label").textContent = signinOnly ? "Welcome back" : "You are buying";
   $("checkout-plan").style.display = signinOnly ? "none" : "block";
+  $("checkout-what").style.display = signinOnly ? "none" : "block";
   $("checkout-back").textContent = signinOnly ? "Back" : "Change";
   $("signin-why").textContent = signinOnly
     ? "Sign in with the Google account you bought with, and your pass appears here."

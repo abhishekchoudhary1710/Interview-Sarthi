@@ -34,7 +34,7 @@
     } catch (e) { /* any trouble: the app sorts it out as usual */ }
   })();
   </script>
-  <link rel="stylesheet" href="../prep.css?v=20261001-site2">
+  <link rel="stylesheet" href="../prep.css?v=20261001-what">
   <link rel="stylesheet" href="./progress-view.css?v=20261001-site">
   <style>
     .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
@@ -270,6 +270,18 @@
           </script>
           <button class="linkink" id="checkout-back">Change</button>
         </div>
+        <!-- what the pass gives, before payment (1 Oct 2026: a buyer paid for this when he wanted Live Sarthi;
+             both cost Rs 99, and Live's checkout points back here) -->
+        <div id="checkout-what">
+          <span class="label">What you get</span>
+          <ul class="what">
+            <li>Unlimited mock interviews for 30 days</li>
+            <li>Questions from your own CV and the job you want</li>
+            <li>A score and feedback on every answer</li>
+            <li>Works in the browser on your phone or laptop</li>
+          </ul>
+          <p class="muted what-note">Good to know: Prep Sarthi is for practice <b>before</b> your interview. For help <b>during</b> a live interview, use <a href="/live/">Live Sarthi</a>.</p>
+        </div>
         <div id="pass-signin" style="margin-top:18px">
           <p class="muted" id="signin-why" style="margin:0 0 14px">Sign in with Google first, so your pass follows you to any phone or laptop.</p>
           <div id="gbutton"></div>
@@ -334,7 +346,7 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20261001-site"></script>
+<script type="module" src="./app.js?v=20261001-what"></script>
 <script type="module" src="./progress-view.js?v=20261001-site"></script>
 </body>
 </html>
