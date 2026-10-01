@@ -1409,6 +1409,16 @@
       object-fit: cover
     }
 
+    /* The whole meeting opens the capture example. Clarity, 24 Sep-1 Oct 2026: the picture, its
+     answer panel and a face drew dead clicks, people expecting it to do something. Mouse only:
+     keyboards and screen readers have the same link in the caption below. */
+    .hmlink {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      cursor: pointer
+    }
+
     /* each clip covers only the part of its tile the panel does not sit over */
     .hmvid {
       position: absolute;
@@ -2014,6 +2024,7 @@
             <div class="hmtag t3"><b>You</b><span>Candidate</span></div>
             <div class="hmmask"></div>
             <p class="hmpa" id="hmAns" aria-hidden="true"></p>
+            <a class="hmlink" href="#proof" tabindex="-1" aria-hidden="true"></a>
           </div>
           <p class="shotcap">Your screen while they talk. The panel stays beside your call and is hidden from supported screen sharing. <a href="#proof">See the capture example →</a></p>
         </div>
