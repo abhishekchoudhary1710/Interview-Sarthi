@@ -19,7 +19,7 @@
  * Google.
  */
 
-import { NOTES } from "./interviewer.js?v=20260929-progress";
+import { NOTES } from "./interviewer.js?v=20261001-faststart";
 
 // The desktop app's proven model first; the non-preview one if Google retires it.
 export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
@@ -31,8 +31,12 @@ const CAPTURE_RATE = 16000;
 
 const SETUP_TIMEOUT_SECONDS = 12;
 const REPLY_TIMEOUT_SECONDS = 15;
+// Only before the first connection: a call that has never connected says so and lets the page offer a way out.
+// Once the interview is running it keeps trying, as the desktop app does: ending it would lose the interview.
 const MAX_RETRIES = 5;
-const MAX_BUFFERED_BYTES = 128000; // do not send seconds of stale microphone audio
+const STILL_TRYING_AFTER = 4;        // failed reconnects before the page says how to end with a report
+const MAX_BUFFERED_BYTES = 128000;   // do not send seconds of stale microphone audio
+const CONGESTED_SECONDS = 10;        // a send buffer that stays full this long is a dead socket, not a slow one
 const VOICE_RMS = 0.005;
 
 const now = () => performance.now() / 1000;
@@ -137,6 +141,8 @@ export class GeminiLive {
     this._activeTotal = 0;
     this._lastMicAt = null;
     this._audioEnded = false;
+    this._congestedSince = null;
+    this._cutOff = false;
   }
 
   get healthy() { return this.connected && !this.stopped; }
@@ -188,7 +194,7 @@ export class GeminiLive {
     return this._sendJson({ realtimeInput: { audio: {
       data: b64(pcm16.buffer.slice(pcm16.byteOffset, pcm16.byteOffset + pcm16.byteLength)),
       mimeType: `audio/pcm;rate=${CAPTURE_RATE}`,
-    } } });
+    } } }, { droppable: true });
   }
 
   /* A stage direction the interviewer acts on ("wrap up now"). turnComplete
@@ -299,6 +305,9 @@ export class GeminiLive {
 
   _disconnect() {
     this._pauseClock();
+    // The interviewer was mid-sentence: after a resume the question has to be heard again.
+    if (this.connected && (this._modelSpeaking || this._playing)) this._cutOff = true;
+    this._congestedSince = null;
     this.connected = false;
     this._attemptAt = null;
     this._modelSpeaking = false;
@@ -331,20 +340,33 @@ export class GeminiLive {
 
   _retry() {
     if (this.stopped || this._retryTimer !== null) return;
-    if (++this._failures > MAX_RETRIES) {
+    if (++this._failures > MAX_RETRIES && !this.sessions) {
       return this._fail("The connection could not recover. Your answers are kept. Check your connection and Gemini quota, then try again.", 'exhausted');
     }
     this._status(this.sessions ? "reconnecting" : "connecting");
-    const wait = this._backoff;
+    if (this.sessions && this._failures === STILL_TRYING_AFTER + 1) {
+      this._notice("Still reconnecting. If your internet is down, press End: your report is written from what you have said so far.");
+    }
+    // A dropped interview tries again at once (Google's 1011 drops on 30 Sep 2026 came back on the first try);
+    // later attempts back off.
+    const wait = this.sessions && this._failures === 1 ? 0 : this._backoff;
     this._event('retry_scheduled', { attempt: this._failures, delay_ms: wait * 1000 });
-    this._backoff = Math.min(this._backoff * 2, 8);
+    if (wait) this._backoff = Math.min(this._backoff * 2, 8);
     this._retryTimer = setTimeout(() => { this._retryTimer = null; this._connect(); }, wait * 1000);
   }
 
-  _sendJson(payload) {
+  _sendJson(payload, { droppable = false } = {}) {
     const ws = this.ws;
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-    if (ws.bufferedAmount > MAX_BUFFERED_BYTES) { this._reconnect("audio_backpressure"); return false; }
+    if (ws.bufferedAmount > MAX_BUFFERED_BYTES) {
+      // A slow upload: drop this piece of microphone audio and keep the call, as the desktop app drops its
+      // oldest audio. Only a buffer that never drains means the socket is dead (28 Sep 2026: a reconnect
+      // for a merely slow connection).
+      const t = this._now();
+      if (this._congestedSince === null) { this._congestedSince = t; this._event("audio_dropped", { reason: "audio_backpressure" }); }
+      if (t - this._congestedSince >= CONGESTED_SECONDS) { this._reconnect("audio_backpressure"); return false; }
+      if (droppable) return false;
+    } else this._congestedSince = null;
     try { ws.send(JSON.stringify(payload)); return true; }
     catch (_) { this._sendErrors++; this._event("send_error", {}); this._reconnect("send_error"); return false; }
   }
@@ -418,13 +440,16 @@ export class GeminiLive {
         this._event("connected", { model: this.model, session: this.sessions, duration_ms: connectMs, resumed: this._resuming });
         this._status("live");
         if (this._resuming) {
-          // An extra user turn would interrupt the restored conversation.
+          // An extra user turn would interrupt the restored conversation, unless the interviewer was the one
+          // cut off: then the candidate is waiting for a question that never finished.
           this._activeSince = t;
-          if (this._replyPendingAt !== null) this._replyPendingAt = t;
+          if (this._cutOff) this.sendText(this.notes.resumed);
+          else if (this._replyPendingAt !== null) this._replyPendingAt = t;
         } else {
           const resumed = this.transcript.turns.length > 0;
           this.sendText(resumed ? this.notes.reconnect : this.notes.opening);
         }
+        this._cutOff = false;
       }
       return;
     }

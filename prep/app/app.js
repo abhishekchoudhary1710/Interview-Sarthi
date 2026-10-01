@@ -12,26 +12,27 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20260930-diagnostics";
-import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20260930-diagnostics";
+import { GeminiLive } from "./live.js?v=20261001-faststart";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261001-faststart";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261001-reportfix";
+import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261001-faststart";
 import { interviewProgress } from "./assessment.js";
 import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
-import { generateInterviewPlan } from "./plan-request.js?v=20261001-reportfix";
-import { PlanCoverage, interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, backupTransport, deviceInvite } from "./billing.js?v=20260930-diagnostics";
+import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
+import { interviewContext } from "./interview-plan.js";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, deviceInvite } from "./billing.js?v=20260930-diagnostics";
 import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20260930-diagnostics";
 import { Wheel } from "../wheel.js";
-import { VoiceGate, MIC_HELP } from "./miccheck.js";
+import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
 // Progress across the month (plan approved 29 Sep 2026). These modules hold the logic; the screens that show
 // it are drawn elsewhere and reach this page through window.prepApp and the prep:* events below.
 import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries, saveInterview, saveItem } from "./history.js";
 import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
+import { coachingBrief } from "./coaching.js?v=20261001-faststart";
 import { refreshAnalyses } from "./insights.js";
-import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261001-reportfix";
+import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261001-faststart";
 
 const $ = (id) => document.getElementById(id);
 // Technical output is available only when support explicitly requests this URL.
@@ -43,9 +44,6 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* private mode */ } },
   del(k) { try { localStorage.removeItem(k); } catch (_) { /* ignore */ } },
 };
-/* Groq writes the plan or report through the licence server if Gemini fails on a pass holder's own key.
- * Not for the demo (the server's relay already has it) and not for a free trial (no pass to vouch for it). */
-const passBackup = (stage = 'report') => (!demo && S.ent && S.ent.kind === "pass") ? backupTransport(stage) : undefined;
 const track = (name, params) => { try { if (window.gtag) window.gtag("event", name, params || {}); } catch (_) { /* analytics off */ } };
 const nowS = () => performance.now() / 1000;
 const TICK_SECONDS = 30;
@@ -56,12 +54,12 @@ const LOW_FREE_SECONDS = 5 * 60;      // when the pass offer appears during a fr
 
 const S = { cv: "", jd: "", practiceFocus: "role", targetRole: "", targetLevel: "", name: "", language: "English", minutes: 12, voice: "Kore", key: "", hash: "", ent: null, plan: "m" };
 let lastScreen = "s-cv";
-let assessmentPlan = null, planCoverage = null, planController = null;
+let assessmentPlan = null, planPending = null, startController = null;
 let audio = null, live = null, timer = null, startedAt = 0, plannedSeconds = 0, ending = false;
 let voiceLog = [], bookedSeconds = 0, trialLeftAtStart = 0, tickPending = null;
 let speaking = false, lastVoiceAt = 0, heardSinceShe = false, linkState = "idle";
-let phase = "idle";               // idle | miccheck | preparing | call
-let gate = new VoiceGate(), micHelpTimer = null, micStats = { chunks: 0, voiced: 0, maxRms: 0 };
+let phase = "idle";               // idle | preparing (microphone, token) | call
+let micStats = { chunks: 0, voiced: 0, maxRms: 0 };
 let sheStoppedAt = 0, quietMax = 0, micWarned = false;
 let youClearTimer = null;
 let offerShown = false;
@@ -71,6 +69,7 @@ const logLines = [];
 const DEMO_SECONDS = 7 * 60;   // the licence server's DEMO.SECONDS; its answer caps the call too
 let demo = null;               // the free demo in progress: { demo, token, seconds } from /mock/demo/start
 let focusCarried = null;       // the habit the last report set, tested in this interview (progress.js carryFocus)
+let coaching = "";             // a pass holder's earlier practice, for the interviewer (coaching.js)
 let redrill = null;            // { source } while one question is being answered again (redrill.js)
 let reportWriting = false;     // a report is being written: no new interview starts until it has arrived
 const wheel = new Wheel($("wheel"));
@@ -105,7 +104,15 @@ function fmtLong(seconds) {
   if (h < 48) return `${h} h ${m % 60} min`;
   return `${Math.floor(h / 24)} d ${h % 24} h`;
 }
+/* What pressing Start on the CV screen does, said under the button: the free demo's terms come before the call. */
+function renderStartNote() {
+  const demoNext = !S.key && passCtx.demoOn && !(S.ent && S.ent.kind === "pass") && !demoUsed.get();
+  $("start-note").textContent = demoNext
+    ? `Free demo: a ${Math.round(DEMO_SECONDS / 60)}-minute interview, then your report. It runs on Google Gemini, which may use it to improve its services. Use earphones if you can; your interviewer speaks first.`
+    : "Use earphones if you can; your interviewer speaks first.";
+}
 function renderEntitlement() {
+  renderStartNote();
   const e = S.ent, el = $("entitle");
   // Nothing known yet: a dash while the server is being asked, and the honest
   // default for a first-time visitor once it is clear nobody is signed in.
@@ -133,17 +140,17 @@ const passCtx = {
   refresh: () => entitlement(S.hash),
   // An interview keeps running while someone looks at passes; coming back must
   // return to it, never reset it.
-  running: () => ["call", "miccheck", "preparing"].includes(phase),
+  running: () => ["call", "preparing"].includes(phase),
   resume() {
     $("pass-back").textContent = "Back";
-    if (["call", "miccheck", "preparing"].includes(phase)) { show("s-live"); return; }
+    if (["call", "preparing"].includes(phase)) { show("s-live"); return; }
     if (S.key && S.ent && lastScreen === "s-live") preLive();
     else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen);
   },
   practise() {
     redrill = null;
     $("pass-back").textContent = "Back";
-    if (["call", "miccheck", "preparing"].includes(phase)) { show("s-live"); return; }
+    if (["call", "preparing"].includes(phase)) { show("s-live"); return; }
     if (S.key && S.ent) preLive(); else if (S.cv || $("cv").value) showKeyStep(); else show("s-cv");
   },
 };
@@ -249,14 +256,20 @@ $("to-key").onclick = async () => {
   store.set("ps_practice_focus", S.practiceFocus); store.set("ps_target_role", S.targetRole); store.set("ps_target_level", S.targetLevel);
   store.set("ps_cv", S.cv); store.set("ps_jd", S.jd); store.set("ps_name", S.name); store.set("ps_language", S.language); store.set("ps_voice", S.voice);
   track("mock_cv_ready", { words: S.cv.split(/\s+/).length, jd: !!S.jd, language: S.language });
-  await booting;                           // the server's config says whether the free demo is on
+  // The server's config says whether the free demo is on. A click that had to wait for it has lost its user
+  // gesture, and iOS Safari keeps audio off without one: that visitor gets the Start button instead of a call.
+  const waited = !bootDone;
+  if (waited) await booting;
   // A first-time visitor gets the free demo on our key: no key, no sign-in, straight to the interview.
   // A key comes up only after a pass is bought (the owner's call, 25 Sep 2026). Someone who already
   // has a key keeps the old path untouched.
+  // One click from here into the call (owner, 1 Oct 2026): the free demo, and anyone whose own key and time are
+  // already known, start at once. The interview screen's Start button remains for Practise again and retries.
   if (!S.key && passCtx.demoOn && !(S.ent && S.ent.kind === "pass")) {
-    if (!demoUsed.get()) { S.ent = { kind: "demo", secondsLeft: DEMO_SECONDS, hasTrial: false }; renderEntitlement(); preLive(); return; }
+    if (!demoUsed.get()) { S.ent = { kind: "demo", secondsLeft: DEMO_SECONDS, hasTrial: false }; renderEntitlement(); preLive(); if (!waited) startInterview(); return; }
     if (passCtx.passesOn) { openPasses("You've had your free demo. A pass gives you unlimited mock interviews."); return; }
   }
+  if (S.key && S.ent && ["pass", "trial"].includes(S.ent.kind) && S.ent.secondsLeft > 0) { preLive(); if (!waited) startInterview(); return; }
   showKeyStep();
 };
 
@@ -328,9 +341,8 @@ function setLink(state, label) {
 
 // ---- microphone help: shown when the mic check fails, or the mic dies mid-call
 
-async function showMicFix(text, { allowAnyway }) {
+async function showMicFix(text) {
   $("micfix-text").textContent = text;
-  $("micfix-anyway").style.display = allowAnyway ? "flex" : "none";
   const mics = await AudioIO.listMics();
   $("micselect").innerHTML = mics.map((m) => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.label)}</option>`).join("");
   if (audio && audio.micId) $("micselect").value = audio.micId;
@@ -342,19 +354,11 @@ $("micselect").onchange = async () => {
   if (!audio) return;
   try {
     const info = await audio.useMic($("micselect").value);
-    gate = new VoiceGate();
     log("mic_switched", { label: info.label });
-    $("micfix-text").textContent = `Switched to ${info.label || "the other microphone"}. Say hello.`;
+    $("micfix-text").textContent = `Switched to ${info.label || "the other microphone"}. Go ahead and answer.`;
   } catch (err) {
     $("micfix-text").textContent = "That microphone could not be opened: " + err.message;
   }
-};
-$("anyway").onclick = () => {
-  if (phase !== "miccheck") return;
-  log("mic_check_skipped", { verdict: gate.verdict, maxRms: +gate.maxRms.toFixed(5) });
-  track("mock_mic_check", { result: "skipped", verdict: gate.verdict });
-  clearTimeout(micHelpTimer); hideMicFix();
-  startCall();
 };
 
 function showOffer(id, text) { $(id + "-text").textContent = text; $(id).style.display = "flex"; }
@@ -384,7 +388,6 @@ function showReportOffer(lead, rep, locked = false) {
 function hideOffer(id) { $(id).style.display = "none"; }
 
 function preLive() {
-  hidePreparation();
   hideDemoFull();
   phase = "idle";
   hideOffer("live-offer"); offerShown = false;
@@ -502,7 +505,6 @@ function wireAudio() {
     const lvl = Math.min(1, rms * 9);
     wheel.setMic(lvl);
     bars.forEach((b, i) => { b.style.transform = `scaleY(${Math.max(0.12, Math.min(1, lvl * BAR_SHAPE[i] * 1.6)).toFixed(2)})`; });
-    if (phase === "miccheck") { if (gate.feed(rms, t)) micCheckPassed(); return; }
     if (phase !== "call") return;
     voiceLog.push([t, voiced]);
     if (rms > quietMax) quietMax = rms;
@@ -515,10 +517,19 @@ function wireAudio() {
   };
 }
 
-$("start").onclick = async () => {
+$("start").onclick = () => startInterview();
+
+/* Start, in one step (owner, 1 Oct 2026): the microphone, the demo's token and a fresh entitlement side by side,
+ * then straight into the call, and the interviewer speaks as soon as it is connected. Nothing waits for an
+ * interview plan: that is made in the background for the report only (preparePlan), and a microphone that delivers
+ * nothing is caught during the call (onSecond) instead of by a mic check first. On 30 Sep 2026 the old sequence,
+ * mic check -> token -> plan -> connect, took 14-18 s from Start to the interviewer's voice, and 42-58 s when the
+ * mic check needed help or Gemini hung on the plan. */
+async function startInterview() {
   if (reportWriting) { notice("live-notice", "Your last report is still being written. Start the next interview once it is ready.", "bad"); return; }
   // Nothing left to practise with (the demo's report has just arrived): the passes, never a call Google refuses.
   if (!redrill && S.ent && S.ent.kind === "none") { preLive(); return; }
+  if (phase !== "idle") return;            // a second click must not start a second call
   // A full interview needs a role or a JD; answering one saved question again does not (it may be on a
   // device where the form was never filled in).
   if (!redrill) {
@@ -526,93 +537,105 @@ $("start").onclick = async () => {
     catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   }
   beginDiagnostics({ kind: redrill ? 'redrill' : S.ent?.kind || 'none', minutes: S.minutes,
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261001-reportfix' });
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261001-faststart' });
+  phase = "preparing";
+  const controller = new AbortController();
+  startController = controller;
+  const cancelled = () => controller.signal.aborted || startController !== controller;
+  const started = performance.now();
+  diagnosticEvent('preparation_start', { stage: 'live' });
+  hideDemoFull(); hideMicFix();
   $("start").disabled = true;
   notice("live-notice", "");
+  $("pre-live").style.display = "none"; $("youbar").style.display = "flex"; $("end").disabled = false;
+  setLink("busy", "Connecting");
+  setCaption("Connecting", `Calling your interviewer. ${who().They} speaks first.`, true);
+  $("left").textContent = "Your time has not started";
+  wheel.setState("reconnecting");
+
   audio = new AudioIO();
   audio.onMicMuted = (muted) => {
     log("mic_track_muted", { muted });
-    if (muted && phase !== "idle") showMicFix("Your system reports the microphone as muted. Unmute it, then say hello.", { allowAnyway: phase === "miccheck" });
+    if (muted && phase !== "idle") showMicFix("Your system reports the microphone as muted. Unmute it, then answer out loud.");
   };
-  try { await audio.start(); }
-  catch (err) {
-    notice("live-notice", "Microphone not available: " + err.message + ". Allow the mic for this site and try again.", "bad");
-    log("mic_error", { error: String(err) });
-    await audio.stop(); $("start").disabled = false; audio = null; return;
+  const isDemo = S.ent.kind === "demo";
+  if (isDemo) diagnosticEvent('demo_requested', { stage: 'demo' });
+  const [micError, grant, fresh] = await Promise.all([
+    audio.start().then(() => null, (err) => err),
+    // Asked for only now, at Start: a visitor who never presses it never uses one up.
+    isDemo ? requestDemo() : null,
+    // A pass can expire between loading the page and pressing Start. A demo has no key to look up.
+    isDemo || redrill || !S.hash ? S.ent : entitlement(S.hash),
+  ]);
+  if (cancelled()) return;
+  if (micError) {
+    log("mic_error", { error: String(micError) });
+    await cancelStart('failed');
+    notice("live-notice", "Microphone not available: " + micError.message + ". Allow the mic for this site and try again.", "bad");
+    return;
+  }
+  if (isDemo) {
+    if (!grant.ok) { diagnosticEvent('demo_refused', { reason: grant.reason }); await demoRefused(grant.reason); return; }
+    demo = grant;
+    diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'demo' });
+    // Not marked used here: if the call cannot connect, pressing Start again resumes the same demo.
+    track("mock_demo_start", {});
+  } else {
+    S.ent = fresh;
+    if (!(S.ent.secondsLeft > 0)) {
+      await cancelStart('failed');
+      notice("live-notice", "Your practice time has expired. Get a pass before starting.", "bad");
+      return;
+    }
   }
   log("mic", { label: audio.micLabel, deviceRate: audio.sampleRate });
-  $("pre-live").style.display = "none"; $("youbar").style.display = "flex"; $("end").disabled = false;
   micStats = { chunks: 0, voiced: 0, maxRms: 0 };
   wireAudio();
-
-  // The interview, and the free minutes, only start once a voice really arrives.
-  phase = "miccheck";
-  gate = new VoiceGate();
-  setLink("idle", "Mic check");
-  setCaption("Mic check", "Say hello, so I know I can hear you.", false);
-  $("left").textContent = "Your time has not started";
-  showPreparation();
-  wheel.setState("listening");
-  clearTimeout(micHelpTimer);
-  micHelpTimer = setTimeout(() => {
-    if (phase !== "miccheck") return;
-    const verdict = gate.verdict;
-    log("mic_check_help", { verdict, maxRms: +gate.maxRms.toFixed(5), chunks: gate.chunks });
-    track("mock_mic_check", { result: "help", verdict });
-    setCaption("Mic check", "I can't hear you yet.", false);
-    showMicFix(MIC_HELP[verdict] || MIC_HELP.silent, { allowAnyway: true });
-  }, 6000);
-};
-
-function micCheckPassed() {
-  clearTimeout(micHelpTimer); hideMicFix();
-  log("mic_check_ok", { maxRms: +gate.maxRms.toFixed(4), chunks: gate.chunks });
-  track("mock_mic_check", { result: "ok" });
+  diagnosticEvent('preparation_ready', { stage: 'live', duration_ms: Math.round(performance.now() - started) });
+  startController = null;
+  assessmentPlan = null;
+  planPending = redrill ? null : preparePlan();
   startCall();
 }
 
-let preparationTimer = null;
-function hidePreparation() {
-  clearInterval(preparationTimer); preparationTimer = null;
-  $("preparation").hidden = true;
-  $("preparation").closest(".call").classList.remove("preparing");
-  $("caption").hidden = false;
+/* The interview plan: the JD's requirements with weak/adequate/strong criteria, made while the interview runs and
+ * used only by the report (and so by the progress page). The interviewer works from the CV and JD directly. When no
+ * plan can be made, the report scores the six broad areas instead; nobody waits for it. */
+const PLAN_WAIT_MS = 20_000;     // the report waits this long at most for a plan still being made
+function preparePlan() {
+  const started = performance.now();
+  diagnosticEvent('preparation_start', { stage: 'plan' });
+  return generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
+    minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel,
+    transport: demo ? demoTransport(demo.demo, 'plan') : undefined })
+    .then((plan) => { diagnosticEvent('preparation_ready', { stage: 'plan', duration_ms: Math.round(performance.now() - started) }); return plan; })
+    .catch((err) => {
+      diagnosticEvent('preparation_failed', { stage: 'plan', error: errorClass(err), duration_ms: Math.round(performance.now() - started) });
+      track("mock_fail_plan", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
+      return null;
+    });
 }
-function showPreparation() {
-  hidePreparation();
-  const waitingSince = Date.now();
-  $("preparation").hidden = false;
-  $("preparation").closest(".call").classList.add("preparing");
-  $("caption").hidden = true;
-  $("youbar").style.display = "none";
-  $("prep-status").textContent = S.jd.trim()
-    ? "Reviewing your CV and job description to prepare relevant assessment areas."
-    : S.practiceFocus === "general_cv"
-      ? "Reviewing your CV to prepare questions about your experience and skills."
-      : "Reviewing your CV and chosen role to prepare relevant assessment areas.";
-  $("prep-elapsed").textContent = "Waiting: 0 seconds";
-  $("prep-slow").hidden = true;
-  preparationTimer = setInterval(() => {
-    const seconds = Math.floor((Date.now() - waitingSince) / 1000);
-    $("prep-elapsed").textContent = `Waiting: ${seconds} seconds`;
-    if (seconds >= 20) $("prep-slow").hidden = false;
-  }, 1000);
-}
-$("cancel-preparation").onclick = () => cancelMicCheck();
+const planForReport = () => planPending
+  ? Promise.race([planPending, new Promise((r) => setTimeout(() => r(null), PLAN_WAIT_MS))]) : Promise.resolve(null);
 
-async function cancelMicCheck(reason = 'cancelled') {
+async function cancelStart(reason = 'cancelled') {
   diagnosticEvent('preparation_cancelled', { reason });
-  planController?.abort(); planController = null;
-  hidePreparation();
-  clearTimeout(micHelpTimer);
+  startController?.abort(); startController = null;
   phase = "idle";
   if (audio) { await audio.stop(); audio = null; }
   preLive();
 }
 
+/* The progress track of the interview about to start, from the form; null for a pasted JD, whose role only the
+ * plan reads from it. */
+function formTrack() {
+  const c = interviewContext(S);
+  return c.mode === "job_description" ? null : trackKey({ mode: c.mode, role: c.targetRole, level: c.targetLevel });
+}
+
 /* No demo for this visitor right now. Nothing here mentions keys: that step comes after a purchase. */
 async function demoRefused(reason) {
-  await cancelMicCheck(reason);
+  await cancelStart(reason);
   track("mock_demo_refused", { reason });
   if (reason === "full") { showDemoFull(); return; }
   if (reason === "busy") { notice("live-notice", "Lots of people are practising right now. Press Start again in about 20 seconds.", "bad"); return; }
@@ -623,70 +646,27 @@ async function demoRefused(reason) {
   if (passCtx.passesOn) openPasses(text); else notice("live-notice", text, "bad");
 }
 
-async function startCall() {
-  if (phase === "preparing" || phase === "call") return;
-  phase = "preparing";
-  const preparationStarted = performance.now();
-  diagnosticEvent('preparation_start', { stage: 'plan' });
-  const controller = new AbortController();
-  planController = controller;
-  assessmentPlan = null; planCoverage = null;
-  setLink("busy", "Preparing");
-  setCaption("Preparing your interview", "Reviewing your CV and the role. Your interview timer has not started.", true);
-  $("left").textContent = "Your time has not started";
-  showPreparation();
-  try {
-    if (S.ent.kind === "demo") {
-      // Asked for only now, at Start: a visitor who never presses it never uses one up.
-      diagnosticEvent('demo_requested', { stage: 'demo' });
-      demo = await requestDemo();
-      if (controller.signal.aborted || planController !== controller) return;
-      if (!demo.ok) { const why = demo.reason; diagnosticEvent('demo_refused', { reason: why }); demo = null; planController = null; await demoRefused(why); return; }
-      diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'demo' });
-      // Not marked used here: if Google is too busy to prepare it, pressing Start again resumes the same demo.
-      track("mock_demo_start", {});
-    }
-    // A re-answer asks one question from an earlier report: nothing to plan.
-    const plan = redrill ? null : await generateInterviewPlan({ apiKey: S.key, cv: S.cv, jd: S.jd,
-      minutes: S.minutes, language: S.language, practiceFocus: S.practiceFocus, targetRole: S.targetRole, targetLevel: S.targetLevel, signal: controller.signal,
-      transport: demo ? demoTransport(demo.demo, 'plan') : undefined, backup: passBackup('plan') });
-    if (controller.signal.aborted || planController !== controller) return;
-    $("prep-status").textContent = "Your interview plan is ready. Checking your available practice time…";
-    // Refresh after preparation: a pass can expire while the plan is being made. A demo has no key to look up.
-    const fresh = demo ? S.ent : await entitlement(S.hash);
-    if (controller.signal.aborted || planController !== controller) return;
-    S.ent = fresh;
-    if (S.ent.secondsLeft <= 0) throw new Error("Your practice time has expired. Get a pass before starting.");
-    assessmentPlan = plan; planCoverage = plan ? new PlanCoverage(plan) : null;
-    diagnosticEvent('preparation_ready', { stage: 'plan', duration_ms: Math.round(performance.now() - preparationStarted) });
-  } catch (err) {
-    diagnosticEvent('preparation_failed', { stage: 'plan', error: errorClass(err), duration_ms: Math.round(performance.now() - preparationStarted) });
-    if (controller.signal.aborted || planController !== controller) return;
-    await cancelMicCheck('failed');
-    // Each way a visitor can get stuck has its own event, so the funnel shows where (26 Sep 2026: two real
-    // demos failed and left no trace at all).
-    track("mock_fail_plan", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
-    notice("live-notice", `Interview preparation failed: ${err.message} Your interview timer did not start. Please retry.`, "bad");
-    return;
-  }
-  planController = null;
-  hidePreparation();
+function startCall() {
+  if (phase === "call") return;
   $("youbar").style.display = "flex";
   phase = "call";
   startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
   trialLeftAtStart = S.ent.secondsLeft;
   plannedSeconds = Math.min(redrill ? REDRILL_SECONDS : S.minutes * 60, S.ent.secondsLeft, demo ? demo.seconds : Infinity);   // free minutes, passes and the demo all stop on the second
-  // A pass holder's last report named one habit to fix: this interview gives them a chance to show it.
-  focusCarried = !redrill && S.ent.kind === "pass" && assessmentPlan
-    ? carryFocus(knownSummaries(), trackKey({ mode: assessmentPlan.mode, role: assessmentPlan.role, level: assessmentPlan.level })) : null;
+  // A pass holder's last report named one habit to fix, and their earlier interviews say what to ask next. A pasted
+  // JD's track is not known yet, so role knowledge learnt for another job is not carried into it.
+  const passHolder = !redrill && S.ent.kind === "pass";
+  const practiceTrack = passHolder ? formTrack() : null;
+  focusCarried = passHolder ? carryFocus(knownSummaries(), practiceTrack || "job_description|") : null;
+  coaching = passHolder ? coachingBrief(knownSummaries(), { track: practiceTrack }) : "";
   log("call_start", { planned: plannedSeconds });
   setLink("busy", "Connecting");
-  setCaption("I can hear you", "Calling your interviewer…", true);
+  setCaption("Connecting", "Calling your interviewer…", true);
   $("left").textContent = "You're on";
   wheel.setState("reconnecting");
 
-  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60, assessmentPlan, focus: focusCarried };
+  const brief = { candidateName: S.name, cv: S.cv, jd: S.jd, language: S.language, voice: S.voice, minutes: plannedSeconds / 60, focus: focusCarried, coaching };
   live = new GeminiLive({
     apiKey: S.key,
     authToken: demo ? demo.token : "",
@@ -729,15 +709,12 @@ async function startCall() {
   timer = setInterval(onSecond, 1000);
 }
 
-function currentProgress(args = {}) {
+/* The interviewer's clock tool. Since 1 Oct 2026 the interviewer works without the plan (it is made in the
+ * background for the report), so the tool answers with time only. */
+function currentProgress() {
   if (redrill) return redrillProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0 });
-  const progress = interviewProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0,
+  return interviewProgress({ plannedSeconds, elapsedSeconds: live ? live.activeSeconds : 0,
     entitlementSeconds: S.ent.kind === "pass" ? trialLeftAtStart - (nowS() - startedAt) : Infinity });
-  if (!planCoverage) return progress;
-  const turns = live ? live.transcript.turns : [];
-  planCoverage.update(args.updates, turns);
-  return { ...progress, coverage: planCoverage.snapshot(progress),
-    recent_answers: turns.map((u, i) => ({ turn: i + 1, who: u.who, text: u.text.slice(0, 2000) })).filter(u => u.who === "candidate").slice(-3) };
 }
 
 async function onSecond() {
@@ -759,15 +736,20 @@ async function onSecond() {
   }
   if (remaining <= 0) { endInterview("time"); return; }
 
-  // The interviewer asked, and the microphone has delivered exact digital silence
-  // ever since: that is a mute key or a dead input, not someone thinking.
+  // The interviewer asked, and the microphone has delivered exact digital silence ever since (a mute key or a
+  // dead input, not someone thinking), or nothing loud enough to be a voice since the call began: the check that
+  // used to run before the call (the mic check, until 1 Oct 2026) now runs here, after the first question.
+  const neverHeard = micStats.voiced === 0;
   if (!micWarned && linkState === "live" && !speaking && sheStoppedAt && !heardSinceShe
-      && nowS() - sheStoppedAt > 10 && quietMax < MIC_MUTED_RMS) {
+      && nowS() - sheStoppedAt > 10 && (quietMax < MIC_MUTED_RMS || neverHeard)) {
     micWarned = true;
-    log("mic_silent_in_call", { quietMax: +quietMax.toFixed(6) });
-    track("mock_mic_silent", {});
+    const verdict = micStats.maxRms < MIC_DEAD_RMS ? "silent" : "quiet";
+    log("mic_silent_in_call", { quietMax: +quietMax.toFixed(6), verdict: neverHeard ? verdict : "silent" });
+    track("mock_mic_silent", { verdict: neverHeard ? verdict : "muted" });
     setCaption("Can't hear you", null, true);
-    showMicFix(`Your microphone has gone completely silent. Is it muted? ${who().They} is waiting for your answer.`, { allowAnyway: false });
+    showMicFix(neverHeard
+      ? `${who().They} can't hear you yet. ${MIC_HELP[verdict]}`
+      : `Your microphone has gone completely silent. Is it muted? ${who().They} is waiting for your answer.`);
   }
 
   // Book used time against the trial, like the desktop app's 30-second slices.
@@ -788,7 +770,7 @@ async function onSecond() {
 }
 
 $("end").onclick = () => {
-  if (phase === "miccheck" || phase === "preparing") { cancelMicCheck(); return; }
+  if (phase === "preparing") { cancelStart(); return; }
   if (confirm("End the interview now and get your report?")) endInterview("user");
 };
 
@@ -824,6 +806,7 @@ async function endInterview(reason) {
   if (reason === "failed" && turns.length === 0) {
     const why = $("live-notice").textContent || "Gemini refused the session.";
     ending = false; preLive();
+    if (S.key) { showKeyStep(); notice("key-notice", why + " Check the key, then continue.", "bad"); return; }
     notice("live-notice", why + " Fix the key or try again.", "bad");
     return;
   }
@@ -861,7 +844,8 @@ async function writeReport(turns, elapsed, usage) {
   const metrics = computeMetrics(turns, voiceLog);
   let result;
   try {
-    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, backup: passBackup(), cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan, previousFocus: focusCarried });
+    assessmentPlan = await planForReport();
+    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan, previousFocus: focusCarried });
   } catch (err) {
     diagnosticEvent('report_failed', { stage: 'report', error: errorClass(err), duration_ms: Math.round(performance.now() - reportStarted) });
     void flushDiagnostics();
@@ -926,7 +910,7 @@ async function writeRedrill(turns, elapsed) {
   waitWheel.start(); waitWheel.setState("thinking");
   let out;
   try {
-    out = await compareAnswers({ apiKey: S.key, source, transcript: turns, language: source.language || S.language, backup: passBackup('redrill') });
+    out = await compareAnswers({ apiKey: S.key, source, transcript: turns, language: source.language || S.language });
   } catch (err) {
     diagnosticEvent('report_failed', { stage: 'redrill', error: errorClass(err), duration_ms: Math.round(performance.now() - reportStarted) });
     void flushDiagnostics();
@@ -1161,7 +1145,7 @@ async function loadJobFromApply() {
  * interviews, settings, delete, export), progress.js (the numbers) and insights.js (the month analysis). */
 async function startRedrill(interviewId, questionIndex) {
   if (!S.ent || S.ent.kind !== "pass") throw new Error("Answering a question again needs a pass.");
-  if (["call", "miccheck", "preparing"].includes(phase)) throw new Error("An interview is running.");
+  if (["call", "preparing"].includes(phase)) throw new Error("An interview is running.");
   const record = await getInterview(interviewId);
   const source = record && redrillSource(record, Number(questionIndex));
   if (!source) throw new Error("That question could not be found in the saved interview.");
@@ -1185,7 +1169,7 @@ window.prepApp = {
   startRedrill, openInterview,
   navigate(id) {
     if (!["s-progress", "s-comparison", "s-cv"].includes(id)) return;
-    if (["call", "miccheck", "preparing"].includes(phase) || ending && $("report-wait").style.display !== "none") {
+    if (["call", "preparing"].includes(phase) || ending && $("report-wait").style.display !== "none") {
       throw new Error("Finish your interview and wait for its report before opening progress.");
     }
     if (id === "s-cv") { redrill = null; ending = false; }
@@ -1208,11 +1192,13 @@ window.addEventListener("pagehide", () => {
   // Leaving while the interview is being prepared, or in the middle of it, is the drop-off to watch.
   if (phase === "preparing") track("mock_abandon_preparing", { demo: !!demo });
   else if (live && !ending) track("mock_abandon_call", { demo: !!demo, seconds: Math.round(live.activeSeconds || 0) });
-  planController?.abort(); hidePreparation(); if (live) live.close();
+  startController?.abort(); if (live) live.close();
 });
 rememberInvite();
 rememberSource();
 const booting = restore().then(loadJobFromApply).then(() => initPasses(passCtx)).then(renderEntitlement);
+let bootDone = false;
+booting.then(() => { bootDone = true; }, () => {});
 // Saves that could not reach the server last time, and any weekly or end-of-pass review now due.
 booting.then(() => {
   flushOutbox().catch(() => {});

@@ -494,17 +494,58 @@ test("repeated startup failures terminate instead of retrying forever", (ctx) =>
   assert.equal(FakeSocket.instances.length, 6);
 });
 
-test("socket backpressure recovers without queuing more stale audio", (ctx) => {
-  const { live } = transport(ctx);
+test("a slow upload drops microphone audio and keeps the call; only a buffer that never drains reconnects", (ctx) => {
+  const { live, advance } = transport(ctx);
   live.start();
   const ws = live.ws;
   ws.open(); ws.message({ setupComplete: {} });
   ws.bufferedAmount = 200000;
   const count = ws.sent.length;
   assert.equal(live.sendAudio(new Int16Array(1600), 0.1), false);
-  assert.equal(ws.sent.length, count);
-  assert.equal(live.connected, false);
-  assert.equal(live.sendText("wrap up"), false);
+  assert.equal(ws.sent.length, count, "no more stale audio is queued");
+  assert.equal(live.connected, true, "a slow connection is not a dead one");
+  assert.equal(live.sendText("wrap up"), true, "stage directions still go through");
+  ws.bufferedAmount = 0;
+  assert.equal(live.sendAudio(new Int16Array(1600), 0.1), true, "audio flows again once the buffer drains");
+  ws.bufferedAmount = 200000;
+  live.sendAudio(new Int16Array(1600), 0.1);
+  advance(11);
+  live.sendAudio(new Int16Array(1600), 0.1);
+  assert.equal(live.connected, false, "ten seconds without draining is a dead socket");
+});
+
+test("a dropped interview retries at once and keeps trying; only a call that never connected gives up", (ctx) => {
+  const { live, advance, notices } = transport(ctx);
+  live.start();
+  live.ws.open(); live.ws.message({ setupComplete: {} });
+  live.ws.onclose({ code: 1011, reason: "Internal error encountered." });
+  advance(0);
+  assert.equal(FakeSocket.instances.length, 2, "the first retry after a drop is immediate");
+  for (let i = 0; i < 8; i++) { live.ws.onclose({ code: 1011, reason: "Internal error encountered." }); advance(8); }
+  assert.equal(live.stopped, false, "an interview that had started never gives up on its own");
+  assert.equal(FakeSocket.instances.length, 10);
+  assert.ok(notices.some(n => /Still reconnecting.*press End/.test(n)), "after several tries the page says how to end with a report");
+  live.ws.open(); live.ws.message({ setupComplete: {} });
+  assert.equal(live.connected, true);
+});
+
+test("an interviewer cut off mid-sentence repeats the question after a resume; a listening one adds nothing", () => {
+  let t = 100;
+  const { live, sent } = engine({ now: () => t });
+  live._handle({ setupComplete: {} });
+  live._handle({ sessionResumptionUpdate: { resumable: true, newHandle: "h1" } });
+  live._handle(audioReply);                                   // the interviewer is speaking
+  live._disconnect(); live._resuming = true;
+  let before = sent.length;
+  live._handle({ setupComplete: {} });
+  assert.equal(sent.length, before + 1);
+  assert.equal(sent.at(-1).clientContent.turns[0].parts[0].text, NOTES.resumed);
+  live._handle({ serverContent: { turnComplete: true } });    // the question was asked again; now the candidate talks
+  live._disconnect(); live._resuming = true;
+  before = sent.length;
+  live._handle({ setupComplete: {} });
+  assert.equal(sent.length, before, "a candidate mid-answer is not interrupted by a stage direction");
+  live.close();
 });
 
 test("Transcript.asContext caps size by dropping the oldest lines", () => {

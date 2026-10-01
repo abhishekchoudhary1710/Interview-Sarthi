@@ -11,11 +11,14 @@ import { COMPETENCIES, ASSESSMENT_BRIEF, normalizeAssessment } from "./assessmen
 import { PLAN_CATEGORIES, evidenceTurns, normalizeRequirements } from "./interview-plan.js";
 import { FOCUS_STATUSES, normalizeFocus } from "./progress.js";
 
-export const REPORT_MODELS = ["gemini-3.6-flash", "gemini-3.1-flash-lite"];
+/* flash-lite first since 1 Oct 2026 (owner's call, Gemini only): on 30 Sep gemini-3.6-flash answered "high demand"
+ * on 6 of 7 report requests, and each one cost the waiting candidate 5-15 s before flash-lite wrote the report
+ * anyway. The desktop app has always led with flash-lite. */
+export const REPORT_MODELS = ["gemini-3.1-flash-lite", "gemini-3.6-flash"];
 /* The scoring rules in force: this prompt, the assessment anchors in assessment.js and the plan rules in
  * plan-request.js. Saved with every report so the progress page can tell a change in the rules from a change
  * in the person. Change it whenever any of those rules change. */
-export const RUBRIC_VERSION = "2026-09-29";
+export const RUBRIC_VERSION = "2026-10-01";
 const URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
 
 const SCHEMA = {
@@ -83,10 +86,12 @@ const FOCUS_CHECK = {
 };
 
 function systemPrompt(language) {
-  return `You are a blunt, kind senior interviewer writing the debrief after a mock interview. Judge only what the transcript shows. Be specific: quote the candidate's own words when pointing out a problem. Never invent facts about the candidate. Do not infer competence or personality from accent, identity, language choice or speaking speed. Evaluate each answer against the question actually asked and the candidate's experience: an introduction needs a clear relevant background, a project walkthrough needs purpose and personal contribution, a technical answer needs sound reasoning, and a behavioural answer needs actions and outcomes. Reward specific evidence where relevant, but do not require numbers or technical depth in an introduction. Do not penalize skills or stages that were never assessed, candidate questions at the close, or answers cut off by the session time limit. If the session only covered background or one project, explicitly describe the assessment as limited instead of claiming technical readiness was established. Write in ${language && language.toLowerCase() !== "auto" ? language : "the language the candidate mostly spoke"}; keep technical terms in English.`;
+  return `You are a blunt, kind senior interviewer writing the debrief after a mock interview. Judge only what the transcript shows. Be specific: quote the candidate's own words when pointing out a problem. Never invent facts about the candidate. Do not infer competence or personality from accent, identity, language choice or speaking speed. Evaluate each answer against the question actually asked and the candidate's experience: an introduction needs a clear relevant background, a project walkthrough needs purpose and personal contribution, a technical answer needs sound reasoning, and a behavioural answer needs actions and outcomes. Reward specific evidence where relevant, but do not require numbers or technical depth in an introduction. Do not penalize skills or stages that were never assessed, candidate questions at the close, or answers cut off by the session time limit. If the session only covered background or one project, explicitly describe the assessment as limited instead of claiming technical readiness was established.
+When an answer gave no example, no project or no outcome, say exactly that in answer_gist and what_was_missing. Never supply an example, project, number, tool or result the candidate did not say. A better_answer may use only facts from the CV or the transcript; where there are none, show the shape of a strong answer with plain placeholders such as [your project] and [the result].
+LANGUAGE: write every text field in ${language && language.toLowerCase() !== "auto" ? language : "the language the candidate mostly spoke"}${/hinglish/i.test(language || "") ? ", in Roman script, mixing Hindi and English the way the candidate did" : ""}. Do not switch to plain English for the feedback. Keep technical terms in English.`;
 }
 
-export async function generateReport({ apiKey, cv, jd, language, transcript, metrics, minutes, assessmentPlan, transport, backup, previousFocus }) {
+export async function generateReport({ apiKey, cv, jd, language, transcript, metrics, minutes, assessmentPlan, transport, previousFocus }) {
   const focus = normalizeFocus(previousFocus);
   const lines = transcript.map((u, i) => `[${i + 1}] ${u.who === "interviewer" ? "INTERVIEWER" : "CANDIDATE"}: ${u.text}${u.interrupted ? " [cut off]" : ""}`);
   const user = [
@@ -153,19 +158,6 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
       return { model, report: finish(JSON.parse(text)) };
     }
     catch { diagnosticEvent('request_error', { stage: 'report', model, error: 'invalid_response' }); last = "Gemini returned malformed JSON"; continue; }
-  }
-  // Both Gemini models failed on the buyer's own key: the licence server's backup writer (Groq) tries once.
-  if (backup) {
-    try {
-      diagnosticEvent('backup_start', { stage: 'report', model: 'backup' });
-      const res = await measuredRequest('report', 'backup', request_id => backup(body, AbortSignal.timeout(60000), request_id));
-      diagnosticEvent('backup_end', { stage: 'report', model: 'backup', status: res.status });
-      if (res.ok) {
-        const payload = await res.json();
-        const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
-        return { model: payload.served_by || "backup", report: finish(JSON.parse(text)) };
-      }
-    } catch { /* keep Gemini's own error below */ }
   }
   throw new Error(last);
 }

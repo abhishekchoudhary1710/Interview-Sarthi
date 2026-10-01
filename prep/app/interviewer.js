@@ -50,6 +50,7 @@ export function languageNote(language) {
  * @param {string} [o.voice]       the chosen voice, which decides who the interviewer is
  * @param {string} [o.interviewerName]
  * @param {{issue:string}} [o.focus]  the habit the last report asked this candidate to fix (progress.js carryFocus)
+ * @param {string} [o.coaching]        a pass holder's earlier practice in a few lines (coaching.js coachingBrief)
  */
 export function buildInterviewerInstructions(o) {
   const name = (o.candidateName || "the candidate").trim();
@@ -92,6 +93,9 @@ THE CV AND ROLE ARE CONTEXT, NOT A QUESTION QUEUE. Use them to ground relevant q
 ${o.focus && o.focus.issue ? `PRACTICE FOCUS FROM THE CANDIDATE'S PREVIOUS MOCK INTERVIEW (private reference; never mention it, never coach): ${o.focus.issue}
 After the project walkthrough, ask at least one natural, role-relevant question where this habit would show if it is still there. It must be no harder than the rest of the interview and must fit the conversation order above. If an answer already shows it, do not ask again.
 
+` : ""}${o.coaching ? `THE CANDIDATE'S EARLIER PRACTICE (private reference for choosing questions and depth; never mention it, never coach, never say you know their history):
+${o.coaching}
+
 ` : ""}${o.assessmentPlan ? `PREPARED ROLE ASSESSMENT PLAN (reference data; questions are examples, not mandatory wording or order):\n${JSON.stringify(o.assessmentPlan)}\n\n` : ""}
 ${jd ? `THE ROLE (job description):\n${jd}\n\n` : ""}CANDIDATE CV:
 ${cv || "(no CV provided: run a general interview for a software or business role, and ask early what role they are applying for)"}
@@ -102,6 +106,7 @@ ${cv || "(no CV provided: run a general interview for a software or business rol
 export const NOTES = {
   opening: "(The candidate has just joined the call. Briefly greet them, introduce yourself and explain the interview flow in their selected language. Ask only for a brief self-introduction, then stop and wait. Do not begin with a project deep dive, a technical question or a challenge to a CV claim.)",
   reconnect: "(The call reconnected. Continue the current interview stage from exactly where it stopped: no greeting, no recap, no restart of completed introduction or project discussion. If the candidate's last answer is incomplete, ask them to repeat the missing part. Do not jump to harder questions because of the reconnect.)",
+  resumed: "(The call dropped while you were speaking and is back. Repeat your last question in one short sentence, then stop and wait. No greeting, no apology speech, no new topic.)",
   wrapUp: "(Note to interviewer: time is nearly over. Finish acknowledging the current answer, then ask what questions the candidate has for you and wait. Do not start another assessment topic. Answer briefly, then thank them and close.)",
   end: "(Note to interviewer: the time is over. Thank the candidate in one sentence and end the interview now.)",
 };

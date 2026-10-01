@@ -256,115 +256,142 @@ test("interviewer instructions make question choice dynamic while keeping scorin
   assert.match(text, /Database diagnosis/);
 });
 
-// Execute the actual app's preparation/cancellation functions with fake UI,
-// audio and transport. No credentials, payment, microphone or network access.
-function preparationHarness(generate, extra = {}) {
+// Execute the actual app's start functions with fake UI, audio and transport. No credentials, payment,
+// microphone or network access.
+function startHarness(generate, extra = {}) {
   const source = readFileSync(new URL("../prep/app/app.js", import.meta.url), "utf8");
   const nodes = new Map();
   const context = vm.createContext({
-    hidePreparation() {}, showPreparation() {}, performance,
-    diagnosticEvent() {}, errorClass: () => 'unknown', flushDiagnostics() {},
-    phase: "miccheck", planController: null, assessmentPlan: null, planCoverage: null,
+    performance, setTimeout, AbortController, navigator: { userAgent: "test" },
+    diagnosticEvent() {}, errorClass: () => 'unknown', beginDiagnostics() {},
+    phase: "idle", startController: null, assessmentPlan: null, planPending: null, reportWriting: false,
     // The free demo (billing.js): off unless a test turns it on.
     demo: null, requestDemo: async () => ({ ok: false, reason: "unavailable" }), demoTransport: (id) => ({ demoId: id }),
-    // The Groq backup for pass holders (billing.js backupTransport): none unless a test supplies one.
-    passBackup: () => undefined,
     demoUsed: { set() { context.demoMarked = true; } }, passCtx: { passesOn: false }, openPasses(text) { context.passes = text; },
-    showDemoFull() { context.fullChoice = true; },
-    S: { key: "test", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "trial", secondsLeft: 1200 } },
-    AbortController, generateInterviewPlan: generate, PlanCoverage,
+    showDemoFull() { context.fullChoice = true; }, hideDemoFull() {}, hideMicFix() {}, show() {},
+    S: { key: "test", hash: "h", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "trial", secondsLeft: 1200 } },
+    generateInterviewPlan: generate, PlanCoverage, interviewContext,
     entitlement: async () => ({ kind: "trial", secondsLeft: 1200 }),
     $: id => { if (!nodes.has(id)) nodes.set(id, { style: {} }); return nodes.get(id); },
-    setLink() {}, setCaption() {}, micHelpTimer: null, clearTimeout() {},
-    audio: { stop: async () => {} }, preLive() { context.phase = "idle"; },
+    setLink() {}, setCaption() {}, who: () => ({ They: "She" }),
+    AudioIO: class { start() { return context.micStart ? context.micStart() : Promise.resolve(); } stop() { context.micStopped = true; return Promise.resolve(); } },
+    audio: null, micStats: null, wireAudio() { context.wired = true; },
+    preLive() { context.preLived = true; },
     notice(_id, message) { context.error = message; },
     nowS: () => 100, log() {}, track() {}, wheel: { setState() {} },
-    buildInterviewerInstructions, currentProgress: () => ({}), onTranscript() {},
-    // Progress across the month (29 Sep 2026): no saved interviews and no re-answer unless a test sets them.
-    redrill: null, focusCarried: null, REDRILL_SECONDS: 180, knownSummaries: () => [], carryFocus: () => null, trackKey,
+    buildInterviewerInstructions, currentProgress: () => ({}), onTranscript() {}, refreshWheel() {}, endInterview() {},
+    // Progress across the month: no saved interviews and no re-answer unless a test sets them.
+    redrill: null, focusCarried: null, coaching: "", REDRILL_SECONDS: 180, knownSummaries: () => [],
+    carryFocus: () => null, coachingBrief: () => "", trackKey,
     buildRedrillInstructions, redrillNotes,
-    GeminiLive: class { constructor(o) { context.liveOptions = o; } start() { context.started = true; } },
+    GeminiLive: class { constructor(o) { context.liveOptions = o; context.calls = (context.calls || 0) + 1; } start() { context.started = true; } },
     setInterval() { context.timerStarted = true; return 1; }, onSecond() {},
     ...extra,
   });
-  vm.runInContext(source.slice(source.indexOf("async function cancelMicCheck("), source.indexOf("function currentProgress(")), context);
+  vm.runInContext(source.slice(source.indexOf("async function startInterview("), source.indexOf("function currentProgress(")), context);
   return context;
 }
 
-test("preparation does not start the clock or socket until the plan is ready", async () => {
-  let resolve;
-  const ctx = preparationHarness(() => new Promise(r => { resolve = r; }));
-  const pending = ctx.startCall();
-  assert.equal(ctx.phase, "preparing");
-  assert.equal(ctx.started, undefined);
-  assert.equal(ctx.timerStarted, undefined);
-  resolve(plan()); await pending;
-  assert.equal(ctx.started, true);
+test("the interviewer is called at once; the plan is made alongside it, for the report only", async () => {
+  let planned = 0;
+  const ctx = startHarness(() => { planned++; return new Promise(() => {}); });
+  await ctx.startInterview();
+  assert.equal(ctx.started, true, "the call does not wait for the plan");
   assert.equal(ctx.timerStarted, true);
   assert.equal(ctx.plannedSeconds, 720);
+  assert.equal(planned, 1);
+  assert.equal(ctx.phase, "call");
+  assert.ok(!ctx.liveOptions.instructions().includes("PREPARED ROLE ASSESSMENT PLAN"), "the interviewer works from the CV and JD");
+  assert.match(ctx.liveOptions.instructions(), /Must diagnose database performance/);
 });
 
-test("a pass holder's last focus reaches the interviewer; a free interview carries none", async () => {
+test("a plan that cannot be made never stops the interview, and the report then goes without it", async () => {
+  const ctx = startHarness(async () => { throw new Error("Gemini HTTP 503"); });
+  await ctx.startInterview();
+  assert.equal(ctx.started, true);
+  assert.equal(await ctx.planPending, null);
+  assert.equal(await vm.runInContext("planForReport()", ctx), null);
+  const ok = startHarness(async () => plan());
+  await ok.startInterview();
+  assert.equal((await vm.runInContext("planForReport()", ok)).requirements.length, 2, "a plan made during the call reaches the report");
+});
+
+test("a pass holder's last focus and earlier practice reach the interviewer; a free interview carries neither", async () => {
   const focus = { group: "ownership", issue: "Says we instead of I", drill: "d" };
-  const pass = preparationHarness(async () => plan(), { carryFocus: (_items, track) => (track ? focus : null),
-    entitlement: async () => ({ kind: "pass", secondsLeft: 86400 }), S: { key: "k", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "pass", secondsLeft: 86400 } } });
-  await pass.startCall();
+  const pass = startHarness(async () => plan(), { carryFocus: () => focus, coachingBrief: () => "Weakest areas so far: Ownership (4.0/10).",
+    entitlement: async () => ({ kind: "pass", secondsLeft: 86400 }), S: { key: "k", hash: "h", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "pass", secondsLeft: 86400 } } });
+  await pass.startInterview();
   assert.equal(pass.focusCarried, focus);
   assert.match(pass.liveOptions.instructions(), /PRACTICE FOCUS[^\n]*Says we instead of I/);
-  const trial = preparationHarness(async () => plan(), { carryFocus: () => focus });
-  await trial.startCall();
+  assert.match(pass.liveOptions.instructions(), /EARLIER PRACTICE[\s\S]*Ownership \(4\.0\/10\)/);
+  const trial = startHarness(async () => plan(), { carryFocus: () => focus, coachingBrief: () => "anything" });
+  await trial.startInterview();
   assert.equal(trial.focusCarried, null);
-  assert.ok(!trial.liveOptions.instructions().includes("PRACTICE FOCUS"));
+  assert.ok(!/PRACTICE FOCUS|EARLIER PRACTICE/.test(trial.liveOptions.instructions()));
+});
+
+test("a role practised without a JD keeps its track for the brief; a pasted JD's track waits for the plan", async () => {
+  const tracks = [];
+  const seen = (_items, o) => { tracks.push(o.track); return ""; };
+  const pass = { kind: "pass", secondsLeft: 86400 };
+  const role = startHarness(async () => plan(), { coachingBrief: seen, entitlement: async () => pass,
+    S: { key: "k", hash: "h", cv: documents.cv, jd: "", practiceFocus: "role", targetRole: "Accountant", targetLevel: TARGET_LEVELS[0], minutes: 12, ent: pass } });
+  await role.startInterview();
+  const jd = startHarness(async () => plan(), { coachingBrief: seen, entitlement: async () => pass,
+    S: { key: "k", hash: "h", cv: documents.cv, jd: documents.jd, minutes: 12, ent: pass } });
+  await jd.startInterview();
+  assert.deepEqual(tracks, [trackKey({ mode: "role_baseline", role: "Accountant", level: TARGET_LEVELS[0] }), null]);
 });
 
 test("answering one question again makes no plan and runs three minutes on its own brief", async () => {
   let planned = 0;
   const source = { interview_id: "iv-1", question: "Walk me through the retry project.", before: {} };
-  const ctx = preparationHarness(async () => { planned++; return plan(); }, { redrill: { source },
+  const ctx = startHarness(async () => { planned++; return plan(); }, { redrill: { source },
     entitlement: async () => ({ kind: "pass", secondsLeft: 86400 }), S: { key: "k", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "pass", secondsLeft: 86400 } } });
-  await ctx.startCall();
+  await ctx.startInterview();
   assert.equal(planned, 0);
   assert.equal(ctx.plannedSeconds, 180);
-  assert.equal(ctx.assessmentPlan, null);
+  assert.equal(ctx.planPending, null);
   assert.match(ctx.liveOptions.instructions(), /Walk me through the retry project/);
   assert.match(ctx.liveOptions.notes.opening, /ask the question/);
 });
 
-test("cancelling preparation prevents a late model response from starting the interview", async () => {
-  let resolve;
-  const ctx = preparationHarness(() => new Promise(r => { resolve = r; }));
-  const pending = ctx.startCall();
-  await ctx.cancelMicCheck();
-  resolve(plan()); await pending;
+test("cancelling while the microphone or token is on its way stops a late answer from starting the call", async () => {
+  let grant;
+  const ctx = startHarness(async () => plan(), { requestDemo: () => new Promise(r => { grant = r; }) });
+  ctx.S.key = ""; ctx.S.ent = { kind: "demo", secondsLeft: 420 };
+  const pending = ctx.startInterview();
+  assert.equal(ctx.phase, "preparing");
+  await ctx.cancelStart();
+  grant({ ok: true, demo: "d".repeat(24), token: "t", seconds: 420 }); await pending;
   assert.equal(ctx.phase, "idle");
   assert.equal(ctx.started, undefined);
+  assert.equal(ctx.micStopped, true);
 });
 
-test("planning failure leaves practice time untouched and offers retry", async () => {
-  const ctx = preparationHarness(async () => { throw new Error("Temporary failure"); });
-  await ctx.startCall();
-  assert.equal(ctx.started, undefined);
-  assert.equal(ctx.phase, "idle");
-  assert.match(ctx.error, /timer did not start/);
-});
-
-test("an entitlement that expires during preparation cannot start a call", async () => {
-  const ctx = preparationHarness(async () => plan());
-  ctx.entitlement = async () => ({ kind: "none", secondsLeft: 0 });
-  await ctx.startCall();
+test("an entitlement that has expired by Start cannot start a call", async () => {
+  const ctx = startHarness(async () => plan(), { entitlement: async () => ({ kind: "none", secondsLeft: 0 }) });
+  await ctx.startInterview();
   assert.equal(ctx.started, undefined);
   assert.equal(ctx.timerStarted, undefined);
   assert.match(ctx.error, /expired/);
 });
 
-test("duplicate microphone events cannot launch concurrent planners", async () => {
-  let resolve, calls = 0;
-  const ctx = preparationHarness(() => { calls++; return new Promise(r => { resolve = r; }); });
-  const first = ctx.startCall();
-  await ctx.startCall();
-  assert.equal(calls, 1);
-  resolve(plan()); await first;
-  assert.equal(ctx.started, true);
+test("a microphone that cannot open stops the start and says why", async () => {
+  const ctx = startHarness(async () => plan(), { micStart: async () => { throw new Error("Permission denied"); } });
+  await ctx.startInterview();
+  assert.equal(ctx.started, undefined);
+  assert.match(ctx.error, /Microphone not available: Permission denied/);
+});
+
+test("a second click while starting cannot start a second call", async () => {
+  let planned = 0;
+  const ctx = startHarness(async () => { planned++; return plan(); });
+  const first = ctx.startInterview();
+  await ctx.startInterview();
+  await first;
+  assert.equal(ctx.calls, 1);
+  assert.equal(planned, 1);
 });
 
 test("no-JD controls follow pasted/removed JD and general-practice selection", () => {
@@ -387,13 +414,13 @@ test("no-JD controls follow pasted/removed JD and general-practice selection", (
 });
 
 
-test("the free demo plans through the licence server and calls with a one-time token, for 7 minutes", async () => {
+test("the free demo calls with a one-time token for 7 minutes and plans through the licence server alongside", async () => {
   let planArgs;
-  const ctx = preparationHarness(async (a) => { planArgs = a; return plan(); }, {
+  const ctx = startHarness(async (a) => { planArgs = a; return plan(); }, {
     requestDemo: async () => ({ ok: true, demo: "d".repeat(24), token: "auth_tokens/abc", seconds: 420 }),
   });
   ctx.S.key = ""; ctx.S.ent = { kind: "demo", secondsLeft: 420 };
-  await ctx.startCall();
+  await ctx.startInterview();
   assert.deepEqual(planArgs.transport, { demoId: "d".repeat(24) });
   assert.equal(ctx.liveOptions.authToken, "auth_tokens/abc");
   assert.equal(ctx.plannedSeconds, 420);
@@ -401,56 +428,51 @@ test("the free demo plans through the licence server and calls with a one-time t
   assert.equal(ctx.started, true);
 });
 
-test("a refused demo never prepares or calls, and says so without mentioning a key", async () => {
+test("a refused demo never plans or calls, and says so without mentioning a key", async () => {
   let planned = false;
-  const ctx = preparationHarness(async () => { planned = true; return plan(); }, {
+  const ctx = startHarness(async () => { planned = true; return plan(); }, {
     requestDemo: async () => ({ ok: false, reason: "day_full" }),
   });
   ctx.S.key = ""; ctx.S.ent = { kind: "demo", secondsLeft: 420 };
-  await ctx.startCall();
+  await ctx.startInterview();
   assert.equal(planned, false);
   assert.equal(ctx.started, undefined);
   assert.match(ctx.error, /free demos are all used up/);
   assert.doesNotMatch(ctx.error, /key/i);
 });
 
-test("when both demo keys are full, the visitor is offered a choice and nothing is prepared or used up", async () => {
+test("when both demo keys are full, the visitor is offered a choice and nothing is planned or used up", async () => {
   let planned = false;
-  const ctx = preparationHarness(async () => { planned = true; return plan(); }, {
+  const ctx = startHarness(async () => { planned = true; return plan(); }, {
     requestDemo: async () => ({ ok: false, reason: "full", retry_after: 60 }),
   });
   ctx.S.key = ""; ctx.S.ent = { kind: "demo", secondsLeft: 420 };
-  await ctx.startCall();
+  await ctx.startInterview();
   assert.equal(ctx.fullChoice, true);
   assert.equal(planned, false);
   assert.equal(ctx.started, undefined);
   assert.equal(ctx.demoMarked, undefined);
 });
 
-// Owner, 26 Sep 2026: Gemini stays first; the licence server's Groq backup writes the plan or report only when
-// both Gemini models have failed on a pass holder's own key.
-test("the backup writes the plan only after both Gemini models fail, and never when Gemini answers", async ctx => {
-  const bodies = [];
-  const backup = async (body) => { bodies.push(JSON.parse(body)); return modelResponse(rawPlan()); };
-  ctx.mock.method(globalThis, "fetch", async () => ({ ok: false, status: 503 }));
-  assert.equal((await generateInterviewPlan({ apiKey: "test", ...documents, backup })).requirements.length, 2);
-  assert.equal(bodies.length, 1);
-  assert.ok(bodies[0].generationConfig.responseSchema, "the backup gets the exact plan format");
-  ctx.mock.restoreAll();
-  ctx.mock.method(globalThis, "fetch", async () => modelResponse(rawPlan()));
-  await generateInterviewPlan({ apiKey: "test", ...documents, backup });
-  assert.equal(bodies.length, 1, "Gemini answered, so the backup was not asked");
+// Gemini only since 1 Oct 2026 (owner's call): when both models fail or hang, the plan and the report say so; no
+// other writer is asked.
+test("with both Gemini models failing or hanging, the plan and the report fail with Gemini's own error", async ctx => {
+  const urls = [];
+  ctx.mock.method(globalThis, "fetch", async (url) => { urls.push(String(url)); throw Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }); });
+  await assert.rejects(generateReport({ apiKey: "test", ...documents, transcript: conversation, metrics: computeMetrics([], []), minutes: 10, assessmentPlan: plan() }), /Gemini unreachable/);
+  await assert.rejects(generateInterviewPlan({ apiKey: "test", ...documents }));
+  assert.ok(urls.length >= 3 && urls.every((u) => u.startsWith("https://generativelanguage.googleapis.com/")), "only Google is asked");
 });
 
-test("the backup writes the report when Gemini fails or hangs on both models, and a failed backup keeps Gemini's error", async ctx => {
-  const report = { requirements: [{ id: "r1", status: "assessed", score: 6, evidence_turns: [2], explanation: "Checked the plan." }] };
-  ctx.mock.method(globalThis, "fetch", async () => { throw Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" }); });
-  const backed = await generateReport({ apiKey: "test", ...documents, transcript: conversation, metrics: computeMetrics([], []), minutes: 10,
-    assessmentPlan: plan(), backup: async () => { const r = modelResponse(report); r.json = async () => ({ ...(await modelResponse(report).json()), served_by: "openai/gpt-oss-120b" }); return r; } });
-  assert.equal(backed.model, "openai/gpt-oss-120b");
-  assert.equal(backed.report.requirements[0].score, 6);
-  await assert.rejects(generateReport({ apiKey: "test", ...documents, transcript: conversation, metrics: computeMetrics([], []), minutes: 10,
-    assessmentPlan: plan(), backup: async () => ({ ok: false, status: 429 }) }), /Gemini unreachable/);
+test("reports are written by flash-lite first, in the interview's language, without invented examples", async ctx => {
+  const models = [];
+  let request;
+  ctx.mock.method(globalThis, "fetch", async (url, options) => { models.push(String(url).match(/models\/([^:]+)/)[1]); request = JSON.parse(options.body); return modelResponse({ overall_score: 60 }); });
+  await generateReport({ apiKey: "test", ...documents, language: "Hinglish", transcript: conversation, metrics: computeMetrics([], []), minutes: 10 });
+  assert.deepEqual(models, ["gemini-3.1-flash-lite"]);
+  const prompt = request.systemInstruction.parts[0].text;
+  assert.match(prompt, /Never supply an example, project, number, tool or result the candidate did not say/);
+  assert.match(prompt, /every text field in Hinglish, in Roman script/);
 });
 
 // 30 Sep 2026: the licence server answers 504 "Gemini too slow" when a model hangs, and two free demos lost their

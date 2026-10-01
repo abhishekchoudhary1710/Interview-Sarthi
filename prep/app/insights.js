@@ -7,8 +7,8 @@
  * result is saved in the account and reused, not rewritten on every visit (plan approved 29 Sep 2026).
  *
  * Costs: one call after an interview at most every 12 hours (or after three new interviews), one per
- * finished week and one at the end of the pass. The Groq backup is not used here: its small free quota is
- * kept for reports. Nothing runs without history switched on, because the interviews come from the account.
+ * finished week and one at the end of the pass. Gemini only. Nothing runs without history switched on, because
+ * the interviews come from the account.
  */
 
 import { PLAN_CATEGORIES } from "./interview-plan.js";
@@ -154,8 +154,8 @@ export async function analyse({ apiKey, items, scope = "latest", window = null, 
   }
   const body = JSON.stringify(prompt(list, scope, language));
   let last = "no model answered", busy = true;
-  // Measured 29 Sep 2026: gemini-3.6-flash and flash-lite both answered 503 "high demand" for the same minute, and
-  // the analysis (unlike the report) has no Groq backup. It runs in the background, so a second round is cheap.
+  // Measured 29 Sep 2026: gemini-3.6-flash and flash-lite both answered 503 "high demand" for the same minute. The
+  // analysis runs in the background, so a second round is cheap.
   for (let round = 0; round < 2 && busy; round++) {
   if (round) await new Promise((r) => setTimeout(r, retryDelayMs));
   busy = false;

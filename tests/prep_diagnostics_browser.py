@@ -5,6 +5,7 @@ Run with Playwright; PREP_BROWSER may select the installed Chromium binary.
 import json
 import mimetypes
 import os
+import re
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 from playwright.sync_api import sync_playwright, expect
@@ -42,18 +43,29 @@ with sync_playwright() as p:
             elif url.path == '/mock/diagnostics/events': events.extend(body['events'])
             r.fulfill(status=status, json=result, headers={'access-control-allow-origin':'http://localhost'}); return
         r.abort()
+    def live(ws):     # a fake Gemini Live: it connects and the interviewer asks the first question
+        def message(raw):
+            m = json.loads(raw)
+            if 'setup' in m: ws.send(json.dumps({'setupComplete': {}}))
+            elif 'clientContent' in m: ws.send(json.dumps({'serverContent': {'outputTranscription': {'text': 'Tell me about yourself.'}, 'turnComplete': True}}))
+        ws.on_message(message)
     context.route('**/*', route)
+    context.route_web_socket(re.compile(r'wss://generativelanguage\.googleapis\.com/.*'), live)
     page = context.new_page(); page.on('pageerror', lambda e: errors.append(str(e)))
     page.goto('http://localhost/prep/app/', wait_until='networkidle')
     page.locator('#cv').fill('PRIVATE CV: I am a backend engineer. I built reliable data processing systems and worked on customer integrations with my team.')
     page.locator('#practice-focus').select_option('general_cv')
-    page.locator('#to-key').click(); page.locator('#start').click()
-    expect(page.locator('#live-notice')).to_contain_text('Interview preparation failed', timeout=10000)
+    page.locator('#to-key').click()                     # one click: straight into the call
+    # The plan fails on both models (429), in the background: the interview goes ahead without it.
+    expect(page.locator('#line')).to_contain_text('Tell me about yourself', timeout=10000)
+    page.wait_for_function("document.querySelector('#livetag').textContent === 'Live'")
+    for _ in range(50):
+        if sum(1 for path, b in requests if path == '/mock/demo/generate') >= 2: break
+        page.wait_for_timeout(100)
     page.evaluate("async () => { const d=await import('/prep/app/diagnostics.js'); await d.flushDiagnostics(); await d.flushDiagnostics(); }")
     names = [e['name'] for e in events]
-    for name in ['attempt_start','mic','mic_check_ok','preparation_start','demo_granted','request_start','model_fallback','preparation_failed']:
-        assert name in names, (name, names)
-    assert 'connection_attempt' not in names, 'Failed preparation must not connect or start the practice timer'
+    for name in ['attempt_start','mic','preparation_start','demo_requested','demo_granted','preparation_ready','request_start','model_fallback','preparation_failed','connection_attempt','connected']:
+        assert name in names, (name, names)  # a failed plan never stops the call
     diagnostic_bodies = [b for path,b in requests if path.startswith('/mock/diagnostics/')]
     assert 'PRIVATE' not in json.dumps(diagnostic_bodies)
     attempt = next(b['id'] for path,b in requests if path == '/mock/diagnostics/start')

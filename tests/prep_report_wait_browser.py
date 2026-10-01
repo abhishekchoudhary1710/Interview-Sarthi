@@ -87,8 +87,7 @@ def run(p, scenario):
     page.goto('http://localhost/prep/app/', wait_until='networkidle')
     page.locator('#cv').fill('I am a backend engineer. I built reliable data processing systems and worked on customer integrations with my team.')
     page.locator('#practice-focus').select_option('general_cv')
-    page.locator('#to-key').click()
-    page.locator('#start').click()
+    page.locator('#to-key').click()                               # one click: straight into the call
     try: expect(page.locator('#line')).to_contain_text('check it worked', timeout=20000)   # the answer is in the transcript
     except AssertionError: raise AssertionError(('the call never ran', page.locator('#live-notice').inner_text(), calls, errors))
     page.locator('#end').click()
@@ -145,7 +144,7 @@ def race_after(page, calls):
 
 with sync_playwright() as p:
     first = run(p, {'report_answers': ['hold', 503, 504, 200], 'while_writing': failing_while, 'after': failing_after})
-    assert [m for _, _, m in first] == ['gemini-3.6-flash', 'gemini-3.1-flash-lite'] * 2, first
+    assert [m for _, _, m in first] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash'] * 2, first
     second = run(p, {'report_answers': ['hold', 200], 'while_writing': race_while, 'after': race_after})
-    assert [m for _, _, m in second] == ['gemini-3.6-flash', 'gemini-3.1-flash-lite'], second
+    assert [m for _, _, m in second] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash'], second
     print(json.dumps({'result': 'passed', 'retry_run': first, 'race_run': second}))
