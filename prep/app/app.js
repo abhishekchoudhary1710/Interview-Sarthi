@@ -18,7 +18,8 @@ import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
 import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261001-faststart";
 import { interviewProgress } from "./assessment.js";
-import { assessmentHtml, assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
+import { assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
+import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, deviceInvite } from "./billing.js?v=20260930-diagnostics";
@@ -80,6 +81,7 @@ const waitWheel = new Wheel($("wheel-wait"));
 function show(id) {
   if (id !== "s-pass" && id !== "s-invite") lastScreen = id;
   for (const s of document.querySelectorAll(".screen")) s.classList.toggle("on", s.id === id);
+  document.documentElement.dataset.screen = id;      // the report and progress screens take the full width
   window.scrollTo({ top: 0 });
   window.dispatchEvent(new CustomEvent("prep:screen", { detail: { id } }));
 }
@@ -259,7 +261,7 @@ $("to-key").onclick = async () => {
   // The server's config says whether the free demo is on. A click that had to wait for it has lost its user
   // gesture, and iOS Safari keeps audio off without one: that visitor gets the Start button instead of a call.
   const waited = !bootDone;
-  if (waited) await booting;
+  if (waited) await booting.catch(() => {});   // a page that failed to set up still lets the visitor try
   // A first-time visitor gets the free demo on our key: no key, no sign-in, straight to the interview.
   // A key comes up only after a pass is bought (the owner's call, 25 Sep 2026). Someone who already
   // has a key keeps the old path untouched.
@@ -369,21 +371,16 @@ const clip = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n
 /* The report is where someone decides whether to keep practising. From 20 to 25 Sep 2026 about seven
  * strangers saw the old offer, a small grey "See passes" box below the whole report, and none tapped it.
  * Now it sits right under their score, names their own weakest answer and puts the price on the button. */
-function showReportOffer(lead, rep, locked = false) {
+function showReportOffer(lead, rep) {
   const scored = (rep.questions || []).filter((q) => Number.isFinite(Number(q.score)) && q.question);
   const weakest = scored.reduce((a, q) => (!a || Number(q.score) < Number(a.score) ? q : a), null);
   const ask = weakest && Number(weakest.score) < 7
     ? ` Your weakest answer was "${clip(weakest.question, 90)}" (${Number(weakest.score)}/10). Practise it again tonight, as many times as you like.`
     : " Practise again tonight, as many times as you like.";
-  if (locked) {
-    showOffer("report-offer", `${lead} Your score and your weakest answer are below. A 30-day pass unlocks the rest of your report and gives you unlimited mock interviews.`);
-    $("report-offer-go").textContent = `Unlock for ${monthPrice()}`;
-  } else {
-    showOffer("report-offer", `${lead}${ask} A 30-day pass gives you unlimited mock interviews.`);
-    $("report-offer-go").textContent = `Get 30 days for ${monthPrice()}`;
-  }
-  const score = $("report").firstElementChild;
-  if (score) score.after($("report-offer"));
+  showOffer("report-offer", `${lead}${ask} A 30-day pass gives you unlimited mock interviews.`);
+  $("report-offer-go").textContent = `Get 30 days for ${monthPrice()} →`;
+  const top = $("report").querySelector(".rd-top") || $("report").firstElementChild;
+  if (top) top.after($("report-offer"));
 }
 function hideOffer(id) { $(id).style.display = "none"; }
 
@@ -863,9 +860,7 @@ async function writeReport(turns, elapsed, usage) {
   const record = { id: "iv-" + crypto.randomUUID(), at: new Date().toISOString(), elapsed, language: S.language, model: result.model,
     rubric: RUBRIC_VERSION, demo: S.ent.kind === "demo", report: result.report, metrics, transcript: turns, usage,
     ...(focusCarried ? { focus_carried: focusCarried } : {}) };
-  // Owner, 26 Sep 2026: a free demo shows the score, the verdict and the weakest answer in full; the rest
-  // of the report is written and saved now, and unlocks the moment a pass is bought.
-  if (S.ent.kind === "demo") record.locked = true;
+  // Owner, 1 Oct 2026: the free demo's report is shown in full, like every other (it was locked from 26 Sep).
   // "+8 since last time": against this person's earlier interviews in the current pass (progress.js).
   try { record.changes = reportChanges(summarize(record), knownSummaries(), currentPeriod()); } catch (_) { /* no badges */ }
   window.__lastReport = record;
@@ -879,7 +874,7 @@ async function writeReport(turns, elapsed, usage) {
     demo = null;
     S.ent = { kind: "none", secondsLeft: 0, hasTrial: false }; renderEntitlement();   // spent: the chip now says "Get a pass"
     if (passCtx.passesOn) {
-      showReportOffer("That was your free demo.", result.report, true);
+      showReportOffer("That was your free demo.", result.report);
       track("mock_offer_shown", { where: "demo_report" });
     } else hideOffer("report-offer");
     track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
@@ -939,95 +934,16 @@ async function writeRedrill(turns, elapsed) {
   saveItem(item).catch(() => {});
 }
 
-/* A report from the free demo stays locked until a pass is bought: the score, the verdict and the weakest
- * answer in full are free; the other answers, the delivery numbers and the advice are what the pass unlocks. */
-const isLocked = (r) => !!(r && r.locked) && !(S.ent && S.ent.kind === "pass");
-const LOCK_BAR = `<div class="lockbar" aria-hidden="true"><i></i><i></i><i></i></div>`;
-
+/* The report, as a dashboard (report-view.js). progress-view.js adds its tools after prep:report-rendered. */
 function renderReport(r) {
-  const rep = r.report, m = r.metrics;
-  const locked = isLocked(r);
-  const qs = rep.questions || [];
-  const scoreOf = (q) => Math.max(0, Math.min(10, Number(q.score) || 0));
-  const weakest = qs.reduce((w, q, i) => (w < 0 || scoreOf(q) < scoreOf(qs[w]) ? i : w), -1);
-  const li = (arr) => (arr || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("");
-  const tiles = [
-    m.avgResponseDelay !== null ? [`${m.avgResponseDelay}s`, "Pause before answering"] : null,
-    m.avgWpm ? [`${m.avgWpm}`, "Words per minute"] : null,
-    [`${m.fillersTotal}`, "Filler words"],
-    m.longestPause >= 2 ? [`${m.longestPause}s`, "Longest silence"] : null,
-    [fmt(r.elapsed), "Interview length"],
-  ].filter(Boolean).map(([b, s]) => `<div class="tile"><b>${b}</b><span>${s}</span></div>`).join("");
-  const questions = qs.map((q, i) => {
-    const score = scoreOf(q);
-    if (locked && i !== weakest) return `<div class="q locked">
-      <span class="label">Question ${i + 1} · locked</span>
-      <h3>${escapeHtml(q.question)}</h3>${LOCK_BAR}
-    </div>`;
-    const tone = score >= 7 ? "good" : score >= 5 ? "mid" : "";
-    return `<div class="q" data-qi="${i}">
-      <span class="label">Question ${i + 1} · ${score} / 10</span>
-      <h3>${escapeHtml(q.question)}</h3>
-      <div class="meter"><i class="${tone}" style="width:${score * 10}%"></i></div>
-      <p class="said">You said: ${escapeHtml(q.answer_gist)}</p>
-      <p style="margin:0"><b>Missing.</b> ${escapeHtml(q.what_was_missing)}</p>
-      <div class="better"><span class="label">Stronger answer</span>${escapeHtml(q.better_answer)}</div>
-    </div>`;
-  }).join("");
-  const d = rep.delivery || {};
   $("s-report").insertBefore($("report-offer"), $("invite-report"));
-  if (locked) {
-    const more = qs.length - (weakest >= 0 ? 1 : 0);
-    const unlock = [
-      more > 0 ? `${more} more answer${more === 1 ? "" : "s"} scored, each with a stronger version` : null,
-      "How you sounded: your pauses, pace and filler words",
-      "What worked, what hurt, and what to practise next",
-      "Unlimited mock interviews for 30 days",
-    ].filter(Boolean);
-    $("report").innerHTML = `
-    <div class="card">
-      <span class="label">Practice score · assessed areas</span>
-      <div class="score"><b>${rep.overall_score === null ? "—" : escapeHtml(rep.overall_score)}</b><span>${rep.overall_score === null ? "Not enough evidence" : "out of 100"}</span></div>
-      <p class="verdict">${escapeHtml(rep.verdict)}</p>
-    </div>
-    <div class="card"><span class="label">Question by question · your weakest answer, in full</span>${questions || "<p class='muted'>No scored questions.</p>"}</div>
-    <div class="card unlock"><span class="label">Your full report is ready</span>
-      <ul class="clean">${unlock.map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
-      <div class="actions"><button class="pill wide" id="unlock-report">Unlock for ${escapeHtml(monthPrice())} →</button></div>
-      <p class="muted" style="font-size:13px;margin:12px 0 0">One payment, never renews. The report is saved in this browser and opens the moment you pay.</p>
-    </div>
-    <div class="card locked"><span class="label">How you sounded · locked</span>${LOCK_BAR}</div>
-    <div class="card locked"><span class="label">What worked, what hurt, practise next · locked</span>${LOCK_BAR}</div>`;
-    $("unlock-report").onclick = () => { track("mock_unlock_click", { where: "report" }); openPasses("", { plan: "m", checkout: true }); };
-    window.dispatchEvent(new CustomEvent("prep:report-rendered", { detail: { record: r, locked: true } }));
-    return;
-  }
-  $("report").innerHTML = `
-    <div class="card">
-      <span class="label">Practice score · assessed areas</span>
-      <div class="score"><b>${rep.overall_score === null ? "—" : escapeHtml(rep.overall_score)}</b><span>${rep.overall_score === null ? "Not enough evidence" : "out of 100"}</span></div>
-      <p class="verdict">${escapeHtml(rep.verdict)}</p>
-      <div class="tiles">${tiles}</div>
-    </div>
-    ${assessmentHtml(rep, r.transcript)}
-    <div class="two">
-      <div class="card"><span class="label">What worked</span><ul class="clean">${li(rep.strengths)}</ul></div>
-      <div class="card"><span class="label">What hurt</span><ul class="clean bad">${li(rep.weaknesses)}</ul></div>
-    </div>
-    <div class="card"><span class="label">Question by question</span>${questions || "<p class='muted'>No scored questions.</p>"}</div>
-    <div class="card delivery"><span class="label">How you sounded</span>
-      <p><b>Pace</b>${escapeHtml(d.pace || "")}</p>
-      <p><b>Fillers</b>${escapeHtml(d.fillers || "")}</p>
-      <p><b>Confidence</b>${escapeHtml(d.confidence || "")}</p>
-      <p><b>Structure</b>${escapeHtml(d.structure || "")}</p>
-    </div>
-    <div class="card"><span class="label">Practise next</span><ol class="next">${li(rep.practice_next)}</ol>
-      <p class="muted" style="font-size:13px;margin:14px 0 0">Report written by ${escapeHtml(r.model)}${r.locked ? "" : " on your own key"}.</p></div>`;
+  $("report").innerHTML = reportHtml(r);
+  wireReport($("report").querySelector(".rd"));
   window.dispatchEvent(new CustomEvent("prep:report-rendered", { detail: { record: r, locked: false } }));
 }
 
-/* A pass was just bought (or found): the demo report saved in this browser opens in full. The payment
- * page reloads the app, so the report is read back from storage rather than from memory. */
+/* A pass was just bought (or found): a demo report saved locked before 1 Oct 2026 opens in full and joins the
+ * account's history. The payment page reloads the app, so the report is read back from storage. */
 function unlockSavedReport() {
   let r = window.__lastReport;
   if (!r || !r.report) { try { r = JSON.parse(store.get("ps_last_report", "null")); } catch (_) { r = null; } }
@@ -1068,11 +984,7 @@ $("download").onclick = () => {
   const r = window.__lastReport;
   if (!r) return;
   const lines = [`Prep Sarthi report, ${new Date(r.at || Date.now()).toLocaleString()}`, ""];
-  if (r.report && isLocked(r)) {
-    // What the free demo shows on screen, and no more: the rest is what the pass unlocks.
-    lines.push(`Practice score: ${r.report.overall_score === null ? "Not enough evidence" : `${r.report.overall_score}/100`}`, r.report.verdict, "",
-      "The full report (every answer scored with a stronger version, how you sounded, what to practise next) opens with a 30-day pass: https://interviewsarthi.com/prep/", "");
-  } else if (r.report) {
+  if (r.report) {
     lines.push(`Practice score: ${r.report.overall_score === null ? "Not enough evidence" : `${r.report.overall_score}/100`}`, r.report.verdict, "", assessmentText(r.report), "", "What worked:", ...(r.report.strengths || []).map((x) => "- " + x), "", "What hurt:", ...(r.report.weaknesses || []).map((x) => "- " + x), "");
     for (const q of r.report.questions || []) lines.push(`Q: ${q.question}`, `  Score ${q.score}/10. You said: ${q.answer_gist}`, `  Missing: ${q.what_was_missing}`, `  Stronger: ${q.better_answer}`, "");
     lines.push("Practise next:", ...(r.report.practice_next || []).map((x, i) => `${i + 1}. ${x}`), "");

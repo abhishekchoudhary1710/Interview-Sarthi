@@ -13,12 +13,12 @@ const SVG = `
 <svg class="wheel" viewBox="0 0 200 200" role="img" aria-label="Interviewer" data-state="idle">
   <circle class="ring" cx="100" cy="100" r="92" fill="none" stroke="#8FA6FF" stroke-width="2.5"/>
   <g class="spin">
-    <circle cx="100" cy="100" r="74" fill="none" stroke="#FBF7F0" stroke-width="11"/>
-    <g stroke="#FBF7F0" stroke-width="7" stroke-linecap="round">
+    <circle cx="100" cy="100" r="74" fill="none" stroke="#FFFFFF" stroke-width="11"/>
+    <g stroke="#FFFFFF" stroke-width="7" stroke-linecap="round">
       <path d="M100 37V163M37 100H163M55.5 55.5L144.5 144.5M55.5 144.5L144.5 55.5"/>
     </g>
-    <circle cx="100" cy="100" r="19" fill="#FBF7F0"/>
-    <circle cx="100" cy="100" r="7" fill="#2447D8"/>
+    <circle cx="100" cy="100" r="19" fill="#FFFFFF"/>
+    <circle cx="100" cy="100" r="7" fill="#245ADC"/>
   </g>
 </svg>`;
 

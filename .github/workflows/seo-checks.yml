@@ -26,3 +26,4 @@ jobs:
       - run: node --test tests/mock_engine.test.mjs
       - run: node --test tests/interview_plan.test.mjs
       - run: node --test tests/coaching.test.mjs
+      - run: node --test tests/report_view.test.mjs

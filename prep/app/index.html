@@ -8,9 +8,9 @@
   <title>Prep Sarthi: mock interview</title>
   <meta name="description" content="The Prep Sarthi app: a voice mock interview from your CV and target job, with a scored report.">
   <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
-  <meta name="theme-color" content="#FBF7F0">
+  <meta name="theme-color" content="#ffffff">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,650;9..40,700&display=swap" rel="stylesheet">
   <script>
   /* Which screen the visitor asked for, decided before anything is painted.
    * app.js is a module and runs only after the page is parsed, by which time
@@ -34,38 +34,34 @@
     } catch (e) { /* any trouble: the app sorts it out as usual */ }
   })();
   </script>
-  <link rel="stylesheet" href="../prep.css?v=20260926-offer">
-  <link rel="stylesheet" href="./progress-view.css?v=20260929-ui">
+  <link rel="stylesheet" href="../prep.css?v=20261001-site">
+  <link rel="stylesheet" href="./progress-view.css?v=20261001-site">
   <style>
     .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
-    /* the free demo's report: what a pass unlocks is shown as locked, never as blurred real text */
-    .lockbar{display:grid;gap:8px;margin-top:10px}
-    .lockbar i{display:block;height:12px;border-radius:6px;background:var(--line);opacity:.8}
-    .lockbar i:nth-child(2){width:88%} .lockbar i:nth-child(3){width:64%}
-    .q.locked h3{color:var(--muted)}
-    .card.locked{opacity:.85}
-    .card.unlock{border:1.5px solid var(--accent);background:var(--wash)}
-    .card.unlock ul{margin:10px 0 4px}
+    /* the report and the progress screens are dashboards: they get the site's full width (app.js show() sets data-screen) */
+    html[data-screen="s-report"] .narrow,html[data-screen="s-progress"] .narrow,html[data-screen="s-comparison"] .narrow{max-width:1160px;padding:0 24px}
+    @media(max-width:600px){html[data-screen="s-report"] .narrow,html[data-screen="s-progress"] .narrow,html[data-screen="s-comparison"] .narrow{padding:0 14px}}
     /* the first paint, before app.js has loaded */
     html.ps-pass #s-cv{display:none}
     html.ps-pass #s-pass{display:block}
     html.ps-checkout #buy-block{display:none}
     html.ps-checkout #checkout{display:block}
     html.ps-confirm #pass-body{display:none}
-    .screen h1{font-size:clamp(34px,6vw,50px);margin:10px 0 12px}
-    .screen h1 em{font-style:italic;color:var(--accent)}
+    .screen{padding-top:28px}
+    .screen h1{font-size:clamp(30px,5vw,44px);margin:10px 0 12px;letter-spacing:-.03em}
+    .screen h1 em{font-style:normal;color:var(--accent)}
     .lede{color:var(--muted);font-size:16.5px;margin:0 0 8px;max-width:36em}
     .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}
     .actions .pill{flex:1 1 auto}
     ol.how{margin:14px 0 0;padding:0;list-style:none;counter-reset:k}
     ol.how li{counter-increment:k;padding:12px 0 12px 44px;border-top:1px solid var(--line);position:relative;color:var(--muted)}
-    ol.how li::before{content:"0" counter(k);position:absolute;left:0;top:14px;font:500 12.5px var(--mono);color:var(--accent);letter-spacing:.08em}
+    ol.how li::before{content:"0" counter(k);position:absolute;left:0;top:13px;font:700 13px var(--font);color:var(--accent);letter-spacing:.06em}
     .check{display:flex;gap:10px;align-items:center;margin-top:14px;color:var(--muted);font-size:14.5px}
     .check input{width:18px;height:18px;accent-color:var(--accent)}
     /* the call */
     .call.big{padding:24px 22px 22px;min-height:min(640px,calc(100dvh - 150px));display:flex;flex-direction:column}
     .call.big .wheelwrap{flex:1;min-height:240px}
-    .call.big .clock{font:500 15px var(--mono);letter-spacing:.06em;color:var(--dark-ink)}
+    .call.big .clock{font:650 16px var(--font);font-variant-numeric:tabular-nums;color:var(--dark-ink)}
     .call.big .clock.low{color:#ff7a70}
     .prestart{display:grid;gap:14px}
     .prestart ul{margin:0;padding:0;list-style:none;color:var(--dark-muted);font-size:14.5px}
@@ -75,28 +71,23 @@
     /* report */
     .two{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media(max-width:700px){.two{grid-template-columns:1fr}}
     .stack{display:grid;gap:16px}
-    .delivery p{margin:0;padding:12px 0;border-top:1px solid var(--line)} .delivery p:first-of-type{border-top:0}
-    .delivery b{font:500 11.5px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
-    ol.next{margin:8px 0 0;padding:0;list-style:none;counter-reset:n}
-    ol.next li{counter-increment:n;padding:14px 0 14px 44px;border-top:1px solid var(--line);position:relative}
-    ol.next li:first-child{border-top:0}
-    ol.next li::before{content:"0" counter(n);position:absolute;left:0;top:16px;font:500 12.5px var(--mono);color:var(--accent);letter-spacing:.08em}
     .writing{text-align:center;padding:60px 20px}
     .writing .wheelwrap{padding:0 0 18px}
     .writing .wheelwrap::before{display:none}
     details.diag{margin:26px 0 0;color:var(--muted);font-size:13px}
     details.diag summary{cursor:pointer}
-    #log{font:12px/1.45 var(--mono);max-height:220px;overflow:auto;white-space:pre-wrap;margin-top:10px}
+    #log{font:12px/1.45 ui-monospace,Consolas,monospace;max-height:220px;overflow:auto;white-space:pre-wrap;margin-top:10px}
     #transcript{display:grid;gap:6px;margin-top:10px;font-size:13.5px}
-    #transcript .bubble small{font:500 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;display:block}
+    #transcript .bubble small{font:700 10.5px var(--font);letter-spacing:.08em;text-transform:uppercase;display:block}
   </style>
 </head>
 <body>
+<header class="appbar"><div class="appbar-in">
+  <a class="brand" href="/" aria-label="Interview Sarthi home"><img src="/assets/mark.svg" alt="" width="26" height="26"><span>Interview<strong>Sarthi</strong></span></a>
+  <a class="brand-prod" href="/prep/">Prep Sarthi</a>
+  <span class="navright"><button class="navlink" id="open-progress" data-pg="open">My progress</button><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button></span>
+</div></header>
 <div class="narrow">
-  <div class="nav">
-    <a class="wm" href="/prep/"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(32 32)"><circle r="25" fill="none" stroke="currentColor" stroke-width="4.6"/><g stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><path d="M0-21.2V21.2M-21.2 0H21.2M-15-15l30 30M-15 15l30-30"/></g><circle r="6" fill="currentColor"/></g></svg>Prep <i>Sarthi</i></a>
-    <span class="navright"><button class="navlink" id="open-progress" data-pg="open">My progress</button><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button></span>
-  </div>
 
   <!-- 1. CV -->
   <section class="screen on" id="s-cv">
@@ -317,7 +308,7 @@
   <section class="screen" id="s-report">
     <div class="card writing" id="report-wait">
       <div class="wheelwrap" id="wheel-wait"></div>
-      <h2 style="font-size:30px">Writing your report</h2>
+      <h2 style="font-size:26px">Writing your report</h2>
       <p class="muted" id="report-status">Scoring every answer against your CV. About twenty seconds.</p>
     </div>
     <div id="report" class="stack"></div>
@@ -343,7 +334,7 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20261001-faststart"></script>
-<script type="module" src="./progress-view.js?v=20260929-qa1"></script>
+<script type="module" src="./app.js?v=20261001-site"></script>
+<script type="module" src="./progress-view.js?v=20261001-site"></script>
 </body>
 </html>
