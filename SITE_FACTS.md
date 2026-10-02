@@ -37,6 +37,14 @@ The platform details and passes below describe **Live Sarthi**, previously prese
 - Evidence: `live/index.html` pricing cards, JSON-LD offers, FAQ and matching checkout URLs. Older About/guide session-count copy is stale.
 - Refund claims remain governed by `refunds.html`; do not change commercial policy as an SEO edit.
 
+## MeetingSarthi (added 2 October 2026)
+
+- Page: https://interviewsarthi.com/meeting/ (`meeting/index.html`). Audience: people on client calls at work, not job seekers. Not listed on the homepage yet (owner's call on the umbrella).
+- What it is: a Windows app (same engine as Live Sarthi, separate build) with a per-project log, voice/typed notes, read-only feeders (local git folder, GitHub token, Jira Cloud email + token), live replies grounded in confirmed log entries during a call, a post-call recap with drafts, and an "Ask" junior. No bot joins meetings; the user's own free Gemini key; the log stays local.
+- Offer: 30 minutes of live replies free per computer; everything else free with no limit. One pass only: **Month Pass, ₹99, 30 days, 2 devices**, paid once, never renews; licence worker plan `m30d`, checkout `https://license.interviewsarthi.com/buy?plan=m30d`, Cashfree, India only at launch (international checkout returns "not available"). A MeetingSarthi key cannot activate Interview Sarthi and vice versa (the apps send `product` to the licence worker).
+- Distribution: Windows installer `Meeting-Sarthi-Setup.exe` on the GitHub latest release once published (`publish_release.py --meeting`); until then the page shows a waitlist form that posts to the licence worker's `/subscribe` with source `meeting-waitlist`. No Microsoft Store listing yet.
+- Marketing rule: an English and memory aid, never "hidden" or "undetectable". The panel's screen-share exclusion is mentioned once, factually.
+
 ## Entity identifiers
 
 - Organization: `https://interviewsarthi.com/#organization`
