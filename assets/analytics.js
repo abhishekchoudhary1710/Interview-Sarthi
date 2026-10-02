@@ -65,6 +65,16 @@
       gaConfig.campaign_name = "linkedin_product_growth";
       gaConfig.campaign_content = socialCreative;
     }
+    /* AI assistants tag their links (ChatGPT adds utm_source=chatgpt.com), but page_location above drops the
+     * query and ChatGPT's apps send no referrer, so those visits counted as (direct): about half of ChatGPT's
+     * visitors in Sep 2026. Only a recognised assistant is passed on, never the raw value. */
+    var aiHosts = { chatgpt: "chatgpt.com", claude: "claude.ai", perplexity: "perplexity.ai",
+                    gemini: "gemini.google.com", copilot: "copilot.microsoft.com" };
+    var aiCampaign = aiHosts[aiSource(incomingParams.get("utm_source"))];
+    if (aiCampaign && !gaConfig.campaign_source && !privateReturn && location.pathname !== "/thanks.html") {
+      gaConfig.campaign_source = aiCampaign;
+      gaConfig.campaign_medium = "ai-assistant";  // the medium GA4 itself gives referrer-tagged AI visits
+    }
     gtag("config", GA4_ID, gaConfig);
   }
 

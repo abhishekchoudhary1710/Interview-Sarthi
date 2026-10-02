@@ -41,6 +41,21 @@ test('known UTM and referrer sources; UTM takes precedence',()=>{
   assert.equal(referral(run('https://interviewsarthi.com/?utm_source=chatgpt.com','https://claude.ai/chat/private'))[0][2].ai_source,'chatgpt');
   assert.equal(referral(run('https://interviewsarthi.com/guides/','https://www.perplexity.ai/search/private'))[0][2].ai_source,'perplexity');
 });
+test('AI assistant UTM reaches GA4 as the session source without a referrer',()=>{
+  const config = r => r.events.find(e=>e[0]==='config')[2];
+  let c=config(run('https://interviewsarthi.com/live/?utm_source=chatgpt.com&email=private@example.test'));
+  assert.equal(c.campaign_source,'chatgpt.com');
+  assert.equal(c.campaign_medium,'ai-assistant');
+  assert.equal(c.page_location,'https://interviewsarthi.com/live/');
+  assert.equal(config(run('https://interviewsarthi.com/?utm_source=perplexity')).campaign_source,'perplexity.ai');
+  for(const url of ['https://interviewsarthi.com/?utm_source=chatgpt.com.evil.test',
+                    'https://interviewsarthi.com/?utm_source=private@example.test',
+                    'https://interviewsarthi.com/thanks.html?utm_source=chatgpt.com&license_key=TEST-SECRET']) {
+    c=config(run(url));
+    assert.equal(c.campaign_source,undefined);
+    assert.equal(c.campaign_medium,undefined);
+  }
+});
 test('reject spoof hosts and ordinary Google traffic',()=>{
   for(const host of ['https://chatgpt.com.evil.test/','https://evilclaude.ai/','https://google.com/search?q=private']) {
     assert.equal(referral(run('https://interviewsarthi.com/',host)).length,0);
