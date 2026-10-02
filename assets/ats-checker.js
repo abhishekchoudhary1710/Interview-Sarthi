@@ -276,18 +276,52 @@
       " skills found." + missing + see + "</p></div></div>";
   }
 
-  function nextHtml() {
-    var j = state.job, q = j ? "&source=" + encodeURIComponent(j.source) + "&id=" + encodeURIComponent(j.id) : "";
-    var prep = "/prep/app/" + (j ? "?job=" + encodeURIComponent(j.source + ":" + j.id) : "");
-    return '<div class="ats-next"><h3>Next: fix it for a real job</h3>' +
-      "<p>ApplySarthi rewrites your CV for one job using only what your CV already says, and gives you a clean " +
-      "one-column PDF. Always free.</p>" +
-      '<p><a class="cta" href="' + APPLY + "/go/apply?slot=ats_result" + q + '">Tailor my CV for a job, free</a></p>' +
-      '<p class="alsotry">Interview coming up? <a href="' + prep + '">Practise it with Prep Sarthi</a> (free 7-minute ' +
-      'demo), then keep <a href="/live/">Live Sarthi</a> open during the call on Windows.</p></div>';
+  /* Which role a pasted description is for: the role whose common skills it names most, when one clearly
+   * leads (three or more shared skills, ahead of every other role). Otherwise no guess. */
+  function guessRole(m, roles) {
+    if (!m || m.kind !== "jd") return null;
+    var named = {}, best = null, bestN = 0, second = 0;
+    m.skills.found.concat(m.skills.missing).forEach(function (s) { named[s] = 1; });
+    Object.keys(roles).forEach(function (slug) {
+      var n = roles[slug].skills.filter(function (p) { return p[1] >= 10 && named[p[0]]; }).length;
+      if (n > bestN) { second = bestN; bestN = n; best = slug; } else if (n > second) second = n;
+    });
+    return bestN >= 3 && bestN > second ? best : null;
   }
 
-  function render(res, m, target, cv) {
+  /* Where "Next" sends someone, by what they gave us (owner, 2 Oct 2026: "make it reasonable"):
+   * a job from ApplySarthi -> its sign-in names that job and makes the tailored CV by itself;
+   * a role, or a pasted description that clearly belongs to one -> that role's open jobs in India, where every
+   * job has its own "Tailor my CV for this job"; nothing to go on -> all open jobs in India.
+   * ApplySarthi tailors only to jobs it holds, so a pasted description cannot be tailored to directly. */
+  function nextHtml(m, target, roles) {
+    var j = state.job;
+    var prep = "/prep/app/" + (j ? "?job=" + encodeURIComponent(j.source + ":" + j.id) : "");
+    var after = '<p class="alsotry">Interview coming up? <a href="' + prep + '">Practise it with Prep Sarthi</a> ' +
+      '(free 7-minute demo), then keep <a href="/live/">Live Sarthi</a> open during the call on Windows.</p></div>';
+    if (j) {
+      return '<div class="ats-next" data-next="job"><h3>Next: tailor your CV for this job</h3>' +
+        "<p>ApplySarthi rewrites your CV for " + esc(j.title || "this job") + (j.company ? " at " + esc(j.company) : "") +
+        " using only what your CV already says, and gives you a clean one-column PDF. Sign in, upload your CV, " +
+        "and it is made for you. Free.</p>" +
+        '<p><a class="cta" href="' + APPLY + "/go/apply?slot=ats_result&source=" + encodeURIComponent(j.source) +
+        "&id=" + encodeURIComponent(j.id) + '">Tailor my CV for this job, free</a></p>' + after;
+    }
+    var slug = target && target.role ? target.slug : guessRole(m, roles);
+    var role = slug && roles[slug];
+    var how = "<p>ApplySarthi tailors your CV to a job it lists. Open a job and press <b>Tailor my CV for this job</b>: " +
+      "it rewrites your CV for that job using only what your CV already says, and gives you a clean one-column PDF. " +
+      "Free.</p>";
+    if (role) {
+      var name = esc(inSentence(role.label));
+      return '<div class="ats-next" data-next="role"><h3>Next: pick a real ' + name + " job and tailor your CV for it</h3>" +
+        how + '<p><a class="cta" href="' + APPLY + role.jobs + '">See ' + name + " jobs in India</a></p>" + after;
+    }
+    return '<div class="ats-next" data-next="all"><h3>Next: tailor your CV for a real job</h3>' + how +
+      '<p><a class="cta" href="' + APPLY + '/jobs-in/india">Find jobs in India</a></p>' + after;
+  }
+
+  function render(res, m, target, cv, roles) {
     var v = res.unreadable ? ["An ATS can't read this file", res.groups[0].checks[0].detail] : VERDICT[res.band];
     var html = '<div class="ats-summary"><span class="ats-eyebrow">RESUME HEALTH</span><div class="ats-score ats-b-' + res.band + '"><div class="ats-num"><b>' + res.score +
       "</b><span>/100</span></div><div><p class=\"ats-verdict\">" + esc(v[0]) + "</p><p>" + esc(v[1]) + "</p></div></div>" +
@@ -304,7 +338,7 @@
       }).join("") + "</ol>";
     }
     if (!res.fixes.length && !res.unreadable) html += '<div class="ats-clear"><h3>No priority fixes</h3><p>Your CV passed the main checks. Review the job match before applying.</p></div>';
-    html += nextHtml() + '</div><div class="ats-panel" role="tabpanel" id="ats-panel-1" aria-labelledby="ats-tab-1" hidden>';
+    html += nextHtml(m, target, roles) + '</div><div class="ats-panel" role="tabpanel" id="ats-panel-1" aria-labelledby="ats-tab-1" hidden>';
     html += res.unreadable ? '<p>Upload a readable CV to compare skills.</p>' : matchHtml(m, target);
     html += '</div><div class="ats-panel" role="tabpanel" id="ats-panel-2" aria-labelledby="ats-tab-2" hidden><div class="ats-check-grid">';
     res.groups.forEach(function (g) {
@@ -378,7 +412,7 @@
       if (t && t.slug && !t.role) t = null;
       var res = ATS.analyse(state.cv);
       var m = !res.unreadable && t ? ATS.matchJob(d.vocab, state.cv.text, t) : null;
-      render(res, m, t, state.cv);
+      render(res, m, t, state.cv, d.data.roles);
       say("");
       var sig = res.score + "|" + (m ? m.kind + m.percent : "none") + "|" + state.source;
       if (sig !== state.last) {
@@ -404,7 +438,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
         if (!j || !j.text) return;
-        state.job = { source: m[1], id: m[2], company: j.company || "" };
+        state.job = { source: m[1], id: m[2], company: j.company || "", title: j.title || "" };
         if (!jdBox.value.trim()) jdBox.value = j.text;
         fromEl.hidden = false;
         fromEl.textContent = "Comparing with " + (j.title || "this job") + (j.company ? " at " + j.company : "") +

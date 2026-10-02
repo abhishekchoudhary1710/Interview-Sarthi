@@ -23,9 +23,12 @@ DATE = '2026-10-02'
 BASE = '/apply/ats-resume-checker/'
 ORIGIN = 'https://interviewsarthi.com'
 
-# slug, role family in Job-Hunt public.ROLE_FAMILIES, open India postings read, skills with share (%)
+# slug, role family in Job-Hunt public.ROLE_FAMILIES, open India postings read, skills with share (%).
+# `jobs` is ApplySarthi's public list of open jobs for the role in India: where "Next" sends a visitor who chose
+# a role but no particular job (each job there has its own "Tailor my CV for this job"). Job-Hunt drops a list
+# below MIN_BROWSE_JOBS (10) open jobs; all eight answered 200 on 2 Oct 2026.
 ROLES = [
-    {'slug': 'software-engineer', 'family': 'software', 'postings': 4281,
+    {'slug': 'software-engineer', 'jobs': '/jobs-in/india/software-engineer', 'family': 'software', 'postings': 4281,
      'label': 'Software engineer', 'plural': 'software engineers',
      'title': 'Software Engineer Resume ATS Checker (Free, India)',
      'skills': [('Python', 21.2), ('AWS', 19.1), ('Java', 17.4), ('Agile', 16.6), ('CI/CD', 15.7),
@@ -39,7 +42,7 @@ ROLES = [
          'figure you can explain in the interview beats an adjective.',
          '<b>Name design work when you did it.</b> System design and microservices come up often in these '
          'postings. If you designed a service or split one apart, say so in those words.']},
-    {'slug': 'data-scientist', 'family': 'data_ml', 'postings': 1558,
+    {'slug': 'data-scientist', 'jobs': '/jobs-in/india/data-scientist', 'family': 'data_ml', 'postings': 1558,
      'label': 'Data scientist and AI/ML engineer', 'plural': 'data scientists and AI/ML engineers',
      'title': 'Data Scientist and AI/ML Resume ATS Checker (Free)',
      'skills': [('Python', 43.9), ('LLMs', 30.6), ('AWS', 29.2), ('Machine learning', 25.7), ('Azure', 25.0),
@@ -52,7 +55,7 @@ ROLES = [
          'on AI&rdquo; matches nothing a recruiter types.',
          '<b>Show how you measured it.</b> The metric, the baseline and the result on data the model had not '
          'seen. Interviewers ask about this first.']},
-    {'slug': 'data-analyst', 'family': 'analyst', 'postings': 1442,
+    {'slug': 'data-analyst', 'jobs': '/jobs-in/india/data-analyst', 'family': 'analyst', 'postings': 1442,
      'label': 'Data analyst', 'plural': 'data analysts',
      'title': 'Data Analyst Resume ATS Checker (Free, India)',
      'skills': [('Excel', 26.9), ('SQL', 26.1), ('Python', 18.1), ('Stakeholder management', 15.0),
@@ -65,7 +68,7 @@ ROLES = [
          'SQL on two million orders; the fix cut them by a third.&rdquo;',
          '<b>Point to work they can see.</b> A public dashboard, a notebook on GitHub or a portfolio page with '
          'anonymised data does more than any adjective.']},
-    {'slug': 'devops-engineer', 'family': 'devops', 'postings': 969,
+    {'slug': 'devops-engineer', 'jobs': '/jobs-in/india/devops-engineer', 'family': 'devops', 'postings': 969,
      'label': 'DevOps and cloud engineer', 'plural': 'DevOps and cloud engineers',
      'title': 'DevOps and Cloud Engineer Resume ATS Checker (Free)',
      'skills': [('AWS', 32.8), ('Python', 32.0), ('CI/CD', 26.6), ('Kubernetes', 24.3), ('Azure', 23.1),
@@ -77,7 +80,7 @@ ROLES = [
          'cut. These are the questions you will be asked.',
          '<b>Say what you turned into code.</b> The Terraform modules you wrote, the CI/CD pipeline you built, '
          'the Kubernetes clusters you ran. The verbs matter as much as the tools.']},
-    {'slug': 'qa-engineer', 'family': 'qa', 'postings': 385,
+    {'slug': 'qa-engineer', 'jobs': '/jobs-in/india/qa-engineer', 'family': 'qa', 'postings': 385,
      'label': 'QA and test engineer', 'plural': 'QA and test engineers',
      'title': 'QA and Test Engineer Resume ATS Checker (Free)',
      'skills': [('Test automation', 34.8), ('Python', 28.8), ('CI/CD', 28.8), ('Selenium', 22.9), ('Agile', 22.9),
@@ -89,7 +92,7 @@ ROLES = [
          'automated cases, defects caught before release.',
          '<b>Say where the tests ran.</b> Tests that run in a CI/CD pipeline such as Jenkins on every commit '
          'read as engineering. A folder of scripts does not.']},
-    {'slug': 'frontend-developer', 'family': 'frontend', 'postings': 128,
+    {'slug': 'frontend-developer', 'jobs': '/jobs-in/india/frontend-engineer', 'family': 'frontend', 'postings': 128,
      'label': 'Front-end developer', 'plural': 'front-end developers',
      'title': 'Front-end Developer Resume ATS Checker (Free)',
      'skills': [('React', 57.0), ('JavaScript', 46.9), ('CSS', 44.5), ('HTML', 40.6), ('Agile', 35.9),
@@ -101,7 +104,7 @@ ROLES = [
          'Front-end interviews ask how you know a page is fast.',
          '<b>Link work that runs.</b> A live site or a GitHub repository with a readme gets opened by hiring '
          'managers more often than a description gets read.']},
-    {'slug': 'product-manager', 'family': 'product', 'postings': 638,
+    {'slug': 'product-manager', 'jobs': '/jobs-in/india/product-manager', 'family': 'product', 'postings': 638,
      'label': 'Product and project manager', 'plural': 'product and project managers',
      'title': 'Product and Project Manager Resume ATS Checker',
      'skills': [('Product management', 30.9), ('Stakeholder management', 29.8), ('Agile', 21.0), ('SQL', 16.0),
@@ -114,7 +117,7 @@ ROLES = [
          'these postings. Say who you brought together (engineering, sales, a regulator) and on what.',
          '<b>Say how you used data.</b> SQL and Excel come up often for product roles in India. If you wrote '
          'your own queries or defined the metric, say so.']},
-    {'slug': 'finance-accounts', 'family': 'finance', 'postings': 536,
+    {'slug': 'finance-accounts', 'jobs': '/jobs-in/india/accountant', 'family': 'finance', 'postings': 536,
      'label': 'Finance and accounts', 'plural': 'finance and accounts professionals',
      'title': 'Accountant and Finance Resume ATS Checker (Free)',
      'skills': [('Accounting', 46.5), ('Excel', 25.6), ('Stakeholder management', 19.4), ('ERP', 15.5),
@@ -136,7 +139,8 @@ def in_sentence(label):
 
 def roles_json():
     """What assets/ats-skills.json carries for the role picker: the same figures the pages print."""
-    return {r['slug']: {'label': r['label'], 'postings': r['postings'], 'skills': [list(s) for s in r['skills']]}
+    return {r['slug']: {'label': r['label'], 'postings': r['postings'], 'jobs': r['jobs'],
+                        'skills': [list(s) for s in r['skills']]}
             for r in ROLES}
 
 
@@ -302,7 +306,7 @@ posting in ten names.</p>
         'more': [
             ('The free ATS resume checker', './'),
             ('ATS resume format for Indian job applications', f'{UP}apply/guides/ats-resume-format-india.html'),
-            ('Browse open jobs on ApplySarthi', 'https://apply.interviewsarthi.com/jobs'),
+            (f'Open {in_sentence(r["label"])} jobs in India', f'https://apply.interviewsarthi.com{r["jobs"]}'),
         ],
     }
 

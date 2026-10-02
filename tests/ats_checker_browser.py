@@ -155,6 +155,9 @@ def main():
         check(st['One column'] == 'pass', 'one-column PDF reads as one column')
         check(st['Phone number'] == 'pass' and st['Email address'] == 'pass', 'contact details found in the PDF')
         check('Paste a job description' in page.text_content('.ats-match'), 'no job given: the match asks for one')
+        nxt = lambda: (page.get_attribute('.ats-next', 'data-next'), page.get_attribute('.ats-next a.cta', 'href'))
+        check(nxt() == ('all', 'https://apply.interviewsarthi.com/jobs-in/india'),
+              f'no job and no role: Next opens all jobs in India {nxt()}')
         page.click('#ats-tab-1')
         page.select_option('#ats-role', 'devops-engineer')
         page.wait_for_function("document.querySelector('.ats-match h3').textContent.includes('%')")
@@ -168,6 +171,18 @@ def main():
         fit_qa = page.text_content('.ats-summary .ats-fit')
         check(score(page) == health and 'Weak fit' in fit_qa and 'Selenium' in fit_qa,
               f'switching to QA keeps health at {health} and shows a weak QA fit: {fit_qa.strip()[:90]}')
+        check(nxt() == ('role', 'https://apply.interviewsarthi.com/jobs-in/india/qa-engineer')
+              and 'See QA and test engineer jobs in India' in page.text_content('.ats-next a.cta'),
+              f'a role: Next opens that role\'s jobs in India {nxt()}')
+        page.select_option('#ats-role', '')
+        page.fill('#ats-jd', 'We are hiring a QA engineer to own test automation. You will write Selenium and '
+                             'Playwright suites in Java and Python, run them from Jenkins in our CI/CD pipeline, '
+                             'and log defects in Jira.')
+        page.wait_for_function("document.querySelector('.ats-next') && document.querySelector('.ats-next').dataset.next === 'role'")
+        check(nxt()[1].endswith('/jobs-in/india/qa-engineer'), f'a pasted QA description: Next opens QA jobs {nxt()}')
+        page.fill('#ats-jd', '')
+        page.select_option('#ats-role', 'qa-engineer')
+        page.wait_for_function("document.querySelector('.ats-next').dataset.next === 'role'")
         page.select_option('#ats-role', 'data-analyst')
         page.wait_for_function("document.querySelector('.ats-summary .ats-fit').textContent.includes('data analyst')")
         check('Strong fit' in page.text_content('.ats-summary .ats-fit'), 'a data analyst CV is a strong data analyst fit')
@@ -207,8 +222,10 @@ def main():
               "the employer's own name is never a missing word")
         page.click('#ats-tab-0')
         href = page.get_attribute('.ats-next a.cta', 'href')
-        check(href.startswith('https://apply.interviewsarthi.com/go/apply?slot=ats_result&source=greenhouse&id=4321'),
-              'Tailor link carries the slot and the job')
+        check(href.startswith('https://apply.interviewsarthi.com/go/apply?slot=ats_result&source=greenhouse&id=4321')
+              and page.text_content('.ats-next a.cta') == 'Tailor my CV for this job, free'
+              and 'Data Analyst at Acme Retail' in page.text_content('.ats-next'),
+              'a job from ApplySarthi: Tailor opens its sign-in for that job, with the slot')
         check(page.get_attribute('.ats-next .alsotry a', 'href') == '/prep/app/?job=greenhouse%3A4321',
               'Prep link opens this job in the app')
 

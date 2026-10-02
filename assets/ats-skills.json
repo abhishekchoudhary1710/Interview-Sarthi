@@ -490,6 +490,7 @@
   "software-engineer": {
    "label": "Software engineer",
    "postings": 4281,
+   "jobs": "/jobs-in/india/software-engineer",
    "skills": [
     [
      "Python",
@@ -536,6 +537,7 @@
   "data-scientist": {
    "label": "Data scientist and AI/ML engineer",
    "postings": 1558,
+   "jobs": "/jobs-in/india/data-scientist",
    "skills": [
     [
      "Python",
@@ -582,6 +584,7 @@
   "data-analyst": {
    "label": "Data analyst",
    "postings": 1442,
+   "jobs": "/jobs-in/india/data-analyst",
    "skills": [
     [
      "Excel",
@@ -628,6 +631,7 @@
   "devops-engineer": {
    "label": "DevOps and cloud engineer",
    "postings": 969,
+   "jobs": "/jobs-in/india/devops-engineer",
    "skills": [
     [
      "AWS",
@@ -674,6 +678,7 @@
   "qa-engineer": {
    "label": "QA and test engineer",
    "postings": 385,
+   "jobs": "/jobs-in/india/qa-engineer",
    "skills": [
     [
      "Test automation",
@@ -720,6 +725,7 @@
   "frontend-developer": {
    "label": "Front-end developer",
    "postings": 128,
+   "jobs": "/jobs-in/india/frontend-engineer",
    "skills": [
     [
      "React",
@@ -766,6 +772,7 @@
   "product-manager": {
    "label": "Product and project manager",
    "postings": 638,
+   "jobs": "/jobs-in/india/product-manager",
    "skills": [
     [
      "Product management",
@@ -812,6 +819,7 @@
   "finance-accounts": {
    "label": "Finance and accounts",
    "postings": 536,
+   "jobs": "/jobs-in/india/accountant",
    "skills": [
     [
      "Accounting",
