@@ -359,14 +359,23 @@
     "job jobs key knowledge level location looking new office opportunity opportunities passion passionate plus " +
     "position preferred professional qualification qualifications related remote required requirement requirements " +
     "responsibilities responsibility responsible role roles salary skill skills strong success successful support " +
-    "team teams time understanding using well work working world year years").split(" ");
+    "team teams time understanding using well work working world year years " +
+    // words every company uses about itself
+    "best build building business businesses class complex deliver delivering drive driven driving dynamic ensure excellence " +
+    "exciting global impact innovative innovation local make making mission need needs operate organisation " +
+    "organisations organization organizations own ownership part " +
+    "people relentless technical thrive value values within " +
+    // equal-opportunity, pay and location boilerplate, long in postings from US companies
+    "accommodation accommodations applicable base based benefits city color compensation disability eligible " +
+    "equity gender holidays inclusion inclusive insurance national notice offer offers orientation origin paid " +
+    "policy privacy protected race range religion sexual status veteran visit york").split(" ");
   var STOPSET = {};
   STOP.forEach(function (w) { STOPSET[w] = 1; });
 
   /* "dashboards" and "dashboard" are one term; "business" keeps its s. */
   function stem(w) { return w.length > 4 && /[^s]s$/.test(w) ? w.slice(0, -1) : w; }
 
-  /* Up to 12 words the description repeats, in the form it first used them, most repeated first. */
+  /* Up to 10 words the description repeats, in the form it first used them, most repeated first. */
   function jobTerms(jd, skills, exclude) {
     var skip = {};
     (skills || []).forEach(function (s) { s.toLowerCase().split(/[^a-z0-9+#.]+/).forEach(function (w) { skip[w] = 1; }); });
@@ -381,7 +390,7 @@
     });
     return Object.keys(tally).filter(function (b) { return tally[b] >= 2; })
       .sort(function (a, b) { return tally[b] - tally[a] || first[a] - first[b]; })
-      .slice(0, 12).map(function (b) { return shown[b]; });
+      .slice(0, 10).map(function (b) { return shown[b]; });
   }
 
   function hasWord(textLower, w) {
@@ -409,10 +418,13 @@
     var sk = { found: [], missing: [] }, tm = { found: [], missing: [] };
     want.forEach(function (s) { (cvSkills[s] ? sk.found : sk.missing).push(s); });
     terms.forEach(function (w) { (hasWord(lower, w) ? tm.found : tm.missing).push(w); });
-    var possible = 2 * want.length + terms.length;
-    var percent = possible ? Math.round(100 * (2 * sk.found.length + tm.found.length) / possible) : 0;
-    return { kind: target.role ? "role" : "jd", enough: want.length + terms.length >= 4,
-             percent: percent, band: bandOf(percent), skills: sk, terms: tm };
+    /* The percentage counts dictionary skills only: that half is the one checked against ApplySarthi.
+     * Repeated words are advice, shown beside it; a description naming fewer than three skills (often a
+     * sales, HR or operations role) gets the words and no percentage rather than a number built on two. */
+    var enough = want.length >= 3;
+    var percent = enough ? Math.round(100 * sk.found.length / want.length) : null;
+    return { kind: target.role ? "role" : "jd", enough: enough, percent: percent,
+             band: enough ? bandOf(percent) : "none", skills: sk, terms: tm };
   }
 
   return { compileVocab: compileVocab, skillsIn: skillsIn, analyse: analyse, matchJob: matchJob,

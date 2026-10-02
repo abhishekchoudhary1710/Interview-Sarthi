@@ -228,24 +228,29 @@
       return '<div class="ats-match"><h3>Job match</h3><p>Paste a job description above, or choose a role, to see ' +
         "which of its skills your CV is missing.</p></div>";
     }
-    var what = m.kind === "role" ? esc(inSentence(target.role.label)) + " postings" : "this job";
-    if (!m.enough) {
-      return '<div class="ats-match"><h3>Job match</h3><p>This description names too few skills to compare with. ' +
-        "Paste the whole job description, including the requirements.</p></div>";
-    }
     var sk = m.skills, tm = m.terms;
-    var line = sk.found.length + " of " + (sk.found.length + sk.missing.length) + " skills found";
-    if (tm.found.length + tm.missing.length) {
-      line += ", and " + tm.found.length + " of " + (tm.found.length + tm.missing.length) + " words the description repeats";
+    var words = tm.missing.length
+      ? '<p class="ats-chips"><span class="ats-k">Words the description repeats that your CV never uses</span>' +
+        chips(tm.missing, "miss") + "</p>" : "";
+    var note = '<p class="note">Add a skill or a word only where it describes work you really did. A recruiter ' +
+      "will ask about every line.</p>";
+    if (!m.enough) {
+      if (!tm.found.length && !tm.missing.length) {
+        return '<div class="ats-match"><h3>Job match</h3><p>This description is too short to compare with. ' +
+          "Paste the whole job description, including the requirements.</p></div>";
+      }
+      return '<div class="ats-match"><h3>Words this job repeats</h3><p>The description names too few skills from ' +
+        "our list to give a percentage, which is usual outside technical roles. Your CV uses " + tm.found.length +
+        " of the " + (tm.found.length + tm.missing.length) + " words it repeats most.</p>" + words + note + "</div>";
     }
+    var what = m.kind === "role" ? esc(inSentence(target.role.label)) + " postings" : "this job";
     return '<div class="ats-match ats-m-' + m.band + '"><h3>Match with ' + what + ": " + m.percent + "%</h3>" +
-      "<p>" + line + ".</p>" +
+      "<p>" + sk.found.length + " of " + (sk.found.length + sk.missing.length) + " skills found.</p>" +
       (sk.found.length ? '<p class="ats-chips"><span class="ats-k">In your CV</span>' + chips(sk.found, "ok") + "</p>" : "") +
       (sk.missing.length ? '<p class="ats-chips"><span class="ats-k">' +
         (m.kind === "role" ? "Named often in these postings, not in your CV" : "Missing") + "</span>" +
         chips(sk.missing, "miss") + "</p>" : "") +
-      (tm.missing.length ? '<p class="ats-chips"><span class="ats-k">Words it repeats that your CV lacks</span>' + chips(tm.missing, "miss") + "</p>" : "") +
-      '<p class="note">Add a missing skill only if you have used it, in the role where you used it. A recruiter will ask about every line.</p></div>';
+      words + note + "</div>";
   }
 
   function nextHtml() {

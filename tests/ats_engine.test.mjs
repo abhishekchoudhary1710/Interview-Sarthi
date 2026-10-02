@@ -163,7 +163,20 @@ test('job match: skills the description names, then the words it repeats, never 
   for (const w of ['experience', 'hybrid', 'acme', 'work', 'strong']) {
     assert.ok(!m.terms.found.concat(m.terms.missing).includes(w), w);
   }
-  assert.ok(m.percent > 50 && m.percent < 100, String(m.percent));
+  assert.equal(m.percent, 100);                 // every skill it names is in the CV; words are advice only
+  assert.equal(m.band, 'strong');
+});
+
+test('a description with few dictionary skills gets its repeated words and no percentage', () => {
+  const jd = `Inside sales executive for our Pune branch. Call channel partners and distributors daily, grow
+    distributor revenue, visit channel partners, maintain distributor records and report territory targets to
+    the branch head. Territory travel required. Global company with a mission to drive complex growth.`;
+  const m = ATS.matchJob(vocab, GOOD, { jd });
+  assert.equal(m.enough, false);
+  assert.equal(m.percent, null);
+  // Shown in the form the description first used: "distributors", "partners".
+  for (const w of ['distributor', 'channel', 'territory']) assert.ok(m.terms.missing.some(x => x.startsWith(w)), w);
+  for (const w of ['global', 'mission', 'drive', 'complex']) assert.ok(!m.terms.missing.includes(w), w);
 });
 
 test('role match uses the skills at least one posting in ten names', () => {
