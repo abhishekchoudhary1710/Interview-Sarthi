@@ -108,6 +108,12 @@ test('Clarity never records the invite page, where a licence key is typed',()=>{
   assert.ok(!run('https://interviewsarthi.com/live/invite.html?code=K7M2QXA').scripts.some(s=>s.includes('clarity.ms')));
   assert.ok(run('https://interviewsarthi.com/live/').scripts.some(s=>s.includes('clarity.ms')));
 });
+test('Clarity never records the ATS checker, which prints the CV on screen; GA4 still counts it',()=>{
+  for(const page of ['', 'data-analyst.html', '?job=greenhouse:123'])
+    assert.ok(!run('https://interviewsarthi.com/apply/ats-resume-checker/'+page).scripts.some(s=>s.includes('clarity.ms')));
+  assert.ok(run('https://interviewsarthi.com/apply/ats-resume-checker/').scripts.some(s=>s.includes('googletagmanager')));
+  assert.ok(run('https://interviewsarthi.com/apply/guides/ats-resume-format-india.html').scripts.some(s=>s.includes('clarity.ms')));
+});
 test('the old /mock/app path is still excluded from Clarity while its stub redirects',()=>{
   assert.ok(!run('https://interviewsarthi.com/mock/app/').scripts.some(s=>s.includes('clarity.ms')));
 });

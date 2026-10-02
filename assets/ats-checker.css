@@ -1,0 +1,71 @@
+/* The ATS resume checker (apply/ats-resume-checker/). Builds on assets/article.css and its tokens. */
+.ats{border:1px solid var(--line);border-radius:16px;padding:22px;margin:6px 0 34px;background:var(--bg2)}
+.ats-step{margin:0 0 20px}
+.ats-h{font-size:17px;margin:0 0 10px;letter-spacing:0}
+.ats-h span{color:var(--muted);font-weight:500;font-size:14px}
+.ats-drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed var(--line2);border-radius:14px;background:#fff;padding:26px 16px;text-align:center;cursor:pointer;transition:border-color .15s}
+.ats-drop:hover,.ats-drop.drag{border-color:var(--accent)}
+.ats-drop:focus-within{outline:3px solid #bfdbfe;outline-offset:2px}
+.ats-drop input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.ats-drop-main{font-weight:700;color:var(--accent);font-size:16px}
+.ats-drop-sub{font-size:13.5px;color:var(--muted)}
+.ats-file{font-size:14px;margin:8px 0 0;font-weight:500}
+.ats textarea{display:block;width:100%;font:inherit;font-size:14.5px;line-height:1.5;color:var(--text);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;background:#fff;resize:vertical;min-height:110px}
+.ats textarea:focus,.ats select:focus{outline:3px solid #bfdbfe;border-color:var(--accent)}
+.ats select{font:inherit;font-size:14.5px;color:var(--text);border:1px solid var(--line2);border-radius:8px;padding:7px 10px;background:#fff;margin:6px 0 0;max-width:100%}
+.ats-role{display:block;font-size:14.5px;color:var(--muted);margin-top:12px}
+.ats-paste summary,.ats-seen summary{cursor:pointer;color:var(--accent);font-size:14.5px;font-weight:500;margin-top:10px}
+.ats-paste textarea{margin-top:8px}
+.ats-from{font-size:14px;color:var(--ok);font-weight:500;margin:0 0 8px}
+.ats-go{border:0;cursor:pointer;font-family:inherit}
+.ats-go:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px}
+.ats-status{font-size:14.5px;color:var(--muted);min-height:1.5em;margin:10px 0 0}
+.ats-status.err{color:var(--bad)}
+.ats-result{margin-top:16px;border-top:1px solid var(--line);padding-top:20px;scroll-margin-top:16px}
+.ats-score{display:flex;gap:18px;align-items:center}
+.ats-num{flex:0 0 auto;display:flex;align-items:baseline;gap:2px}
+.ats-num b{font-size:52px;line-height:1;letter-spacing:-1.5px}
+.ats-num span{font-size:16px;color:var(--muted);font-weight:600}
+.ats-score p{margin:0;font-size:15px;color:var(--muted)}
+.ats-score .ats-verdict{font-size:19px;font-weight:700;color:var(--text);margin-bottom:2px}
+.ats-b-ready .ats-num b,.ats-b-good .ats-num b{color:var(--ok)}
+.ats-b-work .ats-num b{color:var(--warn)}
+.ats-b-fix .ats-num b{color:var(--bad)}
+.ats-meter{height:8px;border-radius:99px;background:var(--line);margin:14px 0 6px;overflow:hidden}
+.ats-meter i{display:block;height:100%;border-radius:99px;background:var(--accent)}
+.ats-sub{font-size:16px;margin:20px 0 6px}
+.ats-fixes{margin:0;padding-left:22px}
+.ats-fixes li{font-size:15px}
+.ats-match,.ats-group,.ats-next{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:14px 0}
+.ats-match h3,.ats-next h3{margin:0 0 6px;font-size:16.5px}
+.ats-m-strong h3{color:var(--ok)}
+.ats-m-partial h3{color:var(--warn)}
+.ats-m-weak h3{color:var(--bad)}
+.ats-match p{font-size:14.5px;margin:6px 0}
+.ats-match .note{margin:10px 0 0}
+.ats-k{display:block;font-size:13px;color:var(--muted);font-weight:600;margin:0 0 4px}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13.5px;margin:0 6px 6px 0;border:1px solid}
+.chip.ok{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+.chip.miss{background:#fff1f2;border-color:#fecdd3;color:#9f1239}
+.ats-group h3{display:flex;justify-content:space-between;gap:10px;margin:0 0 10px;font-size:16px}
+.ats-group h3 span{color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap}
+.ats-group ul{list-style:none;padding:0;margin:0}
+.ats-group li{position:relative;padding-left:30px;font-size:14.5px;margin:0 0 10px;line-height:1.55}
+.ats-group li:last-child{margin-bottom:0}
+.ats-group li b{color:var(--text);margin-right:2px}
+.ats-group li i{position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;font-style:normal;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff}
+.ats-pass i{background:var(--ok)}
+.ats-warn i{background:var(--warn)}
+.ats-fail i{background:var(--bad)}
+.ats-na i{background:var(--line2);color:var(--muted)}
+.ats-seen{margin:14px 0}
+.ats-seen pre{white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.5;max-height:380px;overflow:auto;margin:8px 0 0}
+.ats-next{background:linear-gradient(180deg,#fff,#eff6ff);border-color:#bfdbfe}
+.ats-next p{font-size:14.5px;margin:6px 0 12px}
+.ats-next .alsotry{margin:0}
+@media(max-width:600px){
+  .ats{padding:16px;margin-left:-4px;margin-right:-4px}
+  .ats-score{gap:12px}
+  .ats-num b{font-size:42px}
+  .ats-go{width:100%;justify-content:center}
+}

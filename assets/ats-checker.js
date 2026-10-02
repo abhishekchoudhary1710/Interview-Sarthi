@@ -1,0 +1,374 @@
+/* The ATS resume checker page: reads a CV inside the browser and shows what a parser would see.
+ *
+ * The file never leaves this tab. PDF.js and Mammoth (loaded from cdnjs only when a file is chosen) turn it
+ * into text here, and assets/ats-engine.js scores it. The one request that carries anything job-related is
+ * the public job description fetched by id when a visitor arrives from an ApplySarthi job
+ * (?job=source:id), the same call Prep Sarthi makes. analytics.js keeps session recording off these pages,
+ * because the parser view below prints the CV on screen.
+ */
+(function () {
+  "use strict";
+  var ATS = window.SarthiATS;
+  var root = document.getElementById("checker");
+  if (!ATS || !root) return;
+
+  var ASSETS = new URL(".", (document.currentScript && document.currentScript.src) || location.href);
+  var PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  var MAMMOTH = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js";
+  var APPLY = "https://apply.interviewsarthi.com";
+  var MAX_BYTES = 5 * 1024 * 1024, MAX_PAGES = 6;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fileInput = $("ats-file"), drop = $("ats-drop"), fileName = $("ats-filename"), paste = $("ats-text"),
+      jdBox = $("ats-jd"), roleSel = $("ats-role"), goBtn = $("ats-go"), statusEl = $("ats-status"),
+      out = $("ats-result"), fromEl = $("ats-from");
+
+  var state = { cv: null, source: "", job: null, last: null };
+  var dataReady = fetch(new URL("ats-skills.json", ASSETS)).then(function (r) {
+    if (!r.ok) throw new Error("skills " + r.status);
+    return r.json();
+  }).then(function (data) { return { data: data, vocab: ATS.compileVocab(data) }; });
+
+  function track(name, params) {
+    try { if (window.sarthiTrack) window.sarthiTrack(name, params || {}); } catch (e) { /* never block the check */ }
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function say(text, isError) {
+    statusEl.textContent = text || "";
+    statusEl.className = "ats-status" + (isError ? " err" : "");
+  }
+
+  var loaded = {};
+  function loadScript(src) {
+    if (!loaded[src]) {
+      loaded[src] = new Promise(function (resolve, reject) {
+        var s = document.createElement("script");
+        s.src = src; s.async = true; s.crossOrigin = "anonymous";
+        s.onload = resolve;
+        s.onerror = function () { delete loaded[src]; reject(new Error("load")); };
+        document.head.appendChild(s);
+      });
+    }
+    return loaded[src];
+  }
+
+  /* ---------------------------------------------------------------- PDF */
+
+  /* The text in the order the file stores it, which is the order a simple parser reads. A two-column
+   * CV comes out interleaved here exactly as it does for those parsers, so "What the parser sees" shows it. */
+  function streamText(items) {
+    var s = "", lastY = null, lastEnd = null;
+    items.forEach(function (it) {
+      if (typeof it.str !== "string") return;
+      var x = it.transform[4], y = it.transform[5], h = Math.abs(it.transform[3]) || 10;
+      if (lastY !== null && it.str) {
+        if (Math.abs(y - lastY) > h * 0.5) { if (!/\n$/.test(s)) s += "\n"; }
+        else if (lastEnd !== null && x - lastEnd > h * 0.15 && !/\s$/.test(s) && !/^\s/.test(it.str)) s += " ";
+      }
+      s += it.str;
+      if (it.hasEOL) s += "\n";
+      if (it.str.trim()) { lastY = y; lastEnd = x + it.width; }
+    });
+    return s;
+  }
+
+  /* How many lines have text starting at the same point in the middle of the page (a second column),
+   * on a page where other lines start at the left margin. Right-aligned dates start further right than
+   * 62% of the width, and centred headings do not share one start point, so neither counts. */
+  function columnHits(items, width) {
+    var rows = {};
+    items.forEach(function (it) {
+      if (!it.str || !it.str.trim()) return;
+      var key = Math.round(it.transform[5] / 3);
+      (rows[key] = rows[key] || []).push({ x: it.transform[4], end: it.transform[4] + it.width });
+    });
+    var starts = {}, lines = 0, left = 0;
+    Object.keys(rows).forEach(function (k) {
+      var r = rows[k].sort(function (a, b) { return a.x - b.x; });
+      lines++;
+      if (r[0].x < 0.2 * width) left++;
+      var seg = [r[0].x];
+      for (var i = 1; i < r.length; i++) if (r[i].x - r[i - 1].end > 0.04 * width) seg.push(r[i].x);
+      var seen = {};
+      seg.forEach(function (x) {
+        if (x > 0.22 * width && x < 0.62 * width) {
+          var b = Math.round(x / (0.015 * width));
+          if (!seen[b]) { seen[b] = 1; starts[b] = (starts[b] || 0) + 1; }
+        }
+      });
+    });
+    var best = 0;
+    Object.keys(starts).forEach(function (b) {
+      b = +b;
+      best = Math.max(best, (starts[b] || 0) + (starts[b - 1] || 0) + (starts[b + 1] || 0));
+    });
+    return { lines: lines, hits: lines && left >= 0.15 * lines ? best : 0 };
+  }
+
+  function readPdf(buf) {
+    return loadScript(PDFJS + "pdf.min.js").then(function () {
+      var lib = window.pdfjsLib;
+      lib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js";
+      // isEvalSupported off: the documented mitigation for CVE-2024-4367 in PDF.js 3.x.
+      return lib.getDocument({ data: buf, isEvalSupported: false }).promise.then(function (doc) {
+        var n = Math.min(doc.numPages, MAX_PAGES), texts = [], links = [], images = false, lines = 0, hits = 0;
+        var chain = Promise.resolve();
+        for (var p = 1; p <= n; p++) {
+          (function (p) {
+            chain = chain.then(function () { return doc.getPage(p); }).then(function (page) {
+              var width = page.getViewport({ scale: 1 }).width;
+              return page.getTextContent().then(function (tc) {
+                texts.push(streamText(tc.items));
+                var c = columnHits(tc.items, width);
+                lines += c.lines; hits += c.hits;
+                return page.getAnnotations().catch(function () { return []; });
+              }).then(function (ann) {
+                ann.forEach(function (a) { if (a.url) links.push(a.url); });
+                if (p !== 1) return;
+                return page.getOperatorList().then(function (ops) {
+                  var O = lib.OPS;
+                  images = ops.fnArray.some(function (fn) {
+                    return fn === O.paintImageXObject || fn === O.paintInlineImageXObject || fn === O.paintImageXObjectRepeat;
+                  });
+                }).catch(function () {});
+              });
+            });
+          })(p);
+        }
+        return chain.then(function () {
+          return { text: texts.join("\n"), kind: "pdf", pages: doc.numPages,
+                   columns: lines >= 10 ? hits / lines : 0, images: images, links: links };
+        });
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------------- Word */
+
+  function readDocx(buf) {
+    return loadScript(MAMMOTH).then(function () {
+      return window.mammoth.convertToHtml({ arrayBuffer: buf });
+    }).then(function (res) {
+      var doc = new DOMParser().parseFromString(res.value, "text/html"), lines = [];
+      doc.body.querySelectorAll("h1,h2,h3,h4,h5,h6,p,li").forEach(function (el) {
+        if (el.tagName === "P" && el.closest("li")) return;
+        var c = el.cloneNode(true);
+        c.querySelectorAll("ul,ol").forEach(function (n) { n.remove(); });
+        var t = c.textContent.replace(/\s+/g, " ").trim();
+        if (t) lines.push((el.tagName === "LI" ? "• " : "") + t);
+      });
+      return { text: lines.join("\n"), kind: "docx", pages: null, tables: doc.querySelectorAll("table").length,
+               images: doc.querySelectorAll("img").length > 0,
+               links: Array.prototype.map.call(doc.querySelectorAll("a[href]"), function (a) { return a.getAttribute("href"); }) };
+    });
+  }
+
+  function readFile(file) {
+    var name = (file.name || "").toLowerCase();
+    if (file.size > MAX_BYTES) return Promise.reject(new Error("big"));
+    if (/\.doc$/.test(name)) return Promise.reject(new Error("doc"));
+    var reader = /\.pdf$/.test(name) || file.type === "application/pdf" ? readPdf
+      : /\.docx$/.test(name) ? readDocx : null;
+    if (!reader) return Promise.reject(new Error("type"));
+    return file.arrayBuffer().then(reader);
+  }
+
+  var ERRORS = {
+    big: "This file is over 5 MB. Export the CV again as a PDF: most CVs are well under 1 MB.",
+    doc: "Old Word .doc files can't be read here. Save it as .docx or PDF, or paste the text below.",
+    type: "Choose a PDF or a Word (.docx) file, or paste your CV's text below.",
+    load: "The file reader didn't load. Check your connection and try again, or paste your CV's text below.",
+    PasswordException: "This PDF is locked with a password. An ATS can't open it either: save an unlocked copy and try that.",
+    InvalidPDFException: "This file couldn't be read as a PDF. Export it again from Word or Google Docs."
+  };
+
+  function chooseFile(file) {
+    if (!file) return;
+    fileName.hidden = false;
+    fileName.textContent = file.name;
+    say("Reading " + file.name + "…");
+    readFile(file).then(function (cv) {
+      state.cv = cv; state.source = "file";
+      run();
+    }).catch(function (e) {
+      var key = (e && (e.name in ERRORS ? e.name : e.message)) || "";
+      say(ERRORS[key] || "This file couldn't be read. Export it again as a PDF, or paste your CV's text below.", true);
+      track("ats_error", { reason: ERRORS[key] ? key : "other" });
+    });
+  }
+
+  /* ---------------------------------------------------------------- the result */
+
+  var VERDICT = {
+    ready: ["Ready to send", "An ATS can read this CV, and it carries what recruiters look for."],
+    good: ["Good, with a few fixes", "A parser can read it. The points below will make it stronger."],
+    work: ["Needs work", "Parts of this CV will be lost or skipped. Start with the fixes below."],
+    fix: ["Fix this before you apply", "A parser will lose important parts of this CV. Fix the first points below before you send it anywhere."]
+  };
+  var ICON = { pass: ["✓", "Passed"], warn: ["!", "Worth fixing"], fail: ["✕", "Problem"], na: ["–", "Not checked"] };
+
+  /* "DevOps and cloud engineer" -> "DevOps and cloud engineer", "Data analyst" -> "data analyst": names
+   * with capitals inside (DevOps, QA, AI/ML) keep them. Same rule as apply_pages/ats.py in_sentence(). */
+  function inSentence(label) {
+    return label.split(" ").map(function (w) { return /[A-Z]/.test(w.slice(1)) ? w : w.toLowerCase(); }).join(" ");
+  }
+
+  function chips(list, cls) {
+    return list.map(function (s) { return '<span class="chip ' + cls + '">' + esc(s) + "</span>"; }).join("");
+  }
+
+  function matchHtml(m, target) {
+    if (!m) {
+      return '<div class="ats-match"><h3>Job match</h3><p>Paste a job description above, or choose a role, to see ' +
+        "which of its skills your CV is missing.</p></div>";
+    }
+    var what = m.kind === "role" ? esc(inSentence(target.role.label)) + " postings" : "this job";
+    if (!m.enough) {
+      return '<div class="ats-match"><h3>Job match</h3><p>This description names too few skills to compare with. ' +
+        "Paste the whole job description, including the requirements.</p></div>";
+    }
+    var sk = m.skills, tm = m.terms;
+    var line = sk.found.length + " of " + (sk.found.length + sk.missing.length) + " skills found";
+    if (tm.found.length + tm.missing.length) {
+      line += ", and " + tm.found.length + " of " + (tm.found.length + tm.missing.length) + " words the description repeats";
+    }
+    return '<div class="ats-match ats-m-' + m.band + '"><h3>Match with ' + what + ": " + m.percent + "%</h3>" +
+      "<p>" + line + ".</p>" +
+      (sk.found.length ? '<p class="ats-chips"><span class="ats-k">In your CV</span>' + chips(sk.found, "ok") + "</p>" : "") +
+      (sk.missing.length ? '<p class="ats-chips"><span class="ats-k">' +
+        (m.kind === "role" ? "Named often in these postings, not in your CV" : "Missing") + "</span>" +
+        chips(sk.missing, "miss") + "</p>" : "") +
+      (tm.missing.length ? '<p class="ats-chips"><span class="ats-k">Words it repeats that your CV lacks</span>' + chips(tm.missing, "miss") + "</p>" : "") +
+      '<p class="note">Add a missing skill only if you have used it, in the role where you used it. A recruiter will ask about every line.</p></div>';
+  }
+
+  function nextHtml() {
+    var j = state.job, q = j ? "&source=" + encodeURIComponent(j.source) + "&id=" + encodeURIComponent(j.id) : "";
+    var prep = "/prep/app/" + (j ? "?job=" + encodeURIComponent(j.source + ":" + j.id) : "");
+    return '<div class="ats-next"><h3>Next: fix it for a real job</h3>' +
+      "<p>ApplySarthi rewrites your CV for one job using only what your CV already says, and gives you a clean " +
+      "one-column PDF. Always free.</p>" +
+      '<p><a class="cta" href="' + APPLY + "/go/apply?slot=ats_result" + q + '">Tailor my CV for a job, free</a></p>' +
+      '<p class="alsotry">Interview coming up? <a href="' + prep + '">Practise it with Prep Sarthi</a> (free 7-minute ' +
+      'demo), then keep <a href="/live/">Live Sarthi</a> open during the call on Windows.</p></div>';
+  }
+
+  function render(res, m, target, cv) {
+    var v = res.unreadable ? ["An ATS can't read this file", res.groups[0].checks[0].detail] : VERDICT[res.band];
+    var html = '<div class="ats-score ats-b-' + res.band + '"><div class="ats-num"><b>' + res.score +
+      "</b><span>/100</span></div><div><p class=\"ats-verdict\">" + esc(v[0]) + "</p><p>" + esc(v[1]) + "</p></div></div>" +
+      '<div class="ats-meter" aria-hidden="true"><i style="width:' + res.score + '%"></i></div>';
+    if (!res.unreadable && res.fixes.length) {
+      html += '<h3 class="ats-sub">Fix these first</h3><ol class="ats-fixes">' + res.fixes.map(function (c) {
+        return "<li><b>" + esc(c.title) + ".</b> " + esc(c.detail) + "</li>";
+      }).join("") + "</ol>";
+    }
+    if (!res.unreadable) html += matchHtml(m, target);
+    res.groups.forEach(function (g) {
+      var got = 0, of = 0;
+      g.checks.forEach(function (c) { if (c.status !== "na") { got += c.earned; of += c.weight; } });
+      html += '<div class="ats-group"><h3>' + esc(g.title) + "<span>" + Math.round(got) + " / " + of + "</span></h3><ul>" +
+        g.checks.map(function (c) {
+          var ic = ICON[c.status];
+          return '<li class="ats-' + c.status + '"><i aria-label="' + ic[1] + '" role="img">' + ic[0] + "</i><b>" +
+            esc(c.title) + "</b> " + esc(c.detail) + "</li>";
+        }).join("") + "</ul></div>";
+    });
+    html += '<details class="ats-seen"><summary>What the parser sees</summary><p class="note">The text as it ' +
+      "comes out of your file, in the order a simple parser reads it. If sections are mixed together or your " +
+      "phone number is missing here, an ATS has the same problem.</p><pre>" +
+      esc((cv.text || "").slice(0, 8000)) + ((cv.text || "").length > 8000 ? "\n…" : "") + "</pre></details>";
+    html += nextHtml();
+    out.innerHTML = html;
+    out.hidden = false;
+  }
+
+  function target() {
+    var jd = jdBox.value.trim();
+    if (jd.length >= 80) {
+      return { jd: jd, exclude: state.job && state.job.company ? state.job.company.split(/\s+/) : [] };
+    }
+    return roleSel.value ? { role: null, slug: roleSel.value } : null;
+  }
+
+  function run() {
+    if (state.source !== "file" && paste.value.trim()) {
+      state.cv = { text: paste.value, kind: "text" };
+      state.source = "paste";
+    }
+    if (!state.cv) {
+      say("Choose your CV first, or paste its text.", true);
+      return;
+    }
+    say("Checking…");
+    dataReady.then(function (d) {
+      var t = target();
+      if (t && t.slug) t.role = d.data.roles[t.slug] || null;
+      if (t && t.slug && !t.role) t = null;
+      var res = ATS.analyse(state.cv);
+      var m = !res.unreadable && t ? ATS.matchJob(d.vocab, state.cv.text, t) : null;
+      render(res, m, t, state.cv);
+      say("");
+      var sig = res.score + "|" + (m ? m.kind + m.percent : "none") + "|" + state.source;
+      if (sig !== state.last) {
+        state.last = sig;
+        track("ats_check", { file_kind: state.cv.kind, score_band: res.band,
+                             match: m ? m.kind : "none", match_band: m && m.enough ? m.band : "none" });
+      }
+      if (!statusEl.textContent && out.getBoundingClientRect().top > window.innerHeight) {
+        out.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }).catch(function () {
+      say("The checker couldn't load its skill list. Check your connection and try again.", true);
+    });
+  }
+
+  /* ---------------------------------------------------------------- arriving from an ApplySarthi job */
+
+  function loadJob() {
+    var q = new URLSearchParams(location.search), job = q.get("job") || "";
+    var m = job.match(/^([a-z0-9_]{1,40}):(.{1,200})$/i);
+    if (!m) return;
+    fetch(APPLY + "/api/jd?source=" + encodeURIComponent(m[1]) + "&source_id=" + encodeURIComponent(m[2]))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.text) return;
+        state.job = { source: m[1], id: m[2], company: j.company || "" };
+        if (!jdBox.value.trim()) jdBox.value = j.text;
+        fromEl.hidden = false;
+        fromEl.textContent = "Comparing with " + (j.title || "this job") + (j.company ? " at " + j.company : "") +
+          ", from ApplySarthi.";
+        if (state.cv) run();
+      }).catch(function () { /* the visitor can still paste the description */ });
+  }
+
+  /* ---------------------------------------------------------------- wiring */
+
+  fileInput.addEventListener("change", function () { chooseFile(fileInput.files && fileInput.files[0]); });
+  ["dragenter", "dragover"].forEach(function (t) {
+    drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add("drag"); });
+  });
+  ["dragleave", "drop"].forEach(function (t) {
+    drop.addEventListener(t, function () { drop.classList.remove("drag"); });
+  });
+  drop.addEventListener("drop", function (e) {
+    e.preventDefault();
+    chooseFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
+  });
+  paste.addEventListener("input", function () { state.source = "paste-edit"; });
+  goBtn.addEventListener("click", run);
+  var again;
+  function rerun() {
+    clearTimeout(again);
+    if (state.cv && !out.hidden) again = setTimeout(run, 500);
+  }
+  jdBox.addEventListener("input", rerun);
+  roleSel.addEventListener("change", rerun);
+  loadJob();
+})();

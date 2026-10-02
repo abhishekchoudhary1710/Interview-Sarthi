@@ -34,6 +34,8 @@ products, published prices, and which reach Indian boards at all.</li>
 worth keeping to.</li>
 <li><a href="ats-resume-format-india.html"><b>ATS resume format for Indian applications</b></a> &mdash;
 what parsers actually fail on, the formatting that survives, and the myths worth ignoring.</li>
+<li><a href="{UP}apply/ats-resume-checker/"><b>Free ATS resume checker</b></a> &mdash; see what a parser reads
+from your CV and which skills from the job it is missing. Runs in your browser; nothing is uploaded.</li>
 <li><a href="why-no-interview-calls.html"><b>You applied to 200 jobs and heard nothing</b></a> &mdash; the
 five reasons, in the order they usually apply, and what to change first.</li>
 </ul>
@@ -344,6 +346,9 @@ roughly what the parser sees.</li>
 </ol>
 <p>That paste test catches nearly every real parsing failure, and takes less time than reading another
 article about templates.</p>
+<p>The <a href="../ats-resume-checker/">free ATS resume checker</a> runs the same test for you: drop in your
+CV and it shows the text a parser gets, flags each failure above, and lists the skills from a job description
+that your CV does not mention. It reads the file inside your browser, so nothing is uploaded.</p>
 
 {sarthi_handoff(UP)}
 """,
@@ -358,6 +363,7 @@ article about templates.</p>
          'No, and the figure has no checkable source behind it. An ATS stores applications and lets recruiters search them; it does not score or reject. The realistic failure is that a badly parsed CV becomes a partial record that does not come back in the searches a recruiter runs, so no human ever sees it.'),
     ],
     'more': [
+        ('Free ATS resume checker', f'{UP}apply/ats-resume-checker/'),
         ('You applied to 200 jobs and heard nothing', 'why-no-interview-calls.html'),
         ('What 60,975 open jobs actually contain', f'{UP}apply/job-application-statistics-india.html'),
         ('Auto-apply on Naukri', 'naukri-auto-apply.html'),

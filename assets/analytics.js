@@ -89,7 +89,9 @@
                   location.pathname.indexOf("/mock/app") === 0;
   /* The refer-a-friend page takes a licence key to look up the invite code: never recorded either. */
   var keyPage = location.pathname === "/thanks.html" || location.pathname === "/live/invite.html";
-  if (clarityOn && !privateReturn && !inPrepApp && !keyPage) {
+  /* The ATS resume checker prints the visitor's CV on screen ("What the parser sees"): never recorded. */
+  var cvPage = location.pathname.indexOf("/apply/ats-resume-checker/") === 0;
+  if (clarityOn && !privateReturn && !inPrepApp && !keyPage && !cvPage) {
     (function (c, l, a, r, i, t, y) {
       c[a] = c[a] || function () { (c[a].q = c[a].q || []).push(arguments); };
       t = l.createElement(r); t.async = 1;

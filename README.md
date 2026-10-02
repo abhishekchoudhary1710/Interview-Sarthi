@@ -41,7 +41,7 @@ python scripts/build_apply_pages.py --check
 python scripts/seo_audit.py
 python scripts/generate_sitemap.py --check
 python -m unittest discover -s tests -p 'test_*.py'
-node --test tests/analytics.test.cjs tests/home-routing.test.cjs tests/mock_engine.test.mjs tests/interview_plan.test.mjs
+node --test tests/analytics.test.cjs tests/home-routing.test.cjs tests/mock_engine.test.mjs tests/interview_plan.test.mjs tests/ats_engine.test.mjs
 ```
 
 Optional browser checks require Python Playwright and Microsoft Edge:
@@ -51,6 +51,8 @@ python tests/browser_smoke.py
 ```
 
 This checks desktop/mobile layouts, receipt rendering, weekly checkout destinations and analytics behavior without purchasing anything. Screenshots and results go to ignored `.seo-preview/`.
+
+`python tests/ats_checker_browser.py` (Playwright or patchright, with Chromium) builds sample CVs and runs them through the ATS resume checker at `/apply/ats-resume-checker/`. The checker's skill list comes from ApplySarthi: after the vocabulary changes there, run `python scripts/export_ats_skills.py` and commit `assets/ats-skills.json`.
 
 Prep's normal interview screen does not display diagnostic logs or a duplicate transcript.
 Support sessions can explicitly use `/prep/app/?diagnostics=1`; this setting is not persisted.

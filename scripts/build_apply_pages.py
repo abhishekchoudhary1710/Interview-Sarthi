@@ -126,7 +126,7 @@ def render(page):
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{prefix}assets/article.css">
 <script defer src="{prefix}assets/analytics.js"></script>
-<script defer src="{prefix}assets/wa.js"></script>
+<script defer src="{prefix}assets/wa.js"></script>{page.get('head', '')}
 </head>
 <body>
 <div class="wrap">
