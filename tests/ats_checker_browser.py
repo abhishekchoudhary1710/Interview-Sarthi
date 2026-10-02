@@ -155,6 +155,7 @@ def main():
         check(st['One column'] == 'pass', 'one-column PDF reads as one column')
         check(st['Phone number'] == 'pass' and st['Email address'] == 'pass', 'contact details found in the PDF')
         check('Paste a job description' in page.text_content('.ats-match'), 'no job given: the match asks for one')
+        page.click('#ats-tab-1')
         page.select_option('#ats-role', 'devops-engineer')
         page.wait_for_function("document.querySelector('.ats-match h3').textContent.includes('%')")
         check('DevOps and cloud engineer postings' in page.text_content('.ats-match h3'), 'role match follows the picker')
@@ -180,12 +181,15 @@ def main():
         check('Data Analyst at Acme Retail' in page.text_content('#ats-from'), 'job from ApplySarthi is loaded by id')
         check(page.eval_on_selector('#ats-role', 'e => e.value') == 'data-analyst', 'role page presets its role')
         page.set_input_files('#ats-file', str(tmp / 'one-column.pdf'))
+        page.wait_for_selector('#ats-result:not([hidden]) .ats-num')
+        page.click('#ats-tab-1')
         page.wait_for_selector('#ats-result:not([hidden]) .ats-match h3')
         match = page.text_content('.ats-match')
         check('Match with this job' in match and 'Snowflake' in match and 'Airflow' in match,
               'job match lists the skills the CV lacks')
         check('acme' not in page.eval_on_selector('.ats-match', 'e => e.textContent.toLowerCase().replace("acme retail needs", "")'),
               "the employer's own name is never a missing word")
+        page.click('#ats-tab-0')
         href = page.get_attribute('.ats-next a.cta', 'href')
         check(href.startswith('https://apply.interviewsarthi.com/go/apply?slot=ats_result&source=greenhouse&id=4321'),
               'Tailor link carries the slot and the job')

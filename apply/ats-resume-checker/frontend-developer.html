@@ -108,6 +108,8 @@
 
 
 <section class="ats" id="checker" data-role="frontend-developer" aria-label="ATS resume checker">
+<div class="ats-toolbar"><div><span class="ats-eyebrow">RESUME WORKSPACE</span><h2>Make your next application stronger</h2></div><span class="ats-private">● Private on your device</span></div>
+<div class="ats-workspace"><aside class="ats-inputs" aria-label="Resume and job inputs">
 <div class="ats-step">
 <h2 class="ats-h">1. Your CV</h2>
 <label class="ats-drop" id="ats-drop">
@@ -117,20 +119,23 @@
 </label>
 <p class="ats-file" id="ats-filename" hidden></p>
 <details class="ats-paste"><summary>Or paste your CV&rsquo;s text</summary>
-<textarea id="ats-text" rows="8" aria-label="Your CV's text" placeholder="Paste the whole CV here"></textarea>
+<textarea id="ats-text" rows="5" aria-label="Your CV's text" placeholder="Paste the whole CV here"></textarea>
 </details>
 </div>
 <div class="ats-step">
 <h2 class="ats-h">2. The job <span>(optional)</span></h2>
 <p class="ats-from" id="ats-from" hidden></p>
-<textarea id="ats-jd" rows="5" aria-label="Job description" placeholder="Paste the job description to see which of its skills your CV is missing"></textarea>
+<textarea id="ats-jd" rows="4" aria-label="Job description" placeholder="Paste the job description to see which of its skills your CV is missing"></textarea>
 <label class="ats-role">No job description? Compare with a role:
 <select id="ats-role"><option value="">Choose a role</option><option value="software-engineer">Software engineer</option><option value="data-scientist">Data scientist and AI/ML engineer</option><option value="data-analyst">Data analyst</option><option value="devops-engineer">DevOps and cloud engineer</option><option value="qa-engineer">QA and test engineer</option><option value="frontend-developer" selected>Front-end developer</option><option value="product-manager">Product and project manager</option><option value="finance-accounts">Finance and accounts</option></select>
 </label>
 </div>
 <button type="button" class="cta ats-go" id="ats-go">Check my CV</button>
 <p class="ats-status" id="ats-status" role="status" aria-live="polite"></p>
+</aside><div class="ats-output">
+<div id="ats-empty" class="ats-empty"><span class="ats-empty-icon" aria-hidden="true">◎</span><h3>Your resume, at a glance</h3><p>Add your CV to see your score, priority fixes and skill gaps in one place.</p><div class="ats-preview"><span>Readability</span><span>Contact &amp; sections</span><span>Job match</span></div><p class="note">Free checks · No sign-up · No uploads</p></div>
 <div class="ats-result" id="ats-result" hidden></div>
+</div></div>
 <noscript><p class="box warn">The checker runs inside your browser, so it needs JavaScript switched on.</p></noscript>
 </section>
 

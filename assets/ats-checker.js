@@ -266,15 +266,23 @@
 
   function render(res, m, target, cv) {
     var v = res.unreadable ? ["An ATS can't read this file", res.groups[0].checks[0].detail] : VERDICT[res.band];
-    var html = '<div class="ats-score ats-b-' + res.band + '"><div class="ats-num"><b>' + res.score +
+    var html = '<div class="ats-summary"><span class="ats-eyebrow">RESUME HEALTH</span><div class="ats-score ats-b-' + res.band + '"><div class="ats-num"><b>' + res.score +
       "</b><span>/100</span></div><div><p class=\"ats-verdict\">" + esc(v[0]) + "</p><p>" + esc(v[1]) + "</p></div></div>" +
       '<div class="ats-meter" aria-hidden="true"><i style="width:' + res.score + '%"></i></div>';
+    html += '</div><div class="ats-tabs" role="tablist" aria-label="Resume report">' +
+      ['Overview', 'Job match', 'All checks', 'Parser view'].map(function (label, i) {
+        return '<button type="button" role="tab" id="ats-tab-' + i + '" aria-controls="ats-panel-' + i +
+          '" aria-selected="' + (i === 0) + '" tabindex="' + (i === 0 ? '0' : '-1') + '">' + label + '</button>';
+      }).join('') + '</div><div class="ats-panel" role="tabpanel" id="ats-panel-0" aria-labelledby="ats-tab-0">';
     if (!res.unreadable && res.fixes.length) {
       html += '<h3 class="ats-sub">Fix these first</h3><ol class="ats-fixes">' + res.fixes.map(function (c) {
         return "<li><b>" + esc(c.title) + ".</b> " + esc(c.detail) + "</li>";
       }).join("") + "</ol>";
     }
-    if (!res.unreadable) html += matchHtml(m, target);
+    if (!res.fixes.length && !res.unreadable) html += '<div class="ats-clear"><h3>No priority fixes</h3><p>Your CV passed the main checks. Review the job match before applying.</p></div>';
+    html += nextHtml() + '</div><div class="ats-panel" role="tabpanel" id="ats-panel-1" aria-labelledby="ats-tab-1" hidden>';
+    html += res.unreadable ? '<p>Upload a readable CV to compare skills.</p>' : matchHtml(m, target);
+    html += '</div><div class="ats-panel" role="tabpanel" id="ats-panel-2" aria-labelledby="ats-tab-2" hidden><div class="ats-check-grid">';
     res.groups.forEach(function (g) {
       var got = 0, of = 0;
       g.checks.forEach(function (c) { if (c.status !== "na") { got += c.earned; of += c.weight; } });
@@ -285,13 +293,32 @@
             esc(c.title) + "</b> " + esc(c.detail) + "</li>";
         }).join("") + "</ul></div>";
     });
-    html += '<details class="ats-seen"><summary>What the parser sees</summary><p class="note">The text as it ' +
+    html += '</div></div><div class="ats-panel" role="tabpanel" id="ats-panel-3" aria-labelledby="ats-tab-3" hidden><details open class="ats-seen"><summary>What the parser sees</summary><p class="note">The text as it ' +
       "comes out of your file, in the order a simple parser reads it. If sections are mixed together or your " +
       "phone number is missing here, an ATS has the same problem.</p><pre>" +
       esc((cv.text || "").slice(0, 8000)) + ((cv.text || "").length > 8000 ? "\n…" : "") + "</pre></details>";
-    html += nextHtml();
+    html += "</div>";
+    var previousTab = out.querySelector('[role="tab"][aria-selected="true"]');
+    var activeIndex = previousTab ? Number(previousTab.id.replace("ats-tab-", "")) : 0;
     out.innerHTML = html;
     out.hidden = false;
+    $("ats-empty").hidden = true;
+    var tabs = out.querySelectorAll('[role="tab"]');
+    function selectTab(index) {
+      tabs.forEach(function (tab, i) {
+        tab.setAttribute('aria-selected', String(i === index));
+        tab.tabIndex = i === index ? 0 : -1;
+        $("ats-panel-" + i).hidden = i !== index;
+      });
+    }
+    selectTab(activeIndex);
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () { selectTab(i); });
+      tab.addEventListener('keydown', function (e) {
+        var next = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+        if (next !== null) { e.preventDefault(); selectTab(next); tabs[next].focus(); }
+      });
+    });
   }
 
   function target() {
@@ -303,11 +330,13 @@
   }
 
   function run() {
-    if (state.source !== "file" && paste.value.trim()) {
-      state.cv = { text: paste.value, kind: "text" };
+    if (state.source !== "file") {
+      state.cv = paste.value.trim() ? { text: paste.value, kind: "text" } : null;
       state.source = "paste";
     }
     if (!state.cv) {
+      out.hidden = true;
+      $("ats-empty").hidden = false;
       say("Choose your CV first, or paste its text.", true);
       return;
     }
@@ -366,7 +395,7 @@
     e.preventDefault();
     chooseFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]);
   });
-  paste.addEventListener("input", function () { state.source = "paste-edit"; });
+  paste.addEventListener("input", function () { state.source = "paste-edit"; rerun(); });
   goBtn.addEventListener("click", run);
   var again;
   function rerun() {
