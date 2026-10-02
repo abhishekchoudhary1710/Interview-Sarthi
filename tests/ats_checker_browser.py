@@ -264,7 +264,8 @@ def main():
         page.wait_for_url('**/prep/app/**')
         page.wait_for_function("document.getElementById('cv') && document.getElementById('cv').value.length > 100")
         check(page.input_value('#jd') == '' and page.input_value('#practice-focus') == 'role'
-              and page.input_value('#target-role') == 'Data analyst',
+              and page.input_value('#target-role') == 'data analyst'
+              and 'practise for data analyst' in page.text_content('#apply-welcome'),
               'a role: Prep opens set up to practise for that role')
 
         page.goto(base + '/apply/ats-resume-checker/')

@@ -383,7 +383,7 @@
   function handToPrep(target) {
     var j = state.job, jd = jdBox.value.trim(), role = "";
     if (j && jd) jd = [j.title, j.company && "at " + j.company].filter(Boolean).join(" ") + "\n\n" + jd;
-    if (!jd && target && target.role) role = target.role.label;
+    if (!jd && target && target.role) role = inSentence(target.role.label);
     try {
       sessionStorage.setItem("sarthi_ats_handoff", JSON.stringify({ cv: state.cv ? state.cv.text : "", jd: jd.length >= 80 ? jd : "",
                                                                     role: role, at: Date.now() }));
