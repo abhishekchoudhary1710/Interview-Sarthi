@@ -121,3 +121,16 @@ body:has(.ats) .crumb{margin-top:12px}
 @media(max-width:900px){.ats-workspace{grid-template-columns:280px minmax(0,1fr)}.ats-output{padding:18px}.ats-check-grid{grid-template-columns:1fr}.ats-tabs{gap:2px}.ats-tabs button{padding:8px;font-size:11px}}
 @media(max-width:680px){.ats-toolbar{padding:16px;align-items:start;flex-direction:column;gap:8px}.ats-toolbar h2{font-size:17px}.ats-workspace{grid-template-columns:1fr}.ats-inputs{border-right:0;border-bottom:1px solid var(--line);padding:16px}.ats-output{padding:16px}.ats-empty{min-height:250px;padding:20px 10px}.ats-empty h3{font-size:20px}.ats-panel{max-height:420px}.ats-score{gap:12px}.ats-num b{font-size:44px}.ats-score .ats-verdict{font-size:16px}.ats-summary{padding:16px}.ats-tabs{justify-content:space-between}.ats{margin-left:0;margin-right:0}}
 @media(prefers-reduced-motion:no-preference){.ats-panel{animation:ats-reveal .2s ease-out}.ats-meter i{transition:width .3s ease}@keyframes ats-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
+/* Job match in the top card, beside the health score */
+.ats-fit{display:flex;gap:16px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px dashed #bfdbfe}
+.ats-fit p{margin:0;font-size:13px;line-height:1.6;color:var(--muted)}
+.ats-fit-num{flex:0 0 auto;min-width:86px;display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+.ats-fit-num b{font-size:30px;letter-spacing:-1px}
+.ats-fit-num span{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.ats-fit .ats-fit-title{font-size:15px;font-weight:700;color:var(--text)}
+.ats-f-strong .ats-fit-num b{color:var(--ok)}
+.ats-f-partial .ats-fit-num b{color:var(--warn)}
+.ats-f-weak .ats-fit-num b{color:var(--bad)}
+.ats-linkbtn{border:0;background:none;padding:0;font:inherit;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline}
+.ats-linkbtn:focus-visible{outline:3px solid #bfdbfe;outline-offset:2px;border-radius:4px}
+@media(max-width:680px){.ats-fit{gap:12px}.ats-fit-num{min-width:68px}.ats-fit-num b{font-size:26px}}

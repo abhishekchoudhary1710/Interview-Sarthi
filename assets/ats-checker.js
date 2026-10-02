@@ -206,7 +206,7 @@
   /* ---------------------------------------------------------------- the result */
 
   var VERDICT = {
-    ready: ["Ready to send", "An ATS can read this CV, and it carries what recruiters look for."],
+    ready: ["Ready to send", "An ATS can read this CV, and every main section is where a parser looks for it."],
     good: ["Good, with a few fixes", "A parser can read it. The points below will make it stronger."],
     work: ["Needs work", "Parts of this CV will be lost or skipped. Start with the fixes below."],
     fix: ["Fix this before you apply", "A parser will lose important parts of this CV. Fix the first points below before you send it anywhere."]
@@ -253,6 +253,29 @@
       words + note + "</div>";
   }
 
+  /* The job match in the top card, beside the health score. Health is about the file and does not move when
+   * the job does; without this row, choosing a role looked like it changed nothing (owner, 2 Oct 2026). */
+  var FIT = { strong: "Strong fit", partial: "Partial fit", weak: "Weak fit" };
+  function fitHtml(m, target) {
+    var see = ' <button type="button" class="ats-linkbtn" data-tab="1">See the job match</button>';
+    if (!m) {
+      return '<div class="ats-fit ats-f-none"><p>This score is about how readable your CV is, for any job. ' +
+        "Paste a job description or pick a role to see how well it fits.</p></div>";
+    }
+    if (!m.enough) {
+      return '<div class="ats-fit ats-f-none"><p>This job names too few skills from our list for a match score.' + see + "</p></div>";
+    }
+    var what = m.kind === "role" ? esc(inSentence(target.role.label)) + " postings" : "this job";
+    var sk = m.skills, total = sk.found.length + sk.missing.length;
+    var missing = sk.missing.length
+      ? " Missing: " + sk.missing.slice(0, 3).map(esc).join(", ") +
+        (sk.missing.length > 3 ? " and " + (sk.missing.length - 3) + " more" : "") + "."
+      : " Every skill it names is in your CV.";
+    return '<div class="ats-fit ats-f-' + m.band + '"><div class="ats-fit-num"><b>' + m.percent + '%</b><span>match</span></div>' +
+      '<div><p class="ats-fit-title">' + FIT[m.band] + " for " + what + "</p><p>" + sk.found.length + " of " + total +
+      " skills found." + missing + see + "</p></div></div>";
+  }
+
   function nextHtml() {
     var j = state.job, q = j ? "&source=" + encodeURIComponent(j.source) + "&id=" + encodeURIComponent(j.id) : "";
     var prep = "/prep/app/" + (j ? "?job=" + encodeURIComponent(j.source + ":" + j.id) : "");
@@ -269,6 +292,7 @@
     var html = '<div class="ats-summary"><span class="ats-eyebrow">RESUME HEALTH</span><div class="ats-score ats-b-' + res.band + '"><div class="ats-num"><b>' + res.score +
       "</b><span>/100</span></div><div><p class=\"ats-verdict\">" + esc(v[0]) + "</p><p>" + esc(v[1]) + "</p></div></div>" +
       '<div class="ats-meter" aria-hidden="true"><i style="width:' + res.score + '%"></i></div>';
+    if (!res.unreadable) html += fitHtml(m, target);
     html += '</div><div class="ats-tabs" role="tablist" aria-label="Resume report">' +
       ['Overview', 'Job match', 'All checks', 'Parser view'].map(function (label, i) {
         return '<button type="button" role="tab" id="ats-tab-' + i + '" aria-controls="ats-panel-' + i +
@@ -312,6 +336,13 @@
       });
     }
     selectTab(activeIndex);
+    out.querySelectorAll("[data-tab]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var i = Number(btn.getAttribute("data-tab"));
+        selectTab(i);
+        tabs[i].focus();
+      });
+    });
     tabs.forEach(function (tab, i) {
       tab.addEventListener('click', function () { selectTab(i); });
       tab.addEventListener('keydown', function (e) {

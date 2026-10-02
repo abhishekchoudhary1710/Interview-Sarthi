@@ -159,6 +159,22 @@ def main():
         page.select_option('#ats-role', 'devops-engineer')
         page.wait_for_function("document.querySelector('.ats-match h3').textContent.includes('%')")
         check('DevOps and cloud engineer postings' in page.text_content('.ats-match h3'), 'role match follows the picker')
+        # The top card shows the fit beside the health score, so changing the role visibly changes the result.
+        health = score(page)
+        fit = page.text_content('.ats-summary .ats-fit')
+        check('DevOps and cloud engineer postings' in fit and '%' in fit, f'top card shows the DevOps fit: {fit.strip()[:80]}')
+        page.select_option('#ats-role', 'qa-engineer')
+        page.wait_for_function("document.querySelector('.ats-summary .ats-fit').textContent.includes('QA and test engineer')")
+        fit_qa = page.text_content('.ats-summary .ats-fit')
+        check(score(page) == health and 'Weak fit' in fit_qa and 'Selenium' in fit_qa,
+              f'switching to QA keeps health at {health} and shows a weak QA fit: {fit_qa.strip()[:90]}')
+        page.select_option('#ats-role', 'data-analyst')
+        page.wait_for_function("document.querySelector('.ats-summary .ats-fit').textContent.includes('data analyst')")
+        check('Strong fit' in page.text_content('.ats-summary .ats-fit'), 'a data analyst CV is a strong data analyst fit')
+        page.click('#ats-tab-0')
+        page.click('.ats-summary [data-tab="1"]')
+        check(page.get_attribute('#ats-tab-1', 'aria-selected') == 'true' and not page.is_hidden('#ats-panel-1'),
+              '"See the job match" opens the Job match tab')
         page.screenshot(path=str(OUT / 'ats-desktop.png'), full_page=True)
 
         page.set_input_files('#ats-file', str(tmp / 'two-columns.pdf'))
