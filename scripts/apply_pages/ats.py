@@ -18,6 +18,8 @@ import html
 from ._shared import table
 
 UP = '../../'
+GO = 'https://apply.interviewsarthi.com/go/apply'   # ApplySarthi's click counter; lands only on its own lists or app
+PREP_APP = 'prep/app/'                              # the Prep app itself (free demo), as the result box links it
 SNAPSHOT = '2 October 2026'
 DATE = '2026-10-02'
 BASE = '/apply/ats-resume-checker/'
@@ -228,9 +230,12 @@ MAIN = {
     'meta': f'Updated {SNAPSHOT} · Free, no sign-up · Made by the team that builds ApplySarthi',
     'published': DATE, 'modified': DATE,
     'head': HEAD,
-    'cta_title': 'Missing skills? Tailor your CV for the job',
-    'cta_text': 'ApplySarthi rewrites your CV for one job using only what your CV already says, and gives you '
-                'a clean one-column PDF. Always free.',
+    'cta_title': 'Find the jobs that fit your CV',
+    'cta_text': 'ApplySarthi ranks open jobs by how well they fit your CV, and rewrites your CV for any of them '
+                'using only what it already says. Always free: you sign in and upload your CV there.',
+    'cta_buttons': (f'<a class="cta" href="{GO}?slot=ats_promo&amp;want=matches" rel="nofollow">Find jobs that fit my CV</a> '
+                    f'<a class="cta ghost" href="{UP}apply/">What ApplySarthi does</a>'),
+    'prep_href': PREP_APP,
     'schema': [{
         '@type': 'WebApplication', '@id': ORIGIN + BASE + '#app', 'name': 'ATS Resume Checker',
         'url': ORIGIN + BASE, 'applicationCategory': 'BusinessApplication',
@@ -286,9 +291,14 @@ def role_page(r):
         'meta': f'Updated {SNAPSHOT} · Free, no sign-up · Made by the team that builds ApplySarthi',
         'published': DATE, 'modified': DATE,
         'head': HEAD,
-        'cta_title': 'Missing skills? Tailor your CV for the job',
-        'cta_text': 'ApplySarthi rewrites your CV for one job using only what your CV already says, and gives you '
-                    'a clean one-column PDF. Always free.',
+        'cta_title': f'Tailor your CV for a real {in_sentence(r["label"])} job',
+        'cta_text': f'Open {in_sentence(r["label"])} jobs in India on ApplySarthi. On any job, press <b>Tailor my CV '
+                    f'for this job</b>: your CV rewritten for it, using only what it already says. Free: you sign in '
+                    f'and upload your CV there.',
+        'cta_buttons': (f'<a class="cta" href="{GO}?slot=ats_promo&amp;to={r["jobs"]}" rel="nofollow">'
+                        f'See {html.escape(in_sentence(r["label"]))} jobs in India</a> '
+                        f'<a class="cta ghost" href="{UP}apply/">What ApplySarthi does</a>'),
+        'prep_href': PREP_APP,
         'body': tool_html(r['slug']) + f"""
 <h2>What {html.escape(in_sentence(r['label']))} postings in India ask for</h2>
 {table(['Skill', 'Share of postings naming it'], rows)}

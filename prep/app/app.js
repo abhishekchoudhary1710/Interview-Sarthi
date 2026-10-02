@@ -1022,6 +1022,30 @@ function showApplyWelcome(text) {
   }
   el.textContent = text;
 }
+/* The ATS resume checker on this site hands over the CV it just read and the job or role it was checked
+ * against, so its "Practise this interview" needs no second upload. Same site and this tab only
+ * (sessionStorage); read once, then deleted. Nothing leaves the device until the person presses Start, exactly
+ * as with a CV they paste here themselves. */
+const ATS_HANDOFF = "sarthi_ats_handoff";
+function takeAtsHandoff() {
+  let h = null;
+  try { h = JSON.parse(sessionStorage.getItem(ATS_HANDOFF) || "null"); sessionStorage.removeItem(ATS_HANDOFF); }
+  catch (_) { h = null; }
+  if (!h || typeof h.cv !== "string" || h.cv.trim().length < 80 || !(Date.now() - Number(h.at || 0) < 30 * 60 * 1000)) return false;
+  $("cv").value = h.cv.slice(0, 30000);
+  const jd = typeof h.jd === "string" ? h.jd.trim() : "", role = typeof h.role === "string" ? h.role.trim() : "";
+  $("jd").value = jd.slice(0, 12000);
+  if (!jd && role) { $("practice-focus").value = "role"; $("target-role").value = role.slice(0, 150); }
+  if (!$("name").value) $("name").value = guessName(h.cv);
+  updateNoJdOptions();
+  showApplyWelcome(jd ? "Your CV and the job came from the ATS checker. Check them, then start your free mock interview."
+    : role ? `Your CV came from the ATS checker, set up to practise for ${role}. Check it, then start your free mock interview.`
+    : "Your CV came from the ATS checker. Check it, then start your free mock interview.");
+  track("mock_from_ats", { target: jd ? "jd" : role ? "role" : "cv" });
+  try { if (location.search) history.replaceState(null, "", location.pathname + location.hash); } catch (_) { /* cosmetic */ }
+  return true;
+}
+
 async function loadJobFromApply() {
   const q = new URLSearchParams(location.search);
   const job = q.get("job") || "", fromApply = q.get("from") === "applysarthi", fromLive = q.get("from") === "livesarthi";
@@ -1108,7 +1132,8 @@ window.addEventListener("pagehide", () => {
 });
 rememberInvite();
 rememberSource();
-const booting = restore().then(loadJobFromApply).then(() => initPasses(passCtx)).then(renderEntitlement);
+const booting = restore().then(() => { if (!takeAtsHandoff()) return loadJobFromApply(); })
+  .then(() => initPasses(passCtx)).then(renderEntitlement);
 let bootDone = false;
 booting.then(() => { bootDone = true; }, () => {});
 // Saves that could not reach the server last time, and any weekly or end-of-pass review now due.

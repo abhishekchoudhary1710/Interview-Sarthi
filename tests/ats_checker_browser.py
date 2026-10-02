@@ -25,7 +25,8 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / '.seo-preview'
-BLOCK = ('googletagmanager.com', 'google-analytics.com', 'clarity.ms', '/chat/', 'wa.me')
+BLOCK = ('googletagmanager.com', 'google-analytics.com', 'clarity.ms', '/chat/', 'wa.me',
+         'license.interviewsarthi.com', 'workers.dev', 'generativelanguage.googleapis.com', 'accounts.google.com')
 
 CV_LINES = [
     ('h1', 'Priya Sharma'),
@@ -155,9 +156,15 @@ def main():
         check(st['One column'] == 'pass', 'one-column PDF reads as one column')
         check(st['Phone number'] == 'pass' and st['Email address'] == 'pass', 'contact details found in the PDF')
         check('Paste a job description' in page.text_content('.ats-match'), 'no job given: the match asks for one')
-        nxt = lambda: (page.get_attribute('.ats-next', 'data-next'), page.get_attribute('.ats-next a.cta', 'href'))
-        check(nxt() == ('all', 'https://apply.interviewsarthi.com/jobs-in/india'),
-              f'no job and no role: Next opens all jobs in India {nxt()}')
+        # The next-step box: one main button per situation (state in data-next), the rest quieter.
+        nxt = lambda: page.get_attribute('.ats-next', 'data-next')
+        main_btn = lambda: page.text_content('.ats-next .ats-btns > .cta:first-child').strip()
+        ghost = lambda: page.get_attribute('.ats-next .ats-btns a.cta.ghost', 'href')
+        check(nxt() == 'no-job' and main_btn() == 'Check it against a job'
+              and ghost() == 'https://apply.interviewsarthi.com/go/apply?slot=ats_fit&want=matches' and 'sign in' in page.text_content('.ats-next'),
+              f'no job, no role: check it against a job here; jobs that fit this CV says sign-in first ({nxt()}, {ghost()})')
+        page.click('.ats-next [data-act="job"]')
+        check(page.evaluate("document.activeElement.id") == 'ats-jd', '"Check it against a job" puts the cursor in the job box')
         page.click('#ats-tab-1')
         page.select_option('#ats-role', 'devops-engineer')
         page.wait_for_function("document.querySelector('.ats-match h3').textContent.includes('%')")
@@ -171,21 +178,31 @@ def main():
         fit_qa = page.text_content('.ats-summary .ats-fit')
         check(score(page) == health and 'Weak fit' in fit_qa and 'Selenium' in fit_qa,
               f'switching to QA keeps health at {health} and shows a weak QA fit: {fit_qa.strip()[:90]}')
-        check(nxt() == ('role', 'https://apply.interviewsarthi.com/jobs-in/india/qa-engineer')
-              and 'See QA and test engineer jobs in India' in page.text_content('.ats-next a.cta'),
-              f'a role: Next opens that role\'s jobs in India {nxt()}')
+        check(nxt() == 'fix' and main_btn() == 'Fix the missing skills'
+              and ghost() == 'https://apply.interviewsarthi.com/go/apply?slot=ats_role&to=%2Fjobs-in%2Findia%2Fqa-engineer'
+              and 'See QA and test engineer jobs in India' in page.text_content('.ats-next'),
+              f'a weak role match: fix the skills first, the QA list second ({nxt()}, {ghost()})')
+        page.click('.ats-next [data-act="fix"]')
+        check(page.get_attribute('#ats-tab-1', 'aria-selected') == 'true' and page.is_visible('.ats-fix')
+              and 'Check my updated CV' in page.text_content('.ats-fix'),
+              '"Fix the missing skills" opens the job match with the steps and a re-check button')
+        page.click('#ats-tab-0')
         page.select_option('#ats-role', '')
         page.fill('#ats-jd', 'We are hiring a QA engineer to own test automation. You will write Selenium and '
                              'Playwright suites in Java and Python, run them from Jenkins in our CI/CD pipeline, '
                              'and log defects in Jira.')
-        page.wait_for_function("document.querySelector('.ats-next') && document.querySelector('.ats-next').dataset.next === 'role'")
-        check(nxt()[1].endswith('/jobs-in/india/qa-engineer'), f'a pasted QA description: Next opens QA jobs {nxt()}')
+        page.wait_for_function("document.querySelector('.ats-next') && document.querySelector('.ats-next').dataset.next === 'fix'"
+                               " && document.querySelector('.ats-next a.cta.ghost').href.includes('ats_similar')")
+        check(ghost().endswith('ats_similar&to=%2Fjobs-in%2Findia%2Fqa-engineer'),
+              f'a pasted QA description: the similar list is QA jobs ({ghost()})')
         page.fill('#ats-jd', '')
-        page.select_option('#ats-role', 'qa-engineer')
-        page.wait_for_function("document.querySelector('.ats-next').dataset.next === 'role'")
         page.select_option('#ats-role', 'data-analyst')
         page.wait_for_function("document.querySelector('.ats-summary .ats-fit').textContent.includes('data analyst')")
         check('Strong fit' in page.text_content('.ats-summary .ats-fit'), 'a data analyst CV is a strong data analyst fit')
+        check(nxt() == 'ready' and main_btn() == 'Practise a data analyst interview (free 7-min demo)'
+              and page.get_attribute('.ats-next [data-act="prep"]', 'href') == '/prep/app/?from=ats'
+              and ghost().endswith('ats_role&to=%2Fjobs-in%2Findia%2Fdata-analyst'),
+              f'a strong role match: practise the interview first, the jobs second ({nxt()})')
         page.click('#ats-tab-0')
         page.click('.ats-summary [data-tab="1"]')
         check(page.get_attribute('#ats-tab-1', 'aria-selected') == 'true' and not page.is_hidden('#ats-panel-1'),
@@ -200,6 +217,10 @@ def main():
         page.set_input_files('#ats-file', str(tmp / 'scan.pdf'))
         page.wait_for_function("document.querySelector('.ats-verdict') && document.querySelector('.ats-verdict').textContent.includes(\"can't read\")", timeout=30000)
         check(score(page) == 0, 'image-only PDF scores 0 and says an ATS cannot read it')
+        check(nxt() == 'unreadable' and page.get_attribute('.ats-next a.cta', 'href') == '../guides/ats-resume-format-india.html',
+              'an unreadable file: how to export a readable PDF, or paste the text')
+        page.click('.ats-next [data-act="paste"]')
+        check(page.evaluate("document.activeElement.id") == 'ats-text', '"Paste the text instead" opens the paste box')
 
         page.set_input_files('#ats-file', str(tmp / 'cv.docx'))
         page.wait_for_function("[...document.querySelectorAll('.ats-group li b')].some(b => b.textContent === 'No layout tables')", timeout=30000)
@@ -222,12 +243,29 @@ def main():
               "the employer's own name is never a missing word")
         page.click('#ats-tab-0')
         href = page.get_attribute('.ats-next a.cta', 'href')
-        check(href.startswith('https://apply.interviewsarthi.com/go/apply?slot=ats_result&source=greenhouse&id=4321')
-              and page.text_content('.ats-next a.cta') == 'Tailor my CV for this job, free'
+        check(nxt() == 'job-fix' and href == 'https://apply.interviewsarthi.com/go/apply?slot=ats_tailor&source=greenhouse&id=4321'
+              and main_btn() == 'Tailor my CV for this job, free'
               and 'Data Analyst at Acme Retail' in page.text_content('.ats-next'),
-              'a job from ApplySarthi: Tailor opens its sign-in for that job, with the slot')
-        check(page.get_attribute('.ats-next .alsotry a', 'href') == '/prep/app/?job=greenhouse%3A4321',
-              'Prep link opens this job in the app')
+              'a job from ApplySarthi, weak match: Tailor opens its sign-in for that job, counted')
+        # Practise hands this CV and this job to Prep Sarthi inside the browser: nothing is uploaded twice.
+        page.click('.ats-next [data-act="prep"]')
+        page.wait_for_url('**/prep/app/**')
+        page.wait_for_function("document.getElementById('cv') && document.getElementById('cv').value.length > 100")
+        cv_box, jd_box = page.input_value('#cv'), page.input_value('#jd')
+        check('Priya Sharma' in cv_box and jd_box.startswith('Data Analyst at Acme Retail') and 'Snowflake' in jd_box
+              and 'from the ATS checker' in page.text_content('#apply-welcome'),
+              'Practise opens Prep with this CV and this job already filled in')
+        check(page.evaluate("sessionStorage.getItem('sarthi_ats_handoff')") is None and '?' not in page.url,
+              'the hand-over is read once, then deleted, and the address bar is clean')
+        page.goto(base + '/apply/ats-resume-checker/data-analyst.html')
+        page.set_input_files('#ats-file', str(tmp / 'one-column.pdf'))
+        page.wait_for_selector('#ats-result:not([hidden]) .ats-next[data-next="ready"]')
+        page.click('.ats-next [data-act="prep"]')
+        page.wait_for_url('**/prep/app/**')
+        page.wait_for_function("document.getElementById('cv') && document.getElementById('cv').value.length > 100")
+        check(page.input_value('#jd') == '' and page.input_value('#practice-focus') == 'role'
+              and page.input_value('#target-role') == 'Data analyst',
+              'a role: Prep opens set up to practise for that role')
 
         page.goto(base + '/apply/ats-resume-checker/')
         page.click('.ats-paste summary')

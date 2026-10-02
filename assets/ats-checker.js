@@ -289,36 +289,105 @@
     return bestN >= 3 && bestN > second ? best : null;
   }
 
-  /* Where "Next" sends someone, by what they gave us (owner, 2 Oct 2026: "make it reasonable"):
-   * a job from ApplySarthi -> its sign-in names that job and makes the tailored CV by itself;
-   * a role, or a pasted description that clearly belongs to one -> that role's open jobs in India, where every
-   * job has its own "Tailor my CV for this job"; nothing to go on -> all open jobs in India.
-   * ApplySarthi tailors only to jobs it holds, so a pasted description cannot be tailored to directly. */
-  function nextHtml(m, target, roles) {
-    var j = state.job;
-    var prep = "/prep/app/" + (j ? "?job=" + encodeURIComponent(j.source + ":" + j.id) : "");
-    var after = '<p class="alsotry">Interview coming up? <a href="' + prep + '">Practise it with Prep Sarthi</a> ' +
-      '(free 7-minute demo), then keep <a href="/live/">Live Sarthi</a> open during the call on Windows.</p></div>';
+  /* What to do next, by what the visitor gave us and how the CV did (owner, 2 Oct 2026: "see every logic, what
+   * should happen where"; the leading checkers were studied the same day). One main button per situation,
+   * each label naming where it goes, and "sign in" said before the click, never after:
+   *   unreadable file              -> how to export a readable PDF        | paste the text instead
+   *   no job, no role              -> check it against a job (same page)  | jobs that fit this CV (ApplySarthi)
+   *   role / pasted job, below 75% -> fix the missing skills (same page)  | that role's jobs in India
+   *   role / pasted job, 75%+      -> practise this interview (Prep)      | that role's jobs in India
+   *   job from ApplySarthi, < 75%  -> tailor my CV for this job           | practise this interview
+   *   job from ApplySarthi, 75%+   -> practise this interview             | tailor it · view job and apply
+   * Practise hands this CV and job to Prep Sarthi inside the browser (same site), so nothing is uploaded twice.
+   * ApplySarthi links go through its /go/ counter; it lands only on its own lists or the app. */
+  function goApply(slot, extra) { return APPLY + "/go/apply?slot=" + slot + (extra || ""); }
+
+  function nextHtml(res, m, target, roles) {
+    var j = state.job, act = "";
+    var btn = function (cls, label, attrs) { return '<a class="cta' + cls + '" ' + attrs + ">" + label + "</a>"; };
+    var main = function (label, attrs) { return btn("", label, attrs); };
+    var second = function (label, attrs) { return btn(" ghost", label, attrs); };
+    var live = '<p class="alsotry">Interview booked? <a href="/live/" data-act="live">Live Sarthi</a> shows answer ' +
+      "hints during the call (Windows, 30 minutes free).</p>";
+    var signIn = '<p class="ats-cost">ApplySarthi is free. You sign in with Google or email and upload your CV there; ' +
+      "this page never uploads it.</p>";
+    if (res.unreadable) {
+      return '<div class="ats-next" data-next="unreadable"><h3>Next: get a file an ATS can read</h3>' +
+        "<p>Export your CV again from Word or Google Docs as a PDF, then check it here. Or paste its text below to see " +
+        "the rest of the checks now.</p><p class=\"ats-btns\">" +
+        main("How to make a PDF an ATS can read", 'href="../guides/ats-resume-format-india.html" data-act="guide"') +
+        '<button type="button" class="cta ghost" data-act="paste">Paste the text instead</button></p></div>';
+    }
+    var role = target && target.role ? { slug: target.slug, r: target.role } : null;
+    if (!role && !j) { var g = guessRole(m, roles); if (g) role = { slug: g, r: roles[g], guessed: true }; }
+    var roleName = role ? esc(inSentence(role.r.label)) : "";
+    var good = !!(m && m.enough && m.band === "strong");
+    var prepLabel = role && !(m && m.kind === "jd") && !j ? "Practise a " + roleName + " interview" : "Practise this interview";
+    var prep = main(prepLabel + " (free 7-min demo)", 'href="/prep/app/?from=ats" data-act="prep"');
+    var prepSecond = second(prepLabel, 'href="/prep/app/?from=ats" data-act="prep"');
     if (j) {
-      return '<div class="ats-next" data-next="job"><h3>Next: tailor your CV for this job</h3>' +
-        "<p>ApplySarthi rewrites your CV for " + esc(j.title || "this job") + (j.company ? " at " + esc(j.company) : "") +
-        " using only what your CV already says, and gives you a clean one-column PDF. Sign in, upload your CV, " +
-        "and it is made for you. Free.</p>" +
-        '<p><a class="cta" href="' + APPLY + "/go/apply?slot=ats_result&source=" + encodeURIComponent(j.source) +
-        "&id=" + encodeURIComponent(j.id) + '">Tailor my CV for this job, free</a></p>' + after;
+      var jq = "&source=" + encodeURIComponent(j.source) + "&id=" + encodeURIComponent(j.id);
+      var tailor = 'href="' + goApply("ats_tailor", jq) + '" data-act="tailor"';
+      var view = second("View job and apply", 'href="' + APPLY + "/go/job/" + encodeURIComponent(j.source) + "/" +
+        encodeURIComponent(j.id) + '" target="_blank" rel="noopener" data-act="view"');
+      var name = esc(j.title || "this job") + (j.company ? " at " + esc(j.company) : "");
+      return good
+        ? '<div class="ats-next" data-next="job-ready"><h3>Next: practise the ' + name + " interview</h3>" +
+          "<p>Your CV already fits this job well. Rehearse it out loud with Prep Sarthi, using your CV and this job.</p>" +
+          '<p class="ats-btns">' + prep + second("Tailor my CV for this job", tailor) + view + "</p>" + live + "</div>"
+        : '<div class="ats-next" data-next="job-fix"><h3>Next: tailor your CV for ' + name + "</h3>" +
+          "<p>ApplySarthi rewrites your CV for this job, using only what your CV already says, and gives you a clean " +
+          "one-column PDF. Sign in, upload your CV, and it is made for you.</p>" +
+          '<p class="ats-btns">' + main("Tailor my CV for this job, free", tailor) + prepSecond + "</p>" + signIn + live + "</div>";
     }
-    var slug = target && target.role ? target.slug : guessRole(m, roles);
-    var role = slug && roles[slug];
-    var how = "<p>ApplySarthi tailors your CV to a job it lists. Open a job and press <b>Tailor my CV for this job</b>: " +
-      "it rewrites your CV for that job using only what your CV already says, and gives you a clean one-column PDF. " +
-      "Free.</p>";
-    if (role) {
-      var name = esc(inSentence(role.label));
-      return '<div class="ats-next" data-next="role"><h3>Next: pick a real ' + name + " job and tailor your CV for it</h3>" +
-        how + '<p><a class="cta" href="' + APPLY + role.jobs + '">See ' + name + " jobs in India</a></p>" + after;
+    var list = role
+      ? second("See " + roleName + " jobs in India", 'href="' + goApply(role.guessed ? "ats_similar" : "ats_role",
+          "&to=" + encodeURIComponent(role.r.jobs)) + '" data-act="list"')
+      : second("Find jobs in India", 'href="' + goApply("ats_all", "&to=" + encodeURIComponent("/jobs-in/india")) + '" data-act="list"');
+    var listNote = '<p class="ats-cost">On ApplySarthi, open a job and press <b>Tailor my CV for this job</b>. Free; ' +
+      "you sign in and upload your CV there.</p>";
+    if (!m) {
+      return '<div class="ats-next" data-next="no-job"><h3>Next: check it against a job</h3>' +
+        "<p>A CV is only as good as its fit to the job. Paste a job description, or pick a role, and see which " +
+        "skills recruiters for it will not find in your CV.</p>" +
+        '<p class="ats-btns"><button type="button" class="cta" data-act="job">Check it against a job</button>' +
+        second("See jobs that fit this CV", 'href="' + goApply("ats_fit", "&want=matches") + '" data-act="fit"') +
+        "</p>" + signIn + live + "</div>";
     }
-    return '<div class="ats-next" data-next="all"><h3>Next: tailor your CV for a real job</h3>' + how +
-      '<p><a class="cta" href="' + APPLY + '/jobs-in/india">Find jobs in India</a></p>' + after;
+    if (good) {
+      return '<div class="ats-next" data-next="ready"><h3>Next: practise the interview</h3>' +
+        "<p>Your CV covers what " + (role && !role.guessed && m.kind === "role" ? roleName + " postings" : "this job") +
+        " ask for. Rehearse it out loud with Prep Sarthi, using this CV" + (m.kind === "jd" ? " and this job" : "") + ".</p>" +
+        '<p class="ats-btns">' + prep + list + "</p>" + listNote + live + "</div>";
+    }
+    return '<div class="ats-next" data-next="fix"><h3>Next: add the skills you are missing</h3>' +
+      "<p>Recruiters search by these words. Add each one you have really used, in the role where you used it, then " +
+      "check your CV again.</p>" +
+      '<p class="ats-btns"><button type="button" class="cta" data-act="fix">Fix the missing skills</button>' + list + "</p>" +
+      listNote + live + "</div>";
+  }
+
+  /* Below the missing skills in the Job match tab: how to fix them, and the way back to a fresh check. */
+  function fixHtml(m) {
+    if (!m || (m.enough && m.band === "strong") || !(m.skills.missing.length || m.terms.missing.length)) return "";
+    return '<div class="ats-fix"><h3>How to fix it</h3><ol>' +
+      "<li>Open your CV in Word or Google Docs.</li>" +
+      "<li>For each missing skill you have really used, name it in the job where you used it (" +
+      '"Automated regression tests in Selenium") and add it to your Skills list.</li>' +
+      "<li>Save it as a PDF and check it again here.</li></ol>" +
+      '<p class="ats-btns"><button type="button" class="cta" data-act="recheck">Check my updated CV</button></p>' +
+      '<p class="note">Never add a skill you have not used. A recruiter will ask about every line.</p></div>';
+  }
+
+  /* Prep Sarthi is on this site: hand it the CV and the job inside this tab, so it opens ready to start. */
+  function handToPrep(target) {
+    var j = state.job, jd = jdBox.value.trim(), role = "";
+    if (j && jd) jd = [j.title, j.company && "at " + j.company].filter(Boolean).join(" ") + "\n\n" + jd;
+    if (!jd && target && target.role) role = target.role.label;
+    try {
+      sessionStorage.setItem("sarthi_ats_handoff", JSON.stringify({ cv: state.cv ? state.cv.text : "", jd: jd.length >= 80 ? jd : "",
+                                                                    role: role, at: Date.now() }));
+    } catch (e) { /* Prep still opens; the visitor adds the CV there */ }
   }
 
   function render(res, m, target, cv, roles) {
@@ -338,8 +407,8 @@
       }).join("") + "</ol>";
     }
     if (!res.fixes.length && !res.unreadable) html += '<div class="ats-clear"><h3>No priority fixes</h3><p>Your CV passed the main checks. Review the job match before applying.</p></div>';
-    html += nextHtml(m, target, roles) + '</div><div class="ats-panel" role="tabpanel" id="ats-panel-1" aria-labelledby="ats-tab-1" hidden>';
-    html += res.unreadable ? '<p>Upload a readable CV to compare skills.</p>' : matchHtml(m, target);
+    html += '</div><div class="ats-panel" role="tabpanel" id="ats-panel-1" aria-labelledby="ats-tab-1" hidden>';
+    html += res.unreadable ? '<p>Upload a readable CV to compare skills.</p>' : matchHtml(m, target) + fixHtml(m);
     html += '</div><div class="ats-panel" role="tabpanel" id="ats-panel-2" aria-labelledby="ats-tab-2" hidden><div class="ats-check-grid">';
     res.groups.forEach(function (g) {
       var got = 0, of = 0;
@@ -355,7 +424,8 @@
       "comes out of your file, in the order a simple parser reads it. If sections are mixed together or your " +
       "phone number is missing here, an ATS has the same problem.</p><pre>" +
       esc((cv.text || "").slice(0, 8000)) + ((cv.text || "").length > 8000 ? "\n…" : "") + "</pre></details>";
-    html += "</div>";
+    // The next step sits under the tabs, not inside Overview: it must stay in view whichever tab is open.
+    html += "</div>" + nextHtml(res, m, target, roles);
     var previousTab = out.querySelector('[role="tab"][aria-selected="true"]');
     var activeIndex = previousTab ? Number(previousTab.id.replace("ats-tab-", "")) : 0;
     out.innerHTML = html;
@@ -370,6 +440,21 @@
       });
     }
     selectTab(activeIndex);
+    out.querySelectorAll("[data-act]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var a = el.getAttribute("data-act");
+        track("ats_next", { action: a, state: (out.querySelector(".ats-next") || {}).getAttribute ?
+          out.querySelector(".ats-next").getAttribute("data-next") : "" });
+        if (a === "prep") handToPrep(target);
+        else if (a === "fix") { selectTab(1); tabs[1].focus(); }
+        else if (a === "recheck") fileInput.click();
+        else if (a === "job") { jdBox.scrollIntoView({ behavior: "smooth", block: "center" }); jdBox.focus(); }
+        else if (a === "paste") {
+          var d = paste.closest("details"); if (d) d.open = true;
+          paste.scrollIntoView({ behavior: "smooth", block: "center" }); paste.focus();
+        }
+      });
+    });
     out.querySelectorAll("[data-tab]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var i = Number(btn.getAttribute("data-tab"));
