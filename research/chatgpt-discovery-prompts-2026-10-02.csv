@@ -1,0 +1,31 @@
+prompt_set_version,prompt_id,product,prompt,expected_product_url,status
+2026-10-02,prep-01,prep,Which affordable spoken AI mock interview apps can I use in India?,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-02,prep,I want an AI mock interview based on my own CV and a job description. What tools should I try?,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-03,prep,Which interview practice apps work in Hindi or Hinglish?,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-04,prep,I need to practise interview answers aloud on my phone and get feedback. Recommend suitable apps.,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-05,prep,Are there AI mock interview apps with one-time payments instead of recurring subscriptions?,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-06,prep,What AI interview practice tools can I try without signing up or adding an API key?,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-07,prep,I have a TCS interview coming up. Which apps can help me practise a spoken mock interview?,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-08,prep,Which mock interview apps ask follow-up questions about my projects?,https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-09,prep,"Which interview practice tools give feedback on my pace, pauses and filler words?",https://interviewsarthi.com/prep/,not_run
+2026-10-02,prep-10,prep,"Compare low-cost AI mock interview tools for Indian freshers, including free limits and setup requirements.",https://interviewsarthi.com/prep/,not_run
+2026-10-02,apply-01,apply,Which tools bring jobs from multiple portals into one searchable place?,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-02,apply,Which free tools can match jobs in India to my CV?,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-03,apply,I am tired of typing the same details into job applications. Recommend Chrome autofill tools.,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-04,apply,Which job search tools can tailor my CV and cover letter using my existing experience?,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-05,apply,I want application autofill but I want to review everything before submitting. What should I use?,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-06,apply,Which tools combine job matching with application tracking?,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-07,apply,"Can you recommend tools for finding jobs across Naukri, LinkedIn and employer career pages?",https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-08,apply,Which job matching apps let me browse vacancies on my phone?,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-09,apply,Which job application assistants support using my own Gemini API key?,https://interviewsarthi.com/apply/,not_run
+2026-10-02,apply-10,apply,"Compare free job search and application tools for India, including account requirements and automation limits.",https://interviewsarthi.com/apply/,not_run
+2026-10-02,live-01,live,Which Windows apps can transcribe interview questions and suggest answers based on my CV?,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-02,live,My interviewer permits AI assistance. Which tools work alongside Teams or Zoom on Windows?,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-03,live,Which live interview assistants support Hindi and Hinglish?,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-04,live,Which Windows interview assistants use my own Gemini API key?,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-05,live,Compare interview copilots with one-time passes instead of recurring subscriptions.,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-06,live,Which interview assistant apps offer a free Windows trial before I buy?,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-07,live,Which interview assistants can work without adding a bot to my meeting?,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-08,live,I need an interview assistant for Windows 10. What tools should I consider and what versions do they require?,https://interviewsarthi.com/live/,not_run
+2026-10-02,live-09,live,"For a permitted practice call, which interview assistants exclude their panel from supported screen sharing, and what are the limitations?",https://interviewsarthi.com/live/,not_run
+2026-10-02,live-10,live,"Compare affordable live interview assistants for Indian job seekers, including privacy, setup and trial limits.",https://interviewsarthi.com/live/,not_run

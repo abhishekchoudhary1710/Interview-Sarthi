@@ -12,6 +12,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = 'https://interviewsarthi.com'
+SEARCH_CRAWLERS = ('Googlebot', 'Bingbot', 'OAI-SearchBot')
 NS = {'s': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
 
 
@@ -321,7 +322,7 @@ def audit(root=ROOT):
         robots = ''
     for path, page in parsed_pages.items():
         if page.is_redirect:
-            for crawler in ('Googlebot', 'Bingbot'):
+            for crawler in SEARCH_CRAWLERS:
                 if not robots_allows(robots, crawler, canonical_for(path)):
                     errors.append(f'{path}: robots.txt blocks {crawler} from a migration redirect')
     sitemap = []
@@ -353,7 +354,7 @@ def audit(root=ROOT):
                 warnings.append(f'{path}: missing HTML language declaration')
             if not re.search(r'\bwidth\s*=\s*device-width\b', page.meta.get('viewport', ''), re.I):
                 warnings.append(f'{path}: missing responsive viewport')
-            for crawler in ('Googlebot', 'Bingbot'):
+            for crawler in SEARCH_CRAWLERS:
                 if not robots_allows(robots, crawler, base):
                     errors.append(f'{path}: robots.txt blocks {crawler} from an indexable page')
             for label, values in [('title', page.titles), ('description', page.descriptions), ('canonical', page.canonicals)]:

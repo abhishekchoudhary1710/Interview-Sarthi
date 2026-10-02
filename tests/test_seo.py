@@ -150,6 +150,23 @@ class SeoTests(unittest.TestCase):
             self.assertIn('blocks Bingbot from an indexable page', errors)
             self.assertIn('blocks Googlebot from local asset /photo.png', errors)
 
+    def test_chatgpt_search_access_is_independent_of_training_access(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pages = {'index.html': '<a href="prep/">Prep</a>',
+                     'prep/index.html': '<p>Practice</p>',
+                     'mock/index.html': '<meta http-equiv="refresh" content="0; url=/prep/">'
+                                        '<link rel="canonical" href="https://interviewsarthi.com/prep/">'}
+            allowed = 'User-agent: *\nAllow: /\nUser-agent: GPTBot\nDisallow: /\n'
+            self.fixture_site(root, pages, robots=allowed)
+            self.assertEqual(audit(root)['errors'], [])
+            self.fixture_site(root, pages, robots=allowed + 'User-agent: OAI-SearchBot\nDisallow: /\n')
+            errors = '\n'.join(audit(root)['errors'])
+            self.assertIn('blocks OAI-SearchBot from an indexable page', errors)
+            self.assertIn('blocks OAI-SearchBot from a migration redirect', errors)
+            self.assertNotIn('blocks GPTBot', errors)
+            self.assertNotIn('blocks Googlebot', errors)
+
     def test_breadcrumb_allows_missing_final_url_but_rejects_invalid_urls(self):
         schema = {'@type': 'BreadcrumbList', 'itemListElement': [
             {'@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': 'https://interviewsarthi.com/'},

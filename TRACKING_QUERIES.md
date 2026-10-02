@@ -36,7 +36,7 @@ Destinations: `/apply/`, relevant applying guides, and public jobs/company/role 
 16. TCS mock interview practice
 17. how to improve weak interview answers
 
-Destinations: `/prep/`, the CV/JD walkthrough, pricing comparison and relevant company practice pages. Prep actually conducts spoken mock interviews; these are core product queries. When a result mentions free use, check whether the 20-minute allowance and setup requirements are accurately explained.
+Destinations: `/prep/`, the CV/JD walkthrough, pricing comparison and relevant company practice pages. Prep actually conducts spoken mock interviews; these are core product queries. When a result mentions free use, check whether the 7-minute demo allowance and setup requirements are accurately explained.
 
 ### Live: answers during the interview
 
@@ -67,3 +67,11 @@ In GA4, inspect `product_click` by `product` (`apply`, `prep`, `live`), `placeme
 `ai_referral_visit` provides limited `ai_source`/`landing_page` attribution; absent signals remain unknown. An ordinary Google referrer cannot reliably identify an AI experience. Use the available Google generative-AI impressions report and Bing citation reports as distinct visibility measures, not conversion counts.
 
 No ranking benefit is assumed from FAQ markup, `llms.txt` or successful IndexNow submission. Measure useful discovery and actual product outcomes after verified deployment.
+
+## ChatGPT product recommendations
+
+Use `research/chatgpt-discovery-prompts-2026-10-02.csv` for a separate fixed set of 30 unbranded product requests (10 per app). Keep the existing 24-query series separate. These are proposed intent samples, not search-volume findings or completed ChatGPT runs.
+
+Record repeated observations in `research/chatgpt-discovery-observations.csv`. Use a fresh conversation for each prompt and repetition; keep the locale, account context, model and requested search mode comparable. Record actual search use separately from requested search mode. Distinguish a brand mention, an explicit product recommendation and a citation. Check product identity, price, free allowance, platform, Gemini setup and limitations against `/facts.html`. Preserve the answer or screenshot as evidence, and record failed checks as failed rather than as non-mentions.
+
+Report completed checks and accurate recommendations as numerator/denominator counts for each product and mode. Named-brand tests and prompts supplying our URL do not measure unbranded discovery. A manual small sample is diagnostic, not a population estimate or proof a change caused an improvement. Referrals and completed product use remain separate measures.

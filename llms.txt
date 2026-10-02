@@ -1,6 +1,6 @@
 # Interview Sarthi
 
-> InterviewSarthi is three apps for job seekers: Apply Sarthi finds jobs and helps fill applications (always free), Prep Sarthi runs spoken mock interviews from your CV (free 7-minute demo, no sign-up, works on a phone), and Live Sarthi shows answer suggestions during interview calls on Windows (30 minutes free). The homepage at https://interviewsarthi.com/ explains all three. Paid passes are one-time and never renew. Prices are given in rupees for India and in US dollars for everyone else. Built and run by Abhishek Choudhary. Facts reviewed 25 September 2026.
+> InterviewSarthi is three apps for job seekers: Apply Sarthi finds jobs and helps fill applications (always free), Prep Sarthi runs spoken mock interviews from your CV (free 7-minute demo, no sign-up, works on a phone), and Live Sarthi shows answer suggestions during interview calls on Windows (30 minutes free). The homepage at https://interviewsarthi.com/ explains all three. Paid passes are one-time and never renew. Prices are given in rupees for India and in US dollars for everyone else. Built and run by Abhishek Choudhary. Facts reviewed 2 October 2026.
 
 Product and guide pages contain readable HTML. Interactive app features require JavaScript. Facts pages carry review dates and a corrections address.
 
@@ -15,7 +15,7 @@ Product and guide pages contain readable HTML. Interactive app features require 
 
 ## Product facts, with review dates
 
-- [Live Sarthi product facts](https://interviewsarthi.com/facts.html): the Windows app's identity, platform, passes, capabilities and limits, privacy, official links and corrections address.
+- [InterviewSarthi product facts](https://interviewsarthi.com/facts.html): Apply, Prep and Live identity, platforms, free access, India prices, setup requirements, demonstrations, privacy and official links.
 - [Privacy policy](https://interviewsarthi.com/privacy.html): Live Sarthi, Prep Sarthi and website data practices; links to the separate Apply Sarthi policy.
 - [Refunds](https://interviewsarthi.com/refunds.html) and [Terms](https://interviewsarthi.com/terms.html).
 - [About the developer](https://interviewsarthi.com/about.html).

@@ -1,0 +1,46 @@
+External listing corrections — prepared 2 October 2026
+
+Status: drafts only. No listing edits, outreach or review requests were sent.
+Use the product pages and https://interviewsarthi.com/facts.html to recheck facts before publication. Prices below are for India.
+
+Priority: Prep Sarthi on SaaSHub
+URL: https://www.saashub.com/prep-sarthi
+Research returned an older 20-minute allowance and a 7-day INR 99 pass. The current product pages advertise a free 7-minute demo and INR 99 for 30 days. The listing also returned 0 reviews; do not invent a rating or imply the description is independent testing.
+
+Replacement short description:
+Prep Sarthi runs spoken AI mock interviews from your CV and target job, asks follow-up questions and gives feedback on your answers. Try a free 7-minute demo on a phone or computer, with no sign-up or Gemini key. In India, a one-time INR 99 pass provides 30 days of mock interviews; paid access uses Google sign-in and your own Gemini key. Google's usage limits and any API charges are separate. No automatic renewal.
+
+Replacement pricing:
+Free 7-minute demo. India: INR 99 once for 30 days. Outside India: USD 9.99 once for 30 days. Provider quotas and any charges are separate.
+
+Replacement setup:
+Browser, microphone and internet. No account or Gemini key for the demo; Google sign-in and your own Gemini key for paid practice.
+
+Replacement audience:
+Job seekers who want to practise explaining their own CV and projects aloud before an interview. English, Hindi and Hinglish are supported. AI feedback is for practice and is not a hiring assessment or job-offer guarantee.
+
+Also check derived SaaSHub comparison pages after correcting the main listing; their display may update from the same product record.
+
+Apply Sarthi — consistent listing copy
+Official page: https://interviewsarthi.com/apply/
+App: https://apply.interviewsarthi.com/
+Apply Sarthi brings jobs from multiple sources into one browser app, matches them to your CV, helps tailor documents and fills supported application forms through a Chrome extension. Always free, with no paid plan. Public browsing needs no sign-in or Gemini key. Personal features need an account; further AI tailoring and application help use your own Gemini key. Autofill is reviewed before submission by default; optional Autopilot requires enabling. Source coverage and supported forms vary.
+
+Live Sarthi — consistent listing copy
+Official page: https://interviewsarthi.com/live/
+Store: https://apps.microsoft.com/detail/9NMKQPSQ1KS8
+Live Sarthi is the Interview Sarthi Windows app for interview transcription and CV-based answer suggestions in permitted calls. Supports Windows 10 version 2004 or later and Windows 11, with English, Hindi and Hinglish. Uses your own Gemini key. Trial: 30 minutes once per computer. India passes: INR 99 for 2 days on 1 device; INR 299 for 30 days on 2 devices. Outside India: USD 9.99 and USD 29.99 respectively. One-time payments; no automatic renewal. Google quotas and charges are separate. Panel exclusion applies only to supported screen capture, not every recorder or monitoring method. Answer start time varies.
+
+Account-dependent checks
+1. Correct owner-controlled directory records and Microsoft Store copy where stale.
+2. Inspect both hosts in Google Search Console and Bing Webmaster Tools; verify submitted sitemaps, selected canonicals and actual crawl access.
+3. Verify hosting/CDN permits genuine OAI-SearchBot requests using OpenAI's published IP ranges; don't authenticate crawlers solely by their user-agent.
+4. Use the fixed unbranded prompt catalog and observations CSV. No recommendation baseline has been measured here.
+5. Collect authentic feedback from consenting users; use real demos and measurements rather than fabricated testimonials or outcomes.
+6. Explore an Apply ChatGPT plugin only after assessing job-source authorization, unique utility, privacy and current publishing requirements. Nothing was registered or submitted.
+
+References
+https://developers.openai.com/api/docs/bots
+https://developers.openai.com/plugins/deploy/app-review
+https://developers.openai.com/plugins/plugin-guidelines
+https://developers.openai.com/plugins/guides/optimize-metadata

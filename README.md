@@ -98,6 +98,9 @@ External analytics and font requests are blocked during this test. Screenshots g
 - [Research findings](research/SEO_GEO_RESEARCH_2026-09-15.md)
 - [Benchmark methodology](research/README.md)
 - [Monthly query tracking](TRACKING_QUERIES.md)
+- [30 unbranded ChatGPT discovery prompts](research/chatgpt-discovery-prompts-2026-10-02.csv)
+- [ChatGPT recommendation observations template](research/chatgpt-discovery-observations.csv)
+- [Prepared external listing corrections and account checks](research/external-listing-corrections-2026-10-02.txt)
 - [Owner actions and 90-day roadmap](OWNER_ACTIONS_SEO_GEO.md)
 - [Implementation report](SEO_GEO_IMPLEMENTATION_REPORT.md)
 

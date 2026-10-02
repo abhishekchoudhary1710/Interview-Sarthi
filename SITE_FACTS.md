@@ -1,6 +1,6 @@
 # Interview Sarthi: maintained product facts
 
-Website evidence reviewed: 2026-09-15. Baseline: `e942363`.
+Website product facts reviewed: 2026-10-02 against the maintained product pages. Baseline: `e942363`.
 Product navigation and naming updated: 2026-09-24.
 This records the current advertised offer, not a certification of the desktop binary or billing backend.
 
@@ -55,6 +55,6 @@ The platform details and passes below describe **Live Sarthi**, previously prese
 
 ## Maintenance
 
-When the offer changes, update this file, visible pricing/trial copy, JSON-LD, `assets/analytics.js` pass labels and the Facts page together. Run `python scripts/seo_audit.py` and the regression tests. Update only meaningful page dates in `scripts/seo_pages.json`, then regenerate the sitemap.
+When the offer changes, update this file, visible pricing/trial copy, JSON-LD, `assets/analytics.js` pass labels and the three-product Facts page, llms.txt and any owner-controlled external listings together. Run `python scripts/seo_audit.py` and the regression tests. Update only meaningful page dates in `scripts/seo_pages.json`, then regenerate the sitemap.
 
 Owner verification pending: actual installed trial enforcement, billing product durations/device caps/tax presentation, Store description, and current app compatibility. Do not infer these from a marketing page alone.
