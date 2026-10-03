@@ -13,7 +13,7 @@
  * score worth showing.
  */
 
-import { LICENSE_API, LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20260930-diagnostics";
+import { LICENSE_API, LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20261003-livetest";
 import { reportPaidOrder } from "./purchase-analytics.js?v=20260928";
 
 const $ = (id) => document.getElementById(id);
@@ -67,6 +67,8 @@ function money(plan) {
 
 // The price of a pass as the pass sheet shows it (rupees in India, dollars elsewhere), or "" before config loads.
 export function priceOf(id) { return money(planOf(id)); }
+// Whether this visitor pays in dollars: for prices this sheet does not hold (Live Sarthi's, on its test's end).
+export const isIntl = () => intl();
 
 export async function initPasses(context) {
   ctx = context;

@@ -22,8 +22,8 @@ import { assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, demoTransport, demoUsed, deviceInvite } from "./billing.js?v=20260930-diagnostics";
-import { initPasses, openPasses, priceOf, renderInvite } from "./pass.js?v=20261001-what";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, deviceInvite } from "./billing.js?v=20261003-livetest";
+import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261003-livetest";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
@@ -45,7 +45,20 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, v); } catch (_) { /* private mode */ } },
   del(k) { try { localStorage.removeItem(k); } catch (_) { /* ignore */ } },
 };
-const track = (name, params) => { try { if (window.gtag) window.gtag("event", name, params || {}); } catch (_) { /* analytics off */ } };
+/* Live Sarthi's try-it test (3 Oct 2026). The Windows app's guide opens this page with ?from=livesarthi so a new
+ * Live Sarthi user can hear an interviewer through the PC while the app suggests answers. That visitor is testing Live
+ * Sarthi, not shopping for Prep: until 3 Oct the test used up their Prep demo, ended on a Prep offer and was counted
+ * as a Prep demo. Now the interview runs on the licence
+ * server's test grant, no report is written, the end screen offers Live Sarthi, and GA4 hears livetest_* instead of
+ * mock_*, so Prep's numbers count only people who came for Prep. The tab remembers it, so a reload stays a test. */
+const liveTest = (() => {
+  const asked = new URLSearchParams(location.search).get("from") === "livesarthi";
+  try { if (asked) sessionStorage.setItem("ps_live_test", "1"); return asked || sessionStorage.getItem("ps_live_test") === "1"; }
+  catch (_) { return asked; }
+})();
+const track = (name, params) => {
+  try { if (window.gtag) window.gtag("event", liveTest ? name.replace(/^mock_/, "livetest_") : name, params || {}); } catch (_) { /* analytics off */ }
+};
 const nowS = () => performance.now() / 1000;
 const TICK_SECONDS = 30;
 const VOICE_RMS = 0.005;
@@ -108,6 +121,10 @@ function fmtLong(seconds) {
 }
 /* What pressing Start on the CV screen does, said under the button: the free demo's terms come before the call. */
 function renderStartNote() {
+  if (testing()) {
+    $("start-note").textContent = `Free Live Sarthi test, up to ${Math.round(DEMO_SECONDS / 60)} minutes. It runs on Google Gemini, which may use it to improve its services. Wear earphones; your interviewer speaks first.`;
+    return;
+  }
   const demoNext = !S.key && passCtx.demoOn && !(S.ent && S.ent.kind === "pass") && !demoUsed.get();
   $("start-note").textContent = demoNext
     ? `Free demo: a ${Math.round(DEMO_SECONDS / 60)}-minute interview, then your report. It runs on Google Gemini, which may use it to improve its services. Use earphones if you can; your interviewer speaks first.`
@@ -121,12 +138,28 @@ function renderEntitlement() {
   // A first-time visitor is offered the 7-minute demo (25 Sep 2026); the free minutes need a saved key.
   if (!e) { el.textContent = !booted ? "\u2026" : passCtx.demoOn ? "Free demo \u00b7 7 min" : (store.get("ps_from") === "applysarthi" ? "30 min free" : "20 min free"); el.className = "chip"; return; }
   if (e.kind === "demo") { el.textContent = "Free demo · 7 min"; el.className = "chip ok"; return; }
+  if (e.kind === "livetest") { el.textContent = "Live Sarthi test"; el.className = "chip ok"; return; }
   if (e.kind === "pass") { el.textContent = `Pass · ${fmtLong(e.secondsLeft)} left`; el.className = "chip ok"; }
   else if (e.kind === "trial") { el.textContent = `Free · ${fmtLong(e.secondsLeft)} left`; el.className = "chip"; }
   // Signed in, but no Gemini key in this browser yet: no free-minute count to show.
   else if (e.hasTrial === false) { el.textContent = "Get a pass"; el.className = "chip"; }
   else { el.textContent = passCtx.passesOn ? "Get a pass" : "Free minutes used"; el.className = "chip warn"; }
 }
+
+/* A Start in this tab is a Live Sarthi test: it came from the Windows app, and the server can run the interviewer.
+   Someone who already holds a Prep pass practises on it as usual. */
+const testing = () => liveTest && !!passCtx.demoOn && !(S.ent && S.ent.kind === "pass");
+/* The CV screen says what this tab is for. Its header has nothing of Prep's to sell (prep/app/index.html ps-livetest). */
+function showLiveTestIntro() {
+  document.documentElement.classList.add("ps-livetest");
+  const cv = $("s-cv");
+  cv.querySelector(".label").textContent = "Live Sarthi test";
+  cv.querySelector("h1").innerHTML = "Test Live Sarthi with <em>our</em> AI interviewer.";
+  cv.querySelector(".lede").textContent = "Keep Live Sarthi running and wear earphones. Add your CV and press Start: the interviewer asks you "
+    + "questions out loud, and a suggested answer appears in the Live Sarthi window a few seconds after each one. "
+    + `The test is free and takes up to ${Math.round(DEMO_SECONDS / 60)} minutes.`;
+}
+if (liveTest) showLiveTestIntro();
 
 /* What the pass screen and the invite card need from this page. */
 const passCtx = {
@@ -267,6 +300,8 @@ $("to-key").onclick = async () => {
   // has a key keeps the old path untouched.
   // One click from here into the call (owner, 1 Oct 2026): the free demo, and anyone whose own key and time are
   // already known, start at once. The interview screen's Start button remains for Practise again and retries.
+  // A Live Sarthi test goes first: it never touches the Prep demo, and it needs no key (3 Oct 2026).
+  if (testing()) { S.ent = { kind: "livetest", secondsLeft: DEMO_SECONDS, hasTrial: false }; renderEntitlement(); preLive(); if (!waited) startInterview(); return; }
   if (!S.key && passCtx.demoOn && !(S.ent && S.ent.kind === "pass")) {
     if (!demoUsed.get()) { S.ent = { kind: "demo", secondsLeft: DEMO_SECONDS, hasTrial: false }; renderEntitlement(); preLive(); if (!waited) startInterview(); return; }
     if (passCtx.passesOn) { openPasses("You've had your free demo. A pass gives you unlimited mock interviews."); return; }
@@ -400,7 +435,12 @@ function preLive() {
   setCaption("Your interviewer", `${p.They} speaks first. Answer out loud, like a real call.`);
   $("tip-speaker").textContent = `Use earphones if you can. From a loud speaker ${p.they} can hear ${p.themself}.`;
   $("tip-interrupt").textContent = `You can interrupt, and so can ${p.they}.`;
-  if (S.ent.kind === "demo") {
+  if (S.ent.kind === "livetest") {
+    $("start").disabled = false;
+    const cap = Math.min(S.minutes * 60, DEMO_SECONDS);
+    $("clock").textContent = fmt(cap);
+    notice("live-notice", `Live Sarthi test, up to ${Math.round(cap / 60)} minutes. Keep Live Sarthi running: after each question, look at its window for the suggested answer. It runs on Google Gemini, which may use it to improve its services.`);
+  } else if (S.ent.kind === "demo") {
     $("start").disabled = false;
     const cap = Math.min(S.minutes * 60, DEMO_SECONDS);
     $("clock").textContent = fmt(cap);
@@ -534,7 +574,7 @@ async function startInterview() {
     catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   }
   beginDiagnostics({ kind: redrill ? 'redrill' : S.ent?.kind || 'none', minutes: S.minutes,
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261001-faststart' });
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261003-livetest' });
   phase = "preparing";
   const controller = new AbortController();
   startController = controller;
@@ -555,14 +595,14 @@ async function startInterview() {
     log("mic_track_muted", { muted });
     if (muted && phase !== "idle") showMicFix("Your system reports the microphone as muted. Unmute it, then answer out loud.");
   };
-  const isDemo = S.ent.kind === "demo";
-  if (isDemo) diagnosticEvent('demo_requested', { stage: 'demo' });
+  const isDemo = S.ent.kind === "demo", isTest = S.ent.kind === "livetest";
+  if (isDemo || isTest) diagnosticEvent('demo_requested', { stage: isTest ? 'livetest' : 'demo' });
   const [micError, grant, fresh] = await Promise.all([
     audio.start().then(() => null, (err) => err),
     // Asked for only now, at Start: a visitor who never presses it never uses one up.
-    isDemo ? requestDemo() : null,
-    // A pass can expire between loading the page and pressing Start. A demo has no key to look up.
-    isDemo || redrill || !S.hash ? S.ent : entitlement(S.hash),
+    isTest ? requestLiveTest() : isDemo ? requestDemo() : null,
+    // A pass can expire between loading the page and pressing Start. A demo or a test has no key to look up.
+    isDemo || isTest || redrill || !S.hash ? S.ent : entitlement(S.hash),
   ]);
   if (cancelled()) return;
   if (micError) {
@@ -571,7 +611,12 @@ async function startInterview() {
     notice("live-notice", "Microphone not available: " + micError.message + ". Allow the mic for this site and try again.", "bad");
     return;
   }
-  if (isDemo) {
+  if (isTest) {
+    if (!grant.ok) { diagnosticEvent('demo_refused', { reason: grant.reason }); await testRefused(grant.reason); return; }
+    // Held like a demo for its token and length; a test has no plan and no report, so it never reaches the relay.
+    demo = { demo: grant.test, token: grant.token, seconds: grant.seconds };
+    diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'livetest' });
+  } else if (isDemo) {
     if (!grant.ok) { diagnosticEvent('demo_refused', { reason: grant.reason }); await demoRefused(grant.reason); return; }
     demo = grant;
     diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'demo' });
@@ -591,7 +636,7 @@ async function startInterview() {
   diagnosticEvent('preparation_ready', { stage: 'live', duration_ms: Math.round(performance.now() - started) });
   startController = null;
   assessmentPlan = null;
-  planPending = redrill ? null : preparePlan();
+  planPending = redrill || isTest ? null : preparePlan();
   startCall();
 }
 
@@ -641,6 +686,17 @@ async function demoRefused(reason) {
     : reason === "unavailable" ? "The free demo isn't available just now. Try again in a few minutes, or start with a pass."
     : "Today's free demos are all used up. Come back tomorrow, or start with a pass.";
   if (passCtx.passesOn) openPasses(text); else notice("live-notice", text, "bad");
+}
+
+/* No test interviewer for this Live Sarthi user right now. Never the passes: they are not shopping for Prep. */
+async function testRefused(reason) {
+  await cancelStart(reason);
+  track("mock_demo_refused", { reason });
+  const other = "Other ways to test: join your own Meet or Teams call from your phone and ask the questions yourself, or play an interview video on YouTube.";
+  notice("live-notice", reason === "full" || reason === "busy" ? "Lots of people are practising right now. Press Start again in a minute."
+    : reason === "unavailable" ? "The test interviewer isn't available just now. Try again in a few minutes."
+    : reason === "used" ? `You've had today's tests on this PC. ${other}`
+    : `Today's tests are all used up. ${other}`, "bad");
 }
 
 function startCall() {
@@ -723,6 +779,7 @@ async function onSecond() {
   $("clock").textContent = fmt(remaining);
   $("clock").classList.toggle("low", remaining <= 60);
   if (S.ent.kind === "demo") $("left").textContent = `Free demo · ${fmt(remaining)} left`;
+  else if (S.ent.kind === "livetest") $("left").textContent = `Live Sarthi test · ${fmt(remaining)} left`;
   else if (S.ent.kind === "trial") $("left").textContent = `Free · ${fmtLong(Math.max(0, trialLeftAtStart - elapsed))} left`;
   else if (S.ent.kind === "pass") $("left").textContent = `Pass · ${fmtLong(Math.max(0, passLeft))} left`;
   // Free time is nearly gone: this is the moment someone decides to buy.
@@ -768,7 +825,7 @@ async function onSecond() {
 
 $("end").onclick = () => {
   if (phase === "preparing") { cancelStart(); return; }
-  if (confirm("End the interview now and get your report?")) endInterview("user");
+  if (confirm(S.ent && S.ent.kind === "livetest" ? "End the test now?" : "End the interview now and get your report?")) endInterview("user");
 };
 
 async function endInterview(reason) {
@@ -795,6 +852,18 @@ async function endInterview(reason) {
     renderEntitlement();
   }
   if (reason === "failed" && turns.length === 0) track("mock_fail_connect", { demo: !!demo });
+  if (S.ent.kind === "livetest") {
+    // A test ends on Live Sarthi's next step, never a Prep report. Whether the candidate answered does not matter:
+    // Live Sarthi listens to the interviewer through the PC's sound.
+    demo = null;
+    if (reason === "failed" && turns.length === 0) {
+      ending = false; preLive(); notice("live-notice", "The interviewer could not connect. Press Start to try again.", "bad");
+      return;
+    }
+    wheel.stop();
+    showLiveTestDone(elapsed);
+    return;
+  }
   if (reason === "failed" && turns.length === 0 && demo) {
     // Google refused the connection (a key at its limit): the same choice as a full server, never a key message.
     ending = false; preLive(); notice("live-notice", ""); showDemoFull();
@@ -820,6 +889,17 @@ async function endInterview(reason) {
   wheel.stop();
   await whileWriting(() => redrill ? writeRedrill(turns, elapsed) : writeReport(turns, elapsed, usage));
 }
+
+/* The end of a Live Sarthi test: did it work, and how to have it in the real interview. Live's cheapest pass, as
+ * license-server src/core.js PLANS "2d" sells it (rupees through Cashfree, dollars through Dodo). */
+const LIVE_2D = { inr: "Rs 99", usd: "$9.99" };
+function showLiveTestDone(elapsed) {
+  $("lt-price").textContent = `Passes from ${isIntl() ? LIVE_2D.usd : LIVE_2D.inr} for 2 days.`;
+  show("s-livetest");
+  track("mock_offer_shown", { where: "livetest", seconds: elapsed });
+}
+$("lt-buy").onclick = () => track("mock_offer_click", { where: "livetest" });
+$("lt-again").onclick = () => { ending = false; preLive(); };
 
 // ------------------------------------------------------------- 4. Report
 
@@ -1055,12 +1135,11 @@ async function loadJobFromApply() {
   }
   if (fromApply) showApplyWelcome("Welcome from ApplySarthi. Your free 7-minute mock interview is ready.");
   // The Windows app's try-it guide sends new users here to test it on one PC (26 Sep 2026): Prep's interviewer
-  // asks, Interview Sarthi hears her through the PC's sound and shows answers. One line, so nobody is lost.
-  if (fromLive) {
-    showApplyWelcome("Testing Live Sarthi? Keep it running and wear earphones. Paste your resume, press Start, "
-      + "and answer her out loud. Live Sarthi shows suggested answers as she asks.");
-    track("mock_from_live", {});
-  }
+  // asks, Interview Sarthi hears her through the PC's sound and shows answers. The CV screen already says so
+  // (showLiveTestIntro); only a CV is needed, so the role questions are skipped unless a role was filled in before.
+  // GA4 counted these arrivals as mock_from_live until 3 Oct 2026.
+  if (fromLive) track("livetest_open", {});
+  if (liveTest && !$("target-role").value.trim() && !$("jd").value.trim()) { $("practice-focus").value = "general_cv"; updateNoJdOptions(); }
   const i = job.indexOf(":");
   if (i <= 0) return;
   try {

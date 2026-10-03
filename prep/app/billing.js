@@ -170,6 +170,13 @@ export async function requestDemo(demo, failed) {
   catch (_) { return { ok: false, reason: "unavailable" }; }
 }
 
+/* Live Sarthi's try-it test (3 Oct 2026): the same interviewer on our key, counted apart from the Prep demo.
+   { ok, test, token, model, seconds } or { ok: false, reason: used|day_full|network|full|unavailable }. */
+export async function requestLiveTest() {
+  try { return await post("/mock/livetest/start", { device: demoDevice(), diagnostics: diagnosticContext() }); }
+  catch (_) { return { ok: false, reason: "unavailable" }; }
+}
+
 /* The plan and report requests, sent through the licence server on our key. `body` is the JSON string the
    app would have sent to Google; the answer is Google's own, so the callers need no other change. */
 export function demoTransport(demo, stage = 'report') {

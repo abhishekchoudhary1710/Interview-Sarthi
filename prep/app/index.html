@@ -47,6 +47,8 @@
     html.ps-checkout #buy-block{display:none}
     html.ps-checkout #checkout{display:block}
     html.ps-confirm #pass-body{display:none}
+    /* a Live Sarthi test (app.js liveTest): nothing of Prep's to sell in the header */
+    html.ps-livetest #open-progress,html.ps-livetest #open-invite,html.ps-livetest #entitle{display:none !important}
     .screen{padding-top:28px}
     .screen h1{font-size:clamp(30px,5vw,44px);margin:10px 0 12px;letter-spacing:-.03em}
     .screen h1 em{font-style:normal;color:var(--accent)}
@@ -336,6 +338,21 @@
     <p class="muted" style="margin-top:22px;font-size:14.5px">Real interview coming up? <a href="/live/" target="_blank">Live Sarthi</a> gives you live help on the call itself. Still looking? <a href="/apply/" target="_blank">ApplySarthi</a> finds jobs that match your CV and fills the application for you.</p>
   </section>
 
+  <!-- 5. The end of a Live Sarthi test (app.js showLiveTestDone, 3 Oct 2026): the Windows app's try-it guide sends
+       new Live Sarthi users here. What they need next is Live Sarthi, never a Prep pass or report. -->
+  <section class="screen" id="s-livetest">
+    <span class="label">Live Sarthi test</span>
+    <h1>Test <em>done.</em></h1>
+    <p class="lede">Did a suggested answer appear in the Live Sarthi window a few seconds after each question? That is how it helps in your real interview, and only you can see it, even when you share your screen.</p>
+    <div class="card" style="margin-top:22px">
+      <h2 style="font-size:24px;margin:0">Have it in your real interview</h2>
+      <p class="muted" id="lt-price" style="margin:8px 0 0">Passes from Rs 99 for 2 days.</p>
+      <div class="actions"><a class="pill wide" id="lt-buy" href="/live/#pricing">Get Live Sarthi →</a></div>
+    </div>
+    <p class="muted" style="margin-top:18px;font-size:14.5px">No answers appeared? Check that Live Sarthi is running and can hear this PC's sound, then test again. <a href="/help.html" target="_blank">Help</a></p>
+    <div class="actions"><button class="pill ghost" id="lt-again">Test again</button></div>
+  </section>
+
   <!-- /prep/app/#progress opens My progress (progress-view.js reads the hash); this anchor gives the link a target. -->
   <span id="progress" hidden></span>
   <section class="screen pg" id="s-progress" aria-labelledby="pg-title"></section>
@@ -346,7 +363,7 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20261001-what"></script>
+<script type="module" src="./app.js?v=20261003-livetest"></script>
 <script type="module" src="./progress-view.js?v=20261001-site"></script>
 </body>
 </html>
