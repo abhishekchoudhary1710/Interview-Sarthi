@@ -37,13 +37,13 @@ The platform details and passes below describe **Live Sarthi**, previously prese
 - Evidence: `live/index.html` pricing cards, JSON-LD offers, FAQ and matching checkout URLs. Older About/guide session-count copy is stale.
 - Refund claims remain governed by `refunds.html`; do not change commercial policy as an SEO edit.
 
-## MeetingSarthi (added 2 October 2026; TESTING ONLY, not promoted)
+## MeetingSarthi (shelved 3 October 2026)
 
-- Page: https://interviewsarthi.com/meeting/ (`meeting/index.html`), **noindex and out of the sitemap, llms.txt and all internal links by the owner's instruction (2 Oct 2026): the product is in testing and must not be promoted anywhere until the owner says so.** Audience when it launches: people on client calls at work, not job seekers.
-- What it is: a Windows app (same engine as Live Sarthi, separate build) with a per-project log, voice/typed notes, read-only feeders (local git folder, GitHub token, Jira Cloud email + token), live replies grounded in confirmed log entries during a call, a post-call recap with drafts, and an "Ask" junior. No bot joins meetings; the user's own free Gemini key; the log stays local.
-- Offer: 30 minutes of live replies free per computer; everything else free with no limit. One pass only: **Month Pass, ₹99, 30 days, 2 devices**, paid once, never renews; licence worker plan `m30d`, checkout `https://license.interviewsarthi.com/buy?plan=m30d`, Cashfree, India only at launch (international checkout returns "not available"). A MeetingSarthi key cannot activate Interview Sarthi and vice versa (the apps send `product` to the licence worker).
-- Distribution: Windows installer `Meeting-Sarthi-Setup.exe` on the GitHub latest release once published (`publish_release.py --meeting`); until then the page shows a waitlist form that posts to the licence worker's `/subscribe` with source `meeting-waitlist`. No Microsoft Store listing yet.
-- Marketing rule: an English and memory aid, never "hidden" or "undetectable". The panel's screen-share exclusion is mentioned once, factually.
+MeetingSarthi, a Windows app for client calls at work, was built on 2 October 2026 and **shut down by the owner on
+3 October 2026** before any launch: not a necessity for users, unlikely to sell. The page `/meeting/` was removed
+(it was noindex and unlinked), its Rs 99 pass (licence plan `m30d`) is retired and was never sold, and its
+installer is no longer downloadable. Do not mention, link or describe MeetingSarthi anywhere on the site. The code
+is kept, shelved, in the AI-Helps_SAAS repo.
 
 ## Entity identifiers
 
