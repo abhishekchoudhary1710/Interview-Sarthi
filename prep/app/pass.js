@@ -94,6 +94,17 @@ export async function initPasses(context) {
     if (label) label.style.display = "none";
   }
   $("entitle").onclick = () => openPasses();
+  // The header's Sign in / name button (owner, 3 Oct 2026): sign-in stays
+  // optional, but the way in should not hide inside the pass screen.
+  if (ctx.passesOn) $("acct").style.display = "inline-flex";
+  const acctMenu = (open) => { const want = open === undefined ? $("acct-menu").hidden : open; $("acct-menu").hidden = !want; $("acct-btn").setAttribute("aria-expanded", String(want)); };
+  $("acct-btn").onclick = () => {
+    if (ctx.state.ent && ctx.state.ent.account) { acctMenu(); return; }
+    ctx.track("mock_signin_click", { where: "header" });
+    openPasses("", { signin: true });
+  };
+  document.addEventListener("click", (e) => { if (!$("acct").contains(e.target)) acctMenu(false); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") acctMenu(false); });
   $("open-invite").onclick = () => openInvite();
   $("pass-back").onclick = () => ctx.resume();
   $("invite-back").onclick = () => ctx.resume();
@@ -109,6 +120,7 @@ export async function initPasses(context) {
   const signOut = () => { session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null, kind: ctx.state.ent && ctx.state.ent.hasTrial ? (ctx.state.ent.trialLeft > 0 ? "trial" : "none") : "none", secondsLeft: (ctx.state.ent && ctx.state.ent.trialLeft) || 0, expiresAt: null }); step = "choose"; extendOpen = false; paint(); };
   $("signout").onclick = signOut;
   $("signout2").onclick = signOut;
+  $("acct-out").onclick = () => { acctMenu(false); signOut(); };
   $("start-days").onclick = startDays;
   if (testLogin) {
     $("testlogin").style.display = "block";
@@ -143,14 +155,16 @@ function choosePlan(id) {
 
 /**
  * @param {string} [message]
- * @param {{plan?: "m", checkout?: boolean}} [opts]  the pricing page's buttons
- *        open the app straight at checkout for the pass that was clicked
+ * @param {{plan?: "m", checkout?: boolean, signin?: boolean}} [opts]  the pricing page's buttons
+ *        open the app straight at checkout for the pass that was clicked; the
+ *        header's Sign in button lands on the sign-in step alone
  */
 export async function openPasses(message, opts = {}) {
   ctx.show("s-pass");
   say(message || "");
   if (opts.plan && planOf(opts.plan)) choosePlan(opts.plan);
   if (opts.checkout) { step = "checkout"; if (ctx.state.ent && ctx.state.ent.kind === "pass") extendOpen = true; }
+  if (opts.signin) { step = "signin"; extendOpen = false; }
   if (!ctx.passesOn) {
     $("pass-body").style.display = "none";
     say("Passes open in a few days.", "");

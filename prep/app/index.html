@@ -48,7 +48,22 @@
     html.ps-checkout #checkout{display:block}
     html.ps-confirm #pass-body{display:none}
     /* a Live Sarthi test (app.js liveTest): nothing of Prep's to sell in the header */
-    html.ps-livetest #open-progress,html.ps-livetest #open-invite,html.ps-livetest #entitle{display:none !important}
+    html.ps-livetest #open-progress,html.ps-livetest #open-invite,html.ps-livetest #entitle,html.ps-livetest #acct{display:none !important}
+    /* top-right account: the person's name once signed in, a way in until then (sign-in stays optional) */
+    .acct{position:relative;display:inline-flex}
+    #acct-btn{font:650 12.5px var(--font);padding:6px 12px;border-radius:999px;border:1px solid #c9d5e1;background:#fff;color:var(--ink);cursor:pointer;white-space:nowrap}
+    #acct-btn:hover{background:var(--prep-soft);color:var(--prep)}
+    #acct-btn.in{border-color:transparent;background:var(--prep-soft);color:var(--prep)}
+    #acct-btn.in::after{content:" \25BE";font-size:10px}
+    .acct-menu{position:absolute;right:0;top:calc(100% + 10px);min-width:210px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(15,30,50,.14);padding:12px 14px;z-index:60;text-align:left}
+    .acct-menu p{margin:0;font:600 14px var(--font);color:var(--ink)}
+    .acct-menu small{display:block;margin:2px 0 10px;color:var(--muted);font-size:12.5px;word-break:break-all}
+    @media(max-width:600px){#acct-btn{font-size:11.5px;padding:5px 9px}}
+    /* the bar must fit a phone with the account button added: Invite yields first, then everything tightens */
+    @media(max-width:480px){.appbar #open-invite{display:none}}
+    @media(max-width:420px){.appbar .navright{gap:8px}.appbar .chip{font-size:11px;padding:4px 7px}#acct-btn{font-size:11px;padding:4px 8px;max-width:76px;overflow:hidden;text-overflow:ellipsis}
+      .appbar .brand{display:none}.appbar .brand-prod{padding-left:0;border-left:0}}
+    @media(max-width:380px){.appbar .chip{display:inline-block;max-width:104px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}#acct-btn{max-width:64px}}
     .screen{padding-top:28px}
     .screen h1{font-size:clamp(30px,5vw,44px);margin:10px 0 12px;letter-spacing:-.03em}
     .screen h1 em{font-style:normal;color:var(--accent)}
@@ -87,7 +102,7 @@
 <header class="appbar"><div class="appbar-in">
   <a class="brand" href="/" aria-label="Interview Sarthi home"><img src="/assets/mark.svg" alt="" width="26" height="26"><span>Interview<strong>Sarthi</strong></span></a>
   <a class="brand-prod" href="/prep/">Prep Sarthi</a>
-  <span class="navright"><button class="navlink" id="open-progress" data-pg="open">My progress</button><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button></span>
+  <span class="navright"><button class="navlink" id="open-progress" data-pg="open">My progress</button><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button><span class="acct" id="acct" style="display:none"><button id="acct-btn" aria-haspopup="true" aria-expanded="false">Sign in</button><div class="acct-menu" id="acct-menu" hidden><p id="acct-name"></p><small id="acct-mail"></small><button class="linkink" id="acct-out">Sign out</button></div></span></span>
 </div></header>
 <div class="narrow">
 
@@ -363,7 +378,7 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20261003-livetest"></script>
+<script type="module" src="./app.js?v=20261003-signin"></script>
 <script type="module" src="./progress-view.js?v=20261001-site"></script>
 </body>
 </html>

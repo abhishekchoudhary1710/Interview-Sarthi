@@ -23,7 +23,7 @@ import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, deviceInvite } from "./billing.js?v=20261003-livetest";
-import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261003-livetest";
+import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261003-signin";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
@@ -130,8 +130,22 @@ function renderStartNote() {
     ? `Free demo: a ${Math.round(DEMO_SECONDS / 60)}-minute interview, then your report. It runs on Google Gemini, which may use it to improve its services. Use earphones if you can; your interviewer speaks first.`
     : "Use earphones if you can; your interviewer speaks first.";
 }
+/* The header's account button: the person's first name once they are signed
+   in, "Sign in" until then. pass.js owns the clicks; this only paints. */
+function renderAccount() {
+  const a = S.ent && S.ent.account, btn = $("acct-btn");
+  const raw = a ? ((a.name || "").trim().split(/\s+/)[0] || a.email.split("@")[0]) : "";
+  const first = raw && raw.charAt(0).toUpperCase() + raw.slice(1);
+  btn.textContent = a ? (first.length > 14 ? first.slice(0, 13) + "…" : first) : "Sign in";
+  btn.title = a ? a.email : "Sign in with Google";
+  btn.classList.toggle("in", !!a);
+  $("acct-name").textContent = a ? (a.name || first) : "";
+  $("acct-mail").textContent = a ? a.email : "";
+  if (!a) { $("acct-menu").hidden = true; btn.setAttribute("aria-expanded", "false"); }
+}
 function renderEntitlement() {
   renderStartNote();
+  renderAccount();
   const e = S.ent, el = $("entitle");
   // Nothing known yet: a dash while the server is being asked, and the honest
   // default for a first-time visitor once it is clear nobody is signed in.
