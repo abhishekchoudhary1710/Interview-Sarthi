@@ -19,9 +19,11 @@
  * Google.
  */
 
-import { NOTES } from "./interviewer.js?v=20261001-faststart";
+import { NOTES } from "./interviewer.js?v=20261004-models";
 
-// The desktop app's proven model first; the non-preview one if Google retires it.
+// Two voice models that both answer the free tier. The first is the default; the other takes over when Google
+// retires the first, or when the first keeps failing mid-call (3 and 4 Oct 2026: "Internal error encountered"
+// drops and silent sessions on one model for an hour while the other kept working).
 export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
 export const DEFAULT_MODEL = LIVE_MODELS[0];
 const LIVE_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=";
@@ -38,6 +40,18 @@ const STILL_TRYING_AFTER = 4;        // failed reconnects before the page says h
 const MAX_BUFFERED_BYTES = 128000;   // do not send seconds of stale microphone audio
 const CONGESTED_SECONDS = 10;        // a send buffer that stays full this long is a dead socket, not a slow one
 const VOICE_RMS = 0.005;
+// Google's drops and silences come in bursts on one model: two inside five minutes and the call moves to the
+// other model, at most twice per call (there and back), never ping-ponging for the whole interview.
+const TROUBLE_WINDOW_SECONDS = 300;
+const TROUBLE_SWITCH_AT = 2;
+const MAX_MODEL_SWITCHES = 2;
+// The interviewer is told the app clock in writing: one model called the clock tool only a few times per
+// interview and said goodbye with half the time left (4 Oct 2026). A note every two minutes, one when the
+// closing window opens, and one when it tries to close early.
+const CLOCK_NOTE_SECONDS = 120;
+const NUDGE_GAP_SECONDS = 60;
+const EARLY_CLOSE_MIN_SECONDS = 90;
+const CLOSING_RE = /\b(questions?\s+(do\s+you\s+have\s+)?for\s+(me|us)|any\s+(other\s+|more\s+|further\s+)?questions|wrap(ping)?\s+(it\s+)?up|that'?s\s+all\s+(from|for)|thank\s+you\s+for\s+your\s+time|good\s?bye|be\s+in\s+touch)\b/i;
 
 const now = () => performance.now() / 1000;
 
@@ -143,6 +157,11 @@ export class GeminiLive {
     this._audioEnded = false;
     this._congestedSince = null;
     this._cutOff = false;
+    this._trouble = [];
+    this._modelSwitches = 0;
+    this._lastClockNoteAt = 0;
+    this._closeNoted = false;
+    this._lastNudgeAt = -Infinity;
   }
 
   get healthy() { return this.connected && !this.stopped; }
@@ -282,6 +301,7 @@ export class GeminiLive {
       const secret = this.authToken || this.apiKey;       // never replaceAll(""), which would splice "[key]" everywhere
       const reason = secret ? String(e.reason || "").replaceAll(secret, "[key]") : String(e.reason || "");
       this._event("socket_closed", { code: e.code, reason, wasConnected, duration_ms: connectionDuration });
+      if (e.code === 1011 || /internal error/i.test(reason)) this._noteTrouble();
       if (/quota|resource.exhausted|rate.limit|billing/i.test(reason)) {
         return this._fail("Google's usage limit was reached. Check your Gemini quota and try again later. Your answers are kept.", 'quota');
       }
@@ -292,8 +312,7 @@ export class GeminiLive {
         return this._retry();
       }
       if (!wasConnected && /model.*(not found|not supported|unavailable)|not found.*model/i.test(reason)) {
-        const next = LIVE_MODELS[LIVE_MODELS.indexOf(this.model) + 1];
-        if (next) { this._event('model_fallback', { model: next, reason: 'model_unavailable' }); this.model = next; this._resumeHandle = null; return this._retry(); }
+        if (this._switchModel('model_unavailable')) return this._retry();
       }
       if (e.code === 1008 || /invalid.argument|api.key.*(invalid|expired)|permission.denied|unauthenticated|not supported/i.test(reason)) {
         return this._fail(reason || "Google refused this session. Check the API key and its permissions.", 'permission');
@@ -382,7 +401,9 @@ export class GeminiLive {
       this._audioEnded = true;
       this._sendJson({ realtimeInput: { audioStreamEnd: true } });
     }
-    if (this._goAway && !this._modelSpeaking && !this._playing && t - this._lastVoiced > 1) {
+    // Only when nothing is owed: a resumed session never continues a reply that was in flight (two
+    // 16-second silences on 4 Oct 2026). The deadline timer still forces the refresh in time.
+    if (this._goAway && !this._modelSpeaking && !this._playing && t - this._lastVoiced > 1 && this._replyPendingAt === null) {
       this._reconnect("scheduled_refresh"); return;
     }
     // A short answer followed by silence used to fall outside the old
@@ -394,8 +415,65 @@ export class GeminiLive {
       // A silent generation can also be stuck in the resumable server session.
       // Rebuild it from the transcript instead of resuming that stuck state.
       this._resumeHandle = null;
+      this._noteTrouble();
       this._reconnect("reply_timeout");
+      return;
     }
+    this._clockNotes(t);
+  }
+
+  /* Google's drops and silences, counted inside a sliding window; enough of them move the call to the other model. */
+  _noteTrouble() {
+    const t = this._now();
+    this._trouble = this._trouble.filter((at) => t - at <= TROUBLE_WINDOW_SECONDS);
+    this._trouble.push(t);
+    if (this._trouble.length >= TROUBLE_SWITCH_AT && this._switchModel('unstable')) {
+      this._notice("Switching to a backup voice service. Your answers are kept.");
+    }
+  }
+
+  /* The next model in the list, round robin, a bounded number of times per call. The fresh session is told the
+   * interview so far from the transcript (a resumption handle belongs to the old model). */
+  _switchModel(reason) {
+    if (this._modelSwitches >= MAX_MODEL_SWITCHES) return false;
+    const next = LIVE_MODELS[(LIVE_MODELS.indexOf(this.model) + 1) % LIVE_MODELS.length];
+    if (!next || next === this.model) return false;
+    this._modelSwitches++;
+    this._trouble = [];
+    this._resumeHandle = null;
+    this._event('model_fallback', { model: next, reason });
+    this.model = next;
+    return true;
+  }
+
+  /* The app clock in writing, as context the interviewer reads without answering. Sent only between turns. */
+  _clockNotes(t) {
+    // Never while a reply is owed or the candidate is mid-answer: a note in that window made one model go
+    // silent (4 Oct 2026). Only in the pause after the interviewer's turn has fully ended.
+    if (!this.getInterviewProgress || !this.connected || this._modelSpeaking || this._playing) return;
+    if (this._replyPendingAt !== null || t - this._lastVoiced < 2) return;
+    const p = this.getInterviewProgress();
+    if (!p || !(p.remainingSeconds > 0)) return;
+    if (p.canWrapUp) {
+      if (this._closeNoted) return;
+      this._closeNoted = true;
+      if (this.sendText(NOTES.clockClose(p), { turnComplete: false })) this._event("clock_note", { seconds: p.remainingSeconds, closing: true });
+      return;
+    }
+    const active = this.activeSeconds;
+    if (active - this._lastClockNoteAt < CLOCK_NOTE_SECONDS) return;
+    this._lastClockNoteAt = active;
+    if (this.sendText(NOTES.clock(p), { turnComplete: false })) this._event("clock_note", { seconds: p.remainingSeconds });
+  }
+
+  /* The interviewer just invited closing questions or said goodbye with plenty of time left: tell it to go on. */
+  _nudgeIfClosingEarly(text, t) {
+    if (!this.getInterviewProgress || !CLOSING_RE.test(text || "")) return;
+    const p = this.getInterviewProgress();
+    if (!p || p.canWrapUp || !(p.remainingSeconds > EARLY_CLOSE_MIN_SECONDS)) return;
+    if (t - this._lastNudgeAt < NUDGE_GAP_SECONDS) return;
+    this._lastNudgeAt = t;
+    if (this.sendText(NOTES.notYet(p), { turnComplete: false })) this._event("close_nudge", { seconds: p.remainingSeconds });
   }
 
   // --------------------------------------------------------------- receive
@@ -440,11 +518,13 @@ export class GeminiLive {
         this._event("connected", { model: this.model, session: this.sessions, duration_ms: connectMs, resumed: this._resuming });
         this._status("live");
         if (this._resuming) {
-          // An extra user turn would interrupt the restored conversation, unless the interviewer was the one
-          // cut off: then the candidate is waiting for a question that never finished.
+          // An extra user turn would interrupt the restored conversation, unless something is owed: the
+          // interviewer was cut off mid-question, or the candidate had answered and the reply was in flight
+          // (a resumed session does not continue it: 16-second silences on 4 Oct 2026).
           this._activeSince = t;
           if (this._cutOff) this.sendText(this.notes.resumed);
-          else if (this._replyPendingAt !== null) this._replyPendingAt = t;
+          else if (this._replyPendingAt !== null && t - this._lastVoiced >= 2) this.sendText(this.notes.reconnect);
+          else if (this._replyPendingAt !== null) this._replyPendingAt = t;   // still answering: let them finish
         } else {
           const resumed = this.transcript.turns.length > 0;
           this.sendText(resumed ? this.notes.reconnect : this.notes.opening);
@@ -516,6 +596,7 @@ export class GeminiLive {
       const c = this.transcript.close("candidate");
       if (c && this.onTranscript) this.onTranscript(c, true);
       this._event("turn_complete", {});
+      if (u) this._nudgeIfClosingEarly(u.text, t);
     }
   }
 

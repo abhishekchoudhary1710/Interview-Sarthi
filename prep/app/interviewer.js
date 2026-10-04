@@ -109,4 +109,15 @@ export const NOTES = {
   resumed: "(The call dropped while you were speaking and is back. Repeat your last question in one short sentence, then stop and wait. No greeting, no apology speech, no new topic.)",
   wrapUp: "(Note to interviewer: time is nearly over. Finish acknowledging the current answer, then ask what questions the candidate has for you and wait. Do not start another assessment topic. Answer briefly, then thank them and close.)",
   end: "(Note to interviewer: the time is over. Thank the candidate in one sentence and end the interview now.)",
+  // The app clock in writing (4 Oct 2026): one model rarely called the clock tool and closed with half the time left.
+  clock: (p) => `(App clock: ${clockWords(p.remainingSeconds)} of the interview remain. It is not time to close: keep assessing, one question at a time. Never mention this note.)`,
+  clockClose: (p) => `(App clock: under ${Math.max(1, Math.round(p.closingSeconds || 60))} seconds remain. Finish the current answer, invite the candidate's questions, then thank them and close. Never mention this note.)`,
+  notYet: (p) => `(Note to interviewer: ${clockWords(p.remainingSeconds)} remain, so it is too early to close. After the candidate replies, continue the assessment with a new topic. Do not say goodbye or invite closing questions until the app says the time is nearly over. Never mention this note.)`,
 };
+
+function clockWords(seconds) {
+  const s = Math.max(0, Math.round(Number(seconds) || 0));
+  const m = Math.floor(s / 60), r = s % 60;
+  if (!m) return `${r} seconds`;
+  return r ? `${m} min ${r} s` : `${m} minutes`;
+}

@@ -163,10 +163,14 @@ export function demoDevice() {
   return d;
 }
 export const demoUsed = { get: () => mem.get("ps_demo_used") === "1", set: () => mem.set("ps_demo_used", "1") };
+// The id of this device's demo that Google's drops ruined before any answer was heard (4 Oct 2026): the next
+// start asks the server to begin it afresh, once, instead of being told "used". Kept across a reload.
+export const demoReplace = { get: () => mem.get("ps_demo_replace"), set: (id) => mem.set("ps_demo_replace", id), clear: () => mem.set("ps_demo_replace", "") };
 
 /* { ok, demo, token, model, seconds } or { ok: false, reason: used|day_full|network|busy|unavailable }. */
-export async function requestDemo(demo, failed) {
-  try { return await post("/mock/demo/start", { device: demoDevice(), demo, failed: !!failed, diagnostics: diagnosticContext() }); }
+export async function requestDemo() {
+  const replace = demoReplace.get();
+  try { return await post("/mock/demo/start", { device: demoDevice(), ...(replace ? { replace, reason: "outage" } : {}), diagnostics: diagnosticContext() }); }
   catch (_) { return { ok: false, reason: "unavailable" }; }
 }
 

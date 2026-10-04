@@ -12,8 +12,8 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20261001-faststart";
-import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261001-faststart";
+import { GeminiLive } from "./live.js?v=20261004-models";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261004-models";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
 import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261001-faststart";
@@ -22,8 +22,8 @@ import { assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, deviceInvite } from "./billing.js?v=20261003-livetest";
-import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261003-signin";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite } from "./billing.js?v=20261004-models";
+import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261004-models";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
@@ -33,7 +33,7 @@ import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries
 import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
 import { coachingBrief } from "./coaching.js?v=20261001-faststart";
 import { refreshAnalyses } from "./insights.js";
-import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261001-faststart";
+import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261004-models";
 
 const $ = (id) => document.getElementById(id);
 // Technical output is available only when support explicitly requests this URL.
@@ -77,6 +77,7 @@ let micStats = { chunks: 0, voiced: 0, maxRms: 0 };
 let sheStoppedAt = 0, quietMax = 0, micWarned = false;
 let youClearTimer = null;
 let offerShown = false;
+let liveTrouble = 0;           // Google drops and silences in this call (a demo ruined by them is replaced, not spent)
 let booted = false;
 const bubbles = new Map();
 const logLines = [];
@@ -588,7 +589,7 @@ async function startInterview() {
     catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   }
   beginDiagnostics({ kind: redrill ? 'redrill' : S.ent?.kind || 'none', minutes: S.minutes,
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261003-livetest' });
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261004-models' });
   phase = "preparing";
   const controller = new AbortController();
   startController = controller;
@@ -633,6 +634,7 @@ async function startInterview() {
   } else if (isDemo) {
     if (!grant.ok) { diagnosticEvent('demo_refused', { reason: grant.reason }); await demoRefused(grant.reason); return; }
     demo = grant;
+    demoReplace.clear();
     diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'demo' });
     // Not marked used here: if the call cannot connect, pressing Start again resumes the same demo.
     track("mock_demo_start", {});
@@ -718,7 +720,7 @@ function startCall() {
   $("youbar").style.display = "flex";
   phase = "call";
   startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
-  speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false;
+  speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false; liveTrouble = 0;
   trialLeftAtStart = S.ent.secondsLeft;
   plannedSeconds = Math.min(redrill ? REDRILL_SECONDS : S.minutes * 60, S.ent.secondsLeft, demo ? demo.seconds : Infinity);   // free minutes, passes and the demo all stop on the second
   // A pass holder's last report named one habit to fix, and their earlier interviews say what to ask next. A pasted
@@ -765,6 +767,8 @@ function startCall() {
       if (name === "reconnect") track("mock_reconnect", { reason: data && data.reason, demo: !!demo });
       else if (name === "socket_closed" && data && data.wasConnected)
         track("mock_reconnect", { reason: `closed_${data.code}`, message: String(data.reason || "").slice(0, 90), demo: !!demo });
+      if (name === "model_fallback") track("mock_model_fallback", { model: data && data.model, reason: data && data.reason, demo: !!demo });
+      if (name === "stall_detected" || name === "model_fallback" || (name === "socket_closed" && data && data.code === 1011)) liveTrouble++;
       const usage = data?.usage;
       log(name, { ...data, stage: 'live',
         ...(name === 'socket_closed' ? { error: errorClass(data?.reason) } : {}),
@@ -895,6 +899,14 @@ async function endInterview(reason) {
     const deaf = micStats.maxRms < 0.002;
     diagnosticEvent('no_answers', { deaf, seconds: elapsed });
     track("mock_fail_nomic", { demo: !!demo, deaf, seconds: elapsed });
+    if (demo && !deaf && liveTrouble) {
+      // Google dropped or silenced the call and heard nothing (3 Oct 2026, an hour of it): the visitor's one
+      // demo is not spent on that. The next Start asks the server to replace it.
+      demoReplace.set(demo.demo);
+      demo = null;
+      notice("live-notice", "Google's voice service had trouble during this call and heard none of your answers. Press Start to try again: this attempt does not use up your free demo.", "bad");
+      return;
+    }
     notice("live-notice", deaf
       ? "Your microphone sent only silence for the whole call, so there is nothing to score. It was muted, or the browser used the wrong one. Check it and try again."
       : "Google did not pick up any of your answers, so there is nothing to score. Check your microphone and try again. If it happens again, contact support@interviewsarthi.com.", "bad");

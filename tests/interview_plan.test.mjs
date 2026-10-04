@@ -267,7 +267,7 @@ function startHarness(generate, extra = {}) {
     phase: "idle", startController: null, assessmentPlan: null, planPending: null, reportWriting: false,
     // The free demo (billing.js): off unless a test turns it on.
     demo: null, requestDemo: async () => ({ ok: false, reason: "unavailable" }), demoTransport: (id) => ({ demoId: id }),
-    demoUsed: { set() { context.demoMarked = true; } }, passCtx: { passesOn: false }, openPasses(text) { context.passes = text; },
+    demoUsed: { set() { context.demoMarked = true; } }, demoReplace: { get: () => "", set() {}, clear() {} }, passCtx: { passesOn: false }, openPasses(text) { context.passes = text; },
     showDemoFull() { context.fullChoice = true; }, hideDemoFull() {}, hideMicFix() {}, show() {},
     S: { key: "test", hash: "h", cv: documents.cv, jd: documents.jd, minutes: 12, ent: { kind: "trial", secondsLeft: 1200 } },
     generateInterviewPlan: generate, PlanCoverage, interviewContext,

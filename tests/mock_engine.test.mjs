@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { GeminiLive, Transcript } from "../prep/app/live.js";
+import { GeminiLive, LIVE_MODELS, Transcript } from "../prep/app/live.js";
 import { buildInterviewerInstructions, interviewerPersona, languageNote, NOTES } from "../prep/app/interviewer.js";
 import { interviewProgress, normalizeAssessment, COMPETENCIES } from "../prep/app/assessment.js";
 import { assessmentHtml, assessmentText } from "../prep/app/assessment-view.js";
@@ -541,10 +541,17 @@ test("an interviewer cut off mid-sentence repeats the question after a resume; a
   assert.equal(sent.length, before + 1);
   assert.equal(sent.at(-1).clientContent.turns[0].parts[0].text, NOTES.resumed);
   live._handle({ serverContent: { turnComplete: true } });    // the question was asked again; now the candidate talks
+  live.sendAudio(new Int16Array(1600), 0.1);
   live._disconnect(); live._resuming = true;
   before = sent.length;
   live._handle({ setupComplete: {} });
   assert.equal(sent.length, before, "a candidate mid-answer is not interrupted by a stage direction");
+  t += 6;                                                     // they finished; the reply never came before the drop
+  live._disconnect(); live._resuming = true;
+  before = sent.length;
+  live._handle({ setupComplete: {} });
+  assert.equal(sent.length, before + 1, "a reply owed after a resume is asked for, not waited for in silence");
+  assert.equal(sent.at(-1).clientContent.turns[0].parts[0].text, NOTES.reconnect);
   live.close();
 });
 
@@ -717,4 +724,145 @@ test("mic check: isolated clicks far apart do not count as a voice", () => {
 
 test("mic check: nothing delivered at all is reported as no audio", () => {
   assert.equal(new VoiceGate().verdict, "no-audio");
+});
+
+// ── 4 Oct 2026: one model failed for an hour while the other worked; the interviewer closed early on one model ──
+
+const INTERNAL = { code: 1011, reason: "Internal error encountered." };
+
+test("two internal-error drops inside five minutes move the call to the backup model, with the transcript", (ctx) => {
+  const { live, advance, notices } = transport(ctx);
+  const events = []; live.onEvent = (name, data) => events.push({ name, data });
+  const up = () => { live.ws.open(); live.ws.message({ setupComplete: {} }); live.ws.message(audioReply); live.ws.message({ serverContent: { turnComplete: true } }); };
+  live.start();
+  up();
+  live.ws.message({ serverContent: { inputTranscription: { text: "I built a dashboard." } } });
+  live.ws.message({ serverContent: { outputTranscription: { text: "Tell me more." }, turnComplete: true } });
+  live.ws.onclose(INTERNAL); advance(0);
+  assert.equal(live.model, LIVE_MODELS[0], "one drop is not a pattern");
+  up();
+  advance(30);
+  live.ws.onclose(INTERNAL); advance(1);
+  assert.equal(live.model, LIVE_MODELS[1], "the second drop within five minutes switches");
+  assert.ok(events.some(e => e.name === "model_fallback" && e.data.model === LIVE_MODELS[1] && e.data.reason === "unstable"));
+  assert.ok(notices.some(n => /backup voice service/.test(n)));
+  const setup = live._setupMessage().setup;
+  assert.equal(setup.model, `models/${LIVE_MODELS[1]}`);
+  assert.match(setup.systemInstruction.parts[0].text, /INTERVIEW SO FAR[\s\S]*dashboard/, "the fresh session gets the interview so far");
+  assert.deepEqual(setup.sessionResumption, {}, "a resumption handle belongs to the old model");
+  // Drops on the backup go back once; a third switch never happens.
+  up(); live.ws.onclose(INTERNAL); advance(1); up(); live.ws.onclose(INTERNAL); advance(1);
+  assert.equal(live.model, LIVE_MODELS[0]);
+  up(); live.ws.onclose(INTERNAL); advance(1); up(); live.ws.onclose(INTERNAL); advance(1);
+  assert.equal(live.model, LIVE_MODELS[0], "at most two switches per call");
+  assert.equal(events.filter(e => e.name === "model_fallback").length, 2);
+});
+
+test("drops far apart stay on the model; a silence plus a drop count together", (ctx) => {
+  const { live, advance } = transport(ctx);
+  const up = () => { live.ws.open(); live.ws.message({ setupComplete: {} }); live.ws.message(audioReply); live.ws.message({ serverContent: { turnComplete: true } }); };
+  live.start();
+  up();
+  live.ws.onclose(INTERNAL); advance(0);
+  up();
+  advance(400);
+  live.ws.onclose(INTERNAL); advance(1);
+  assert.equal(live.model, LIVE_MODELS[0], "two drops seven minutes apart are not a burst");
+  up();
+  live.sendAudio(new Int16Array(1600), 0.1);
+  advance(16);                                   // nothing came back: a silent session
+  assert.equal(live.model, LIVE_MODELS[1], "a recent drop plus a silence is the same burst");
+});
+
+test("the interviewer reads the app clock between turns: every two minutes, and once when closing opens", () => {
+  let t = 100, live;
+  const result = engine({ now: () => t, getInterviewProgress: () => interviewProgress({ plannedSeconds: 600, elapsedSeconds: live?.activeSeconds || 0 }) });
+  live = result.live;
+  live._handle({ setupComplete: {} });
+  live._handle(audioReply);                       // the practice clock starts with the interviewer's first words
+  live._handle({ serverContent: { turnComplete: true } });
+  const notes = () => result.sent.filter(p => p.clientContent && p.clientContent.turnComplete === false).map(p => p.clientContent.turns[0].parts[0].text);
+  t += 60; live._checkStall();
+  assert.equal(notes().length, 0, "nothing in the first minute");
+  t += 60; live._checkStall();
+  assert.equal(notes().length, 1);
+  assert.match(notes()[0], /App clock: 8 minutes of the interview remain/);
+  live._checkStall();
+  assert.equal(notes().length, 1, "one note per two minutes");
+  live.setPlaying(true); t += 120; live._checkStall();
+  assert.equal(notes().length, 1, "never while the interviewer's voice is playing");
+  live.setPlaying(false); live._checkStall();
+  assert.equal(notes().length, 2);
+  t += 300; live._checkStall();                   // 540 s active: the closing window opens
+  assert.equal(notes().length, 3);
+  assert.match(notes()[2], /under 60 seconds remain[\s\S]*invite the candidate's questions/);
+  t += 30; live._checkStall();
+  assert.equal(notes().length, 3, "the closing note is sent once");
+  assert.ok(result.seen.events.some(([n, d]) => n === "clock_note" && d.closing === true));
+  assert.equal(live._replyPendingAt, null, "a note is context, not a question: no reply is awaited");
+  assert.equal(live.connected, true);
+});
+
+test("an early invitation to ask questions gets a continue note; a timely one does not", () => {
+  let t = 100, live;
+  const result = engine({ now: () => t, getInterviewProgress: () => interviewProgress({ plannedSeconds: 600, elapsedSeconds: live?.activeSeconds || 0 }) });
+  live = result.live;
+  live._handle({ setupComplete: {} }); live._handle(audioReply);
+  const nudges = () => result.sent.filter(p => p.clientContent && p.clientContent.turnComplete === false).map(p => p.clientContent.turns[0].parts[0].text).filter(n => /too early to close/.test(n));
+  t += 200;
+  live._handle({ serverContent: { outputTranscription: { text: "To wrap up, what questions do you have for me?" }, turnComplete: true } });
+  assert.equal(nudges().length, 1);
+  assert.match(nudges()[0], /6 min 40 s remain, so it is too early to close/);
+  assert.ok(result.seen.events.some(([n]) => n === "close_nudge"));
+  live._handle({ serverContent: { outputTranscription: { text: "Any other questions for me?" }, turnComplete: true } });
+  assert.equal(nudges().length, 1, "one nudge a minute");
+  t += 330;                                       // 530 s: not yet the closing window, but under 90 s left
+  live._handle({ serverContent: { outputTranscription: { text: "Do you have any questions for me?" }, turnComplete: true } });
+  assert.equal(nudges().length, 1, "with a minute and a half left, closing is fine");
+  t += 20;                                        // 550 s: the closing window
+  live._handle({ serverContent: { outputTranscription: { text: "Thank you for your time, goodbye." }, turnComplete: true } });
+  assert.equal(nudges().length, 1);
+  live._handle({ serverContent: { outputTranscription: { text: "Tell me about a time you disagreed with your manager." }, turnComplete: true } });
+  assert.equal(nudges().length, 1, "an ordinary question is never nudged");
+});
+
+test("clock notes wait until nothing is owed: not while a reply is pending or the candidate is speaking", () => {
+  let t = 100, live;
+  const result = engine({ now: () => t, getInterviewProgress: () => interviewProgress({ plannedSeconds: 600, elapsedSeconds: live?.activeSeconds || 0 }) });
+  live = result.live;
+  live._handle({ setupComplete: {} }); live._handle(audioReply); live._handle({ serverContent: { turnComplete: true } });
+  const notes = () => result.sent.filter(p => p.clientContent && p.clientContent.turnComplete === false);
+  t += 130;
+  live.sendAudio(new Int16Array(1600), 0.1);     // the candidate answers: a reply is now owed
+  t += 1; live._checkStall();
+  assert.equal(notes().length, 0, "not while the candidate is speaking");
+  t += 5; live._checkStall();
+  assert.equal(notes().length, 0, "not while the interviewer's reply is pending");
+  live._handle(audioReply); live._handle({ serverContent: { turnComplete: true } });
+  live._checkStall();
+  assert.equal(notes().length, 1, "once the interviewer has replied and finished");
+});
+
+test("the GoAway refresh waits for an owed reply, and a resume with a reply owed asks the interviewer to go on", (ctx) => {
+  const { live, advance } = transport(ctx);
+  const events = []; live.onEvent = (name, data) => events.push({ name, data });
+  live.start();
+  live.ws.open(); live.ws.message({ setupComplete: {} }); live.ws.message(audioReply); live.ws.message({ serverContent: { turnComplete: true } });
+  live.ws.message({ sessionResumptionUpdate: { resumable: true, newHandle: "h1" } });
+  live.ws.message({ goAway: { timeLeft: "50s" } });
+  live.sendAudio(new Int16Array(1600), 0.1);     // the candidate answered just as the warning came
+  advance(5);
+  assert.equal(live.connected, true, "no refresh while the reply is owed");
+  live.ws.message(audioReply);                   // the reply arrives
+  live.ws.message({ serverContent: { turnComplete: true } });
+  advance(2);
+  assert.ok(events.some(e => e.name === "reconnect" && e.data.reason === "scheduled_refresh"), "then the refresh happens");
+  // A resume that finds a reply owed nudges the interviewer instead of waiting in silence.
+  const second = live.ws; second.open();
+  live._replyPendingAt = live._now();
+  const before = second.sent.filter(p => p.clientContent).length;
+  second.message({ setupComplete: {} });
+  const sentText = second.sent.filter(p => p.clientContent);
+  assert.equal(sentText.length, before + 1);
+  assert.match(sentText.at(-1).clientContent.turns[0].parts[0].text, /The call reconnected/);
 });
