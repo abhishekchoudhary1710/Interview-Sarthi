@@ -135,6 +135,14 @@ test('product choices are measured across guides without personal URL parameters
   assert.ok(!JSON.stringify(r.events).includes('SECRET'));
   assert.ok(!JSON.stringify(r.events).includes('private'));
 });
+test('a guide tells its top strip apart from its bottom box and from links in the text',()=>{
+  const r=run('https://interviewsarthi.com/guides/us-job-interview-tips-indians.html');
+  for (const [inside,placement] of [['.app-strip','guide_strip'],['.promo','guide_box'],[null,'page']]) {
+    const anchor={getAttribute:()=>'/live/',closest:sel=>(inside && sel.split(',').map(s=>s.trim()).includes(inside))?{}:null};
+    r.listeners.click({target:{closest:()=>anchor}});
+    assert.equal(r.events.filter(e=>e[1]==='product_click').at(-1)[2].placement,placement);
+  }
+});
 test('unrelated and spoof product URLs are not tracked as product choices',()=>{
   const r=run('https://interviewsarthi.com/');
   for(const href of ['https://apply.interviewsarthi.com.evil.test/','https://other.test/prep/','/guides/','mailto:support@interviewsarthi.com']) {

@@ -56,3 +56,14 @@ footer a{color:var(--muted);text-decoration:none;margin:0 7px}
 .promo-duo li{margin-bottom:6px}
 .promo-duo .cta{margin-top:auto;align-self:flex-start;font-size:14.5px;padding:10px 16px}
 @media(max-width:600px){.promo-duo{grid-template-columns:1fr}}
+.app-strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0 6px}
+.app-strip .tile{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line2);border-radius:12px;padding:12px 14px;text-decoration:none;color:var(--text);background:var(--bg2)}
+.app-strip .tile:hover{border-color:var(--accent)}
+.app-strip .when{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.app-strip b{font-size:16px;line-height:1.4}
+.app-strip b small{font-weight:500;color:var(--muted);font-size:12.5px;margin-left:4px}
+.app-strip .what{font-size:13.5px;color:var(--muted);line-height:1.45}
+.app-strip .price{font-size:13.5px;font-weight:600;line-height:1.45;margin-top:4px}
+.app-strip .go{font-size:13.5px;font-weight:600;color:var(--accent);margin-top:2px}
+.strip-note{font-size:12px;color:var(--muted);margin:0 0 18px}
+@media(max-width:600px){.app-strip{grid-template-columns:1fr}}
