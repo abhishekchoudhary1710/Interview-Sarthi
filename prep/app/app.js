@@ -12,8 +12,8 @@
  */
 
 import { AudioIO } from "./audio.js";
-import { GeminiLive } from "./live.js?v=20261004-models";
-import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261004-models";
+import { GeminiLive } from "./live.js?v=20261005-busy";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261005-busy";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
 import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261001-faststart";
@@ -22,8 +22,8 @@ import { assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite } from "./billing.js?v=20261004-models";
-import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261004-models";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite } from "./billing.js?v=20261005-busy";
+import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261005-busy";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
@@ -33,7 +33,7 @@ import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries
 import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
 import { coachingBrief } from "./coaching.js?v=20261001-faststart";
 import { refreshAnalyses } from "./insights.js";
-import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261004-models";
+import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261005-busy";
 
 const $ = (id) => document.getElementById(id);
 // Technical output is available only when support explicitly requests this URL.
@@ -87,6 +87,7 @@ let focusCarried = null;       // the habit the last report set, tested in this 
 let coaching = "";             // a pass holder's earlier practice, for the interviewer (coaching.js)
 let redrill = null;            // { source } while one question is being answered again (redrill.js)
 let reportWriting = false;     // a report is being written: no new interview starts until it has arrived
+let googleDrop = false;        // the last drop or silence was Google's (1011, reply timeout), not this connection's
 const wheel = new Wheel($("wheel"));
 const waitWheel = new Wheel($("wheel-wait"));
 
@@ -245,6 +246,7 @@ async function restore() {
   }
   booted = true;
   renderEntitlement();
+  void resumePendingReport();
 }
 
 $("language").onchange = () => { $("language-other").style.display = $("language").value === "other" ? "block" : "none"; };
@@ -589,7 +591,7 @@ async function startInterview() {
     catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   }
   beginDiagnostics({ kind: redrill ? 'redrill' : S.ent?.kind || 'none', minutes: S.minutes,
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261004-models' });
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261005-busy' });
   phase = "preparing";
   const controller = new AbortController();
   startController = controller;
@@ -756,7 +758,9 @@ function startCall() {
       }
       else if (s === "connecting" || s === "reconnecting") {
         setLink("busy", s === "connecting" ? "Connecting" : "Reconnecting");
-        if (s === "reconnecting") setCaption("One moment", "Reconnecting. Your practice timer is paused and your answers are kept.", true);
+        if (s === "reconnecting") setCaption(googleDrop ? "Google is busy" : "One moment", googleDrop
+          ? "Google's voice service dropped. Reconnecting your interviewer. Not your mic, not the app. Your timer is paused and your answers are kept."
+          : "Reconnecting. Your practice timer is paused and your answers are kept.", true);
       } else if (s === "failed") endInterview("failed");
       refreshWheel();
     },
@@ -764,9 +768,11 @@ function startCall() {
     onEvent: (name, data) => {
       // Why a call reconnects, for everyone (the diagnostics log is on only with ?diagnostics=1): the owner's
       // own test on 27 Sep 2026 reconnected mid-call and nothing outside the browser could say why.
-      if (name === "reconnect") track("mock_reconnect", { reason: data && data.reason, demo: !!demo });
-      else if (name === "socket_closed" && data && data.wasConnected)
+      if (name === "reconnect") { googleDrop = /^(reply_timeout|setup_timeout|resume_rejected)$/.test(String(data && data.reason)); track("mock_reconnect", { reason: data && data.reason, demo: !!demo }); }
+      else if (name === "socket_closed" && data && data.wasConnected) {
+        googleDrop = data.code === 1011 || /internal error|unavailable|overloaded|high demand/i.test(String(data.reason || ""));
         track("mock_reconnect", { reason: `closed_${data.code}`, message: String(data.reason || "").slice(0, 90), demo: !!demo });
+      }
       if (name === "model_fallback") track("mock_model_fallback", { model: data && data.model, reason: data && data.reason, demo: !!demo });
       if (name === "stall_detected" || name === "model_fallback" || (name === "socket_closed" && data && data.code === 1011)) liveTrouble++;
       const usage = data?.usage;
@@ -938,28 +944,106 @@ async function whileWriting(write) {
   finally { reportWriting = false; $("report-actions").style.display = ""; }
 }
 
-async function writeReport(turns, elapsed, usage) {
+/* Google answers "high demand" (503) or hangs (504) in bursts of a few minutes (30 Sep and 5 Oct 2026: both report
+ * models at once). The report is then tried again by itself, with the wait and the reason on screen, so nobody takes
+ * Google's bad minute for a broken app. The unwritten report stays on this device (ps_pending_report) and is finished
+ * the next time the app opens, in a minute or tomorrow. Owner's ask, 5 Oct 2026. */
+const REPORT_RETRY_SECONDS = (window.__PREP_TEST && window.__PREP_TEST.retrySeconds) || [20, 30, 45, 60, 60, 60, 60, 60, 60, 60];
+const PENDING_REPORT_HOURS = 24;      // older than this the answers are stale, and the pending report is dropped
+const DEMO_REPORT_MINUTES = 55;       // the licence server stops answering a demo's report an hour after its start
+let reportBusyWake = null;            // ends the current wait early: true = try now, false = stop trying
+
+function rememberPendingReport(job) { store.set("ps_pending_report", JSON.stringify(job)); return job; }
+function forgetPendingReport() { try { localStorage.removeItem("ps_pending_report"); } catch (_) { /* private mode */ } }
+function readPendingReport() {
+  try { const j = JSON.parse(store.get("ps_pending_report", "null")); return j && Array.isArray(j.turns) && j.turns.length ? j : null; }
+  catch { return null; }
+}
+
+/* The waiting card while Google is busy: whose fault, what happens next, a countdown, and two choices. */
+function reportBusyWait(seconds, err, job) {
+  const why = err.network ? "Google could not be reached from your connection" : "Google's servers are busy right now";
+  const later = job.demo ? "come back within the hour on this device and it will be written then."
+    : "open Prep Sarthi again on this device at any time and it will be written then" + (S.ent && S.ent.kind === "pass" ? ", and saved to Your interviews." : ".");
+  $("report-wait").querySelector("h2").textContent = err.network ? "Waiting for your connection" : "Google is busy, not your app";
+  waitWheel.setState("reconnecting");
+  let box = $("report-busy-actions");
+  if (!box) {
+    box = document.createElement("div"); box.className = "actions"; box.id = "report-busy-actions";
+    box.innerHTML = `<button class="pill" id="report-retry">Try now</button><button class="pill ghost" id="report-later">Stop trying</button>`;
+    $("report-wait").appendChild(box);
+  }
+  return new Promise((resolve) => {
+    let left = seconds;
+    const paint = () => { $("report-status").innerHTML = `${escapeHtml(why)}. Your answers are safe, and this is not your microphone or this app. Trying again in <b>${left} s</b>. You can wait here, or leave: ${escapeHtml(later)}`; };
+    const tick = setInterval(() => { left -= 1; if (left <= 0) done(true); else paint(); }, 1000);
+    const done = (go) => { clearInterval(tick); reportBusyWake = null; resolve(go); };
+    reportBusyWake = done;
+    $("report-retry").onclick = () => { track("mock_report_retry", { demo: !!job.demo, during: "wait" }); done(true); };
+    $("report-later").onclick = () => { track("mock_report_later", { demo: !!job.demo }); done(false); };
+    paint();
+  });
+}
+
+/* An interview whose report Google could not write last time (busy or unreachable): finish it now, on the
+ * person's own key if they have one since, otherwise through the demo relay while its hour lasts. */
+async function resumePendingReport() {
+  const job = readPendingReport();
+  if (!job) return;
+  const ageMin = (Date.now() - Date.parse(job.at || 0)) / 60000;
+  const usable = ageMin >= 0 && ageMin <= PENDING_REPORT_HOURS * 60 && (S.key || (job.demo && ageMin <= DEMO_REPORT_MINUTES));
+  if (!usable) { forgetPendingReport(); return; }
+  // A demo visitor has no entitlement until Start is pressed (line above startInterview): give the report the one it had.
+  if (!S.key && !S.ent) { S.ent = { kind: "demo", secondsLeft: 0, hasTrial: false }; renderEntitlement(); }
+  track("mock_report_resume", { demo: !!job.demo && !S.key, minutes: Math.round(ageMin) });
+  await whileWriting(() => writeReport(job.turns, job.elapsed, job.usage, job));
+}
+
+async function writeReport(turns, elapsed, usage, pending = null) {
   const reportStarted = performance.now();
-  diagnosticEvent('report_start', { stage: 'report' });
+  diagnosticEvent('report_start', { stage: 'report', resumed: !!pending });
   show("s-report");
   $("report").innerHTML = ""; $("report-wait").style.display = "block";
+  $("report-wait").querySelector("h2").textContent = pending ? "Finishing your report" : "Writing your report";
+  $("report-status").textContent = pending ? `From your interview at ${new Date(pending.at).toLocaleString()}. About twenty seconds.` : "Scoring every answer against your CV. About twenty seconds.";
+  const stale = $("report-busy-actions"); if (stale) stale.remove();
   waitWheel.start(); waitWheel.setState("thinking");
-  const metrics = computeMetrics(turns, voiceLog);
-  let result;
-  try {
-    assessmentPlan = await planForReport();
-    result = await generateReport({ apiKey: S.key, transport: demo ? demoTransport(demo.demo) : undefined, cv: S.cv, jd: S.jd, language: S.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan, previousFocus: focusCarried });
-  } catch (err) {
-    diagnosticEvent('report_failed', { stage: 'report', error: errorClass(err), duration_ms: Math.round(performance.now() - reportStarted) });
+  const metrics = pending ? pending.metrics : computeMetrics(turns, voiceLog);
+  if (!pending) assessmentPlan = await planForReport();
+  // Everything the report needs, kept on this device until it is written or given up on.
+  const job = pending || rememberPendingReport({ at: new Date().toISOString(), turns, elapsed, usage, metrics, cv: S.cv, jd: S.jd, language: S.language,
+    plan: assessmentPlan, focus: focusCarried, demo: demo ? { demo: demo.demo, seconds: demo.seconds } : null });
+  const transport = job.demo && !S.key ? demoTransport(job.demo.demo) : undefined;    // a buyer since then writes it on their own key
+  let result, err;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      result = await generateReport({ apiKey: S.key, transport, cv: job.cv, jd: job.jd, language: job.language, transcript: turns, metrics, minutes: Math.round(elapsed / 60), assessmentPlan: job.plan, previousFocus: job.focus });
+      break;
+    } catch (e) {
+      err = e;
+      const wait = (e.busy || e.network) ? REPORT_RETRY_SECONDS[attempt] : 0;
+      diagnosticEvent('report_failed', { stage: 'report', error: errorClass(e), attempt: attempt + 1, busy: !!e.busy, retrying: !!wait, duration_ms: Math.round(performance.now() - reportStarted) });
+      if (!wait) break;
+      if (attempt === 0) track("mock_report_busy", { demo: !!job.demo, message: String(e.message || "").slice(0, 90) });
+      if (!(await reportBusyWait(wait, e, job))) break;         // "Stop trying"
+      $("report-wait").querySelector("h2").textContent = "Writing your report"; waitWheel.setState("thinking");
+    }
+  }
+  if (!result) {
     void flushDiagnostics();
-    track("mock_fail_report", { demo: !!demo, message: String(err && err.message || "").slice(0, 90) });
+    track("mock_fail_report", { demo: !!job.demo, message: String(err && err.message || "").slice(0, 90), busy: !!err.busy });
     waitWheel.stop(); $("report-wait").style.display = "none";
-    $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">The report could not be written</h2><p class="muted">${escapeHtml(err.message)}</p><p class="muted">Your answers are kept. Try again now, or download your transcript below.</p><div class="actions"><button class="pill" id="report-retry">Write my report again</button></div></div>`;
+    if (!err.busy && !err.network) forgetPendingReport();       // waiting would not change this answer
+    const reason = err.busy ? "Google's servers are busy: their side, not your microphone or this app."
+      : err.network ? "Google could not be reached from your connection." : escapeHtml(err.message);
+    const keep = err.busy || err.network ? ` It will also be written by itself the next time you open Prep Sarthi on this device${job.demo && !S.key ? " within the hour" : ""}.` : "";
+    $("report").innerHTML = `<div class="card"><h2 style="font-size:28px">${err.busy ? "Google is busy right now" : "The report could not be written"}</h2><p class="muted">${reason}</p><p class="muted">Your answers are kept. Try again now, or download your transcript below.${keep}</p><div class="actions"><button class="pill" id="report-retry">Write my report again</button></div></div>`;
     // The same interview again, not a new one: both Hyderabad demos that lost their report on 30 Sep were redone in full.
-    $("report-retry").onclick = () => { track("mock_report_retry", { demo: !!demo }); void whileWriting(() => writeReport(turns, elapsed, usage)); };
+    $("report-retry").onclick = () => { track("mock_report_retry", { demo: !!job.demo }); void whileWriting(() => writeReport(turns, elapsed, usage, job)); };
     window.__lastReport = { turns, metrics, elapsed };
     return;
   }
+  forgetPendingReport();
   waitWheel.stop(); $("report-wait").style.display = "none";
   diagnosticEvent('report_ready', { stage: 'report', model: result.model, duration_ms: Math.round(performance.now() - reportStarted) });
   void flushDiagnostics();

@@ -19,7 +19,7 @@
  * Google.
  */
 
-import { NOTES } from "./interviewer.js?v=20261004-models";
+import { NOTES } from "./interviewer.js?v=20261005-busy";
 
 // Two voice models that both answer the free tier. The first is the default; the other takes over when Google
 // retires the first, or when the first keeps failing mid-call (3 and 4 Oct 2026: "Internal error encountered"
@@ -317,7 +317,11 @@ export class GeminiLive {
       if (e.code === 1008 || /invalid.argument|api.key.*(invalid|expired)|permission.denied|unauthenticated|not supported/i.test(reason)) {
         return this._fail(reason || "Google refused this session. Check the API key and its permissions.", 'permission');
       }
-      this._notice("Reconnecting to your interviewer. Your answers are kept and the practice timer is paused.");
+      // 1011 "Internal error encountered" and "unavailable" are Google's (3-5 Oct 2026); said so, or people
+      // blame their microphone, their internet or this app and give up.
+      this._notice(e.code === 1011 || /internal error|unavailable|overloaded|high demand/i.test(reason)
+        ? "Google's voice service dropped the call: their side, not your microphone or this app. Reconnecting to your interviewer. Your answers are kept and the practice timer is paused."
+        : "Reconnecting to your interviewer. Your answers are kept and the practice timer is paused.");
       this._retry();
     };
   }
@@ -343,7 +347,9 @@ export class GeminiLive {
     if (this.stopped) return;
     this._event("reconnect", { reason });
     this._disconnect();
-    this._notice("Reconnecting to your interviewer. Your answers are kept and the practice timer is paused.");
+    this._notice(reason === "reply_timeout" || reason === "setup_timeout"
+      ? "Google's voice service went quiet (their side, not your microphone or this app). Reconnecting to your interviewer. Your answers are kept and the practice timer is paused."
+      : "Reconnecting to your interviewer. Your answers are kept and the practice timer is paused.");
     this._retry();
   }
 

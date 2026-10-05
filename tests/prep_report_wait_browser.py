@@ -3,8 +3,10 @@ Fake audio, a fake licence server and a fake Gemini Live socket: no request leav
 
 1. The first report model answers 504 ("Gemini too slow"): the app moves on to the second model.
 2. While the report is written, Practise again is hidden and Start refuses a new interview.
-3. Both models failing shows "Write my report again", which writes it from the same answers.
+3. Both models busy shows "Google is busy, not your app" with a countdown and Try now, which writes it from
+   the same answers (5 Oct 2026: six minutes of 503 on both models cost a visitor their report).
 4. Once the demo's report has arrived, Start opens the passes instead of a call Google would refuse.
+5. Stop trying, leave, come back: the report is written by itself from the answers kept on the device.
 
 Run with Playwright; PREP_BROWSER may select the installed Chromium binary.
 """
@@ -82,6 +84,7 @@ def run(p, scenario):
     context.route('**/*', route)
     context.route_web_socket(re.compile(r'wss://generativelanguage\.googleapis\.com/.*'), live)
     page = context.new_page()
+    page.add_init_script("window.__PREP_TEST = { retrySeconds: [3, 3] }")
     page.on('pageerror', lambda e: errors.append(str(e)))
     page.on('dialog', lambda d: d.accept())                       # "End the interview now and get your report?"
     page.goto('http://localhost/prep/app/', wait_until='networkidle')
@@ -108,7 +111,7 @@ def demo_starts(calls):
     return sum(1 for c in calls if c[0] == '/mock/demo/start')
 
 
-# A report that fails on both models, then is written again from the same answers.
+# A report that meets a busy Google on both models: the wait is named, and Try now writes it from the same answers.
 def failing_while(page, calls):
     expect(page.locator('#report-wait')).to_be_visible()
     expect(page.locator('#report-actions')).to_be_hidden()
@@ -117,11 +120,35 @@ def failing_while(page, calls):
 
 def failing_after(page, calls):
     expect(page.locator('#report-retry')).to_be_visible(timeout=10000)
-    expect(page.locator('#report-actions')).to_be_visible()
+    expect(page.locator('#report-wait')).to_contain_text('Google is busy, not your app')
+    expect(page.locator('#report-status')).to_contain_text('not your microphone or this app')
+    expect(page.locator('#report-actions')).to_be_hidden()           # no Practise again while the report is owed
     page.locator('#report-retry').click()
     expect(page.locator('#report-wait')).to_be_hidden(timeout=10000)
     expect(page.locator('#report')).to_contain_text('Clear answer, thin on checks.')
+    expect(page.locator('#report-actions')).to_be_visible()
     assert demo_starts(calls) == 1, 'writing the report again is not a new interview'
+    assert page.evaluate("localStorage.getItem('ps_pending_report')") is None, 'a written report is no longer pending'
+
+
+# Stop trying, leave, come back: the answers kept on the device become the report without a new interview.
+def resume_after(page, calls):
+    expect(page.locator('#report-later')).to_be_visible(timeout=10000)
+    page.locator('#report-later').click()
+    expect(page.locator('#report')).to_contain_text('Google is busy right now')
+    expect(page.locator('#report')).to_contain_text('next time you open Prep Sarthi')
+    assert page.evaluate("JSON.parse(localStorage.getItem('ps_pending_report')).turns.length") >= 2
+    page.goto('http://localhost/prep/app/', wait_until='networkidle')          # back later
+    expect(page.locator('#report')).to_contain_text('Clear answer, thin on checks.', timeout=15000)
+    assert page.evaluate("localStorage.getItem('ps_pending_report')") is None
+    assert demo_starts(calls) == 1, 'the resumed report is not a new interview'
+
+
+# The countdown runs out by itself: nothing pressed, the report arrives.
+def waiting_after(page, calls):
+    expect(page.locator('#report-status')).to_contain_text('Trying again in', timeout=10000)
+    expect(page.locator('#report')).to_contain_text('Clear answer, thin on checks.', timeout=15000)
+    assert demo_starts(calls) == 1
 
 
 # The Bengaluru path: Practise again during the wait, the report landing while the next interview is set up.
@@ -147,4 +174,8 @@ with sync_playwright() as p:
     assert [m for _, _, m in first] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash'] * 2, first
     second = run(p, {'report_answers': ['hold', 200], 'while_writing': race_while, 'after': race_after})
     assert [m for _, _, m in second] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash'], second
-    print(json.dumps({'result': 'passed', 'retry_run': first, 'race_run': second}))
+    third = run(p, {'report_answers': ['hold', 503, 200], 'while_writing': failing_while, 'after': resume_after})
+    assert [m for _, _, m in third] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'], third
+    fourth = run(p, {'report_answers': ['hold', 503, 200], 'while_writing': failing_while, 'after': waiting_after})
+    assert [m for _, _, m in fourth] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'], fourth
+    print(json.dumps({'result': 'passed', 'retry_run': first, 'race_run': second, 'resume_run': third, 'wait_run': fourth}))

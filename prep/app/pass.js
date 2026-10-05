@@ -13,7 +13,7 @@
  * score worth showing.
  */
 
-import { LICENSE_API, LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20261004-models";
+import { LICENSE_API, LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20261005-busy";
 import { reportPaidOrder } from "./purchase-analytics.js?v=20260928";
 
 const $ = (id) => document.getElementById(id);

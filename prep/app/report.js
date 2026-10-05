@@ -132,6 +132,7 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
     generationConfig: { temperature: 0.3, maxOutputTokens: assessmentPlan ? 12000 : 7000, responseMimeType: "application/json", responseSchema: schema },
   });
   let last = "no model answered";
+  const seen = new Set();     // what went wrong, per model: "busy" (Google's side), "network" (ours), "other"
   for (const model of REPORT_MODELS) {
     if (model !== REPORT_MODELS[0]) diagnosticEvent('model_fallback', { stage: 'report', model });
     let res;
@@ -141,25 +142,34 @@ export async function generateReport({ apiKey, cv, jd, language, transcript, met
         : fetch(URL.replace("{model}", model).replace("{key}", encodeURIComponent(apiKey)), {
             method: "POST", headers: { "content-type": "application/json" }, body, signal: AbortSignal.timeout(60000),
           }));
-    } catch (err) { last = `Gemini unreachable (${err.message})`; continue; }
+    } catch (err) { last = `Gemini unreachable (${err.message})`; seen.add("network"); continue; }
     if (!res.ok) {
       let detail = "";
       try { detail = (await res.json()).error.message; } catch (_) { /* no body */ }
       last = `Gemini HTTP ${res.status}${detail ? ": " + detail : ""}`;
       // 504 is the licence server giving up on a hung model ("Gemini too slow"): on 30 Sep 2026 two free demos
       // lost their report to it while the next model was fine.
-      if ([404, 429, 500, 502, 503, 504].includes(res.status)) continue;
+      if ([404, 429, 500, 502, 503, 504].includes(res.status)) {
+        // A key's daily limit will not clear in a minute; everything else here is Google's bad moment.
+        seen.add(res.status === 404 || (res.status === 429 && /quota|exceeded|limit/i.test(detail)) ? "other" : "busy");
+        continue;
+      }
       throw new Error(last);
     }
     const payload = await res.json();
     const text = ((((payload.candidates || [])[0] || {}).content || {}).parts || []).map((p) => p.text || "").join("").trim();
-    if (!text) { diagnosticEvent('request_error', { stage: 'report', model, error: 'invalid_response' }); last = "Gemini returned no report"; continue; }
+    if (!text) { diagnosticEvent('request_error', { stage: 'report', model, error: 'invalid_response' }); last = "Gemini returned no report"; seen.add("other"); continue; }
     try {
       return { model, report: finish(JSON.parse(text)) };
     }
-    catch { diagnosticEvent('request_error', { stage: 'report', model, error: 'invalid_response' }); last = "Gemini returned malformed JSON"; continue; }
+    catch { diagnosticEvent('request_error', { stage: 'report', model, error: 'invalid_response' }); last = "Gemini returned malformed JSON"; seen.add("other"); continue; }
   }
-  throw new Error(last);
+  // Both models busy or hung (30 Sep and 5 Oct 2026, six minutes at a time): the app says so and tries again
+  // by itself. Anything else is final until the person presses the button.
+  const err = new Error(last);
+  err.busy = seen.has("busy") && !seen.has("other");
+  err.network = seen.has("network") && !seen.has("busy") && !seen.has("other");
+  throw err;
 }
 
 /* The fields the progress page relies on: answer turns must be real candidate turns, a focus must name one of
