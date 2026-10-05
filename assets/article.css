@@ -48,3 +48,11 @@ p.note{font-size:13.5px;color:var(--muted);margin-top:-8px}
 footer{border-top:1px solid var(--line);background:var(--bg2);color:var(--muted);font-size:13px;text-align:center;padding:26px 20px 40px}
 footer a{color:var(--muted);text-decoration:none;margin:0 7px}
 @media(max-width:600px){h1{font-size:27px}header.top nav a{margin-left:0;margin-right:14px}}
+.promo-duo{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:4px 0 2px}
+.promo-duo .app{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff;display:flex;flex-direction:column}
+.promo-duo .when{margin:0 0 2px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.promo-duo h4{margin:0 0 8px;font-size:17px}
+.promo-duo ul{margin:0 0 16px;padding-left:18px;font-size:14.5px;color:var(--muted);line-height:1.55}
+.promo-duo li{margin-bottom:6px}
+.promo-duo .cta{margin-top:auto;align-self:flex-start;font-size:14.5px;padding:10px 16px}
+@media(max-width:600px){.promo-duo{grid-template-columns:1fr}}

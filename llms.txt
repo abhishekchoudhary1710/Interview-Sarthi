@@ -45,6 +45,15 @@ Product and guide pages contain readable HTML. Interactive app features require 
 - [Hinglish interview answers](https://interviewsarthi.com/guides/hinglish-interview-answers.html)
 - [Rules on using AI in interviews](https://interviewsarthi.com/guides/ai-in-interviews-rules.html)
 
+## Interviewing abroad (for Indians applying to jobs in other countries)
+
+- [Job interviews abroad for Indians](https://interviewsarthi.com/guides/job-interviews-abroad-indians.html): what changes in the US, UK, Canada and UAE compared with Indian interviews.
+- [US job interviews for Indians](https://interviewsarthi.com/guides/us-job-interview-tips-indians.html): recruiter screens, STAR answers, salary research, thank-you emails.
+- [UK job interviews for Indians](https://interviewsarthi.com/guides/uk-job-interview-tips-indians.html): competency-based questions, right to work, the sponsor register.
+- [Canada job interviews for Indians](https://interviewsarthi.com/guides/canada-job-interview-tips-indians.html): the Canadian experience question, behavioural rounds, references.
+- [Dubai and UAE job interviews for Indians](https://interviewsarthi.com/guides/dubai-uae-job-interview-tips-indians.html): monthly packages, gratuity on basic pay, notice periods, fake offers.
+- [Will you require visa sponsorship?](https://interviewsarthi.com/guides/visa-sponsorship-interview-question.html): honest answers for OPT, H-1B, the UK Graduate route, Canadian work permits and the UAE.
+
 ## Applying for jobs, guides
 
 - [All applying guides](https://interviewsarthi.com/apply/guides/)
