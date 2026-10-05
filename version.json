@@ -1,5 +1,5 @@
 {
-  "latest": "1.0.30",
-  "note": "Read every past interview inside the app - each question with its suggested answer - and save a copy you can print. A shorter end screen after the interview, and dollar prices outside India.",
+  "latest": "1.0.31",
+  "note": "Steadier voice: when Google's voice service drops, Live Sarthi moves to Google's other voice model and carries on. No more answers cut at the ten-minute mark, and a clear message when your Gemini key is at its free limit.",
   "url": "https://interviewsarthi.com/#download"
 }
