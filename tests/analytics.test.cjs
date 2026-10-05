@@ -19,6 +19,93 @@ function run(url, referrer='', session=storage(), local=storage(), disabled=fals
   return {get events(){return window.dataLayer.map(x=>Array.from(x));},scripts,location,listeners,window};
 }
 const referral = r => r.events.filter(e=>e[0]==='event' && e[1]==='ai_referral_visit');
+const campaignUrl = (source='career_creator', medium='referral', name='international_us_live', content='software-review-01') =>
+  'https://interviewsarthi.com/live/international.html?' + new URLSearchParams({utm_source:source,utm_medium:medium,utm_campaign:name,utm_content:content});
+test('every generated campaign link is accepted by the shipped analytics code',()=>{
+  const {spawnSync}=require('node:child_process');
+  const result=spawnSync('python3',['-c',
+    'import sys,json;sys.path.insert(0,sys.argv[1]);from build_outreach_links import campaign_rows;print(json.dumps([r for slot in range(1,6) for r in campaign_rows(slot)]))',
+    path.join(__dirname,'../scripts')],{encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  const rows=JSON.parse(result.stdout);
+  assert.equal(rows.length,300);assert.equal(new Set(rows.map(r=>r.url)).size,300);
+  for(const row of rows) {
+    const r=run(row.url);const config=r.events.find(e=>e[0]==='config')[2];
+    assert.equal(config.campaign_name,row.campaign);
+    assert.equal(config.campaign_content,row.content);
+    assert.equal(config.campaign_source,row.source);
+    assert.equal(config.campaign_medium,row.medium);
+  }
+});
+test('planned US/UK written placements preserve campaign fields on entry only',()=>{
+  const channels=[['linkedin','social','post'],['reddit','referral','community'],['facebook','referral','community'],['career_creator','referral','review'],['career_newsletter','email','newsletter']];
+  for(const market of ['us','uk']) for(const product of ['live','prep']) for(const [source,medium,placement] of channels) {
+    const name=`international_${market}_${product}`,content=`data-${placement}-01`;
+    const session=storage();
+    const entry=run(campaignUrl(source,medium,name,content)+'&email=private@example.test&key=SECRET','',session);
+    const config=entry.events.find(e=>e[0]==='config')[2];
+    assert.equal(config.campaign_source,source);assert.equal(config.campaign_medium,medium);
+    assert.equal(config.campaign_name,name);assert.equal(config.campaign_content,content);
+    assert.ok(!JSON.stringify(entry.events).includes('SECRET'));
+    assert.ok(!JSON.stringify(entry.events).includes('private@example.test'));
+    const next=run('https://interviewsarthi.com/live/',entry.location.href,session);
+    assert.equal(next.events.find(e=>e[0]==='config')[2].campaign_name,undefined);
+    next.window.sarthiTrack('download_click',{method:'store'});
+    assert.equal(next.events.find(e=>e[1]==='download_click')[2].outreach_content,content);
+  }
+});
+test('unplanned or personal campaign fields and spoofed channels are rejected',()=>{
+  for(const args of [
+    ['career_creator','referral','international_us_live','private@example.test'],
+    ['career_creator','referral','international_us_live','software-review-99'],
+    ['reddit','referral','international_us_live','software-review-01'],
+    ['career_creator','email','international_us_live','software-review-01'],
+    ['career_creator','referral','private@example.test','software-review-01'],
+    ['toString','referral','international_us_live','software-review-01']
+  ]) {
+    const r=run(campaignUrl(...args));
+    assert.equal(r.events.find(e=>e[0]==='config')[2].campaign_name,undefined);
+    assert.equal(r.events.filter(e=>e[1]==='outreach_visit').length,0);
+  }
+});
+test('unrelated arrivals and expired placements do not inherit prior outreach',()=>{
+  for(const [url,referrer] of [
+    ['https://interviewsarthi.com/live/','https://www.google.com/search?q=interview'],
+    ['https://interviewsarthi.com/live/?utm_source=chatgpt.com',''],
+    ['https://interviewsarthi.com/live/?utm_source=unknown','']
+  ]) {
+    const session=storage();run(campaignUrl(),' ',session);
+    const r=run(url,referrer,session);r.window.sarthiTrack('download_click');
+    assert.equal(r.events.find(e=>e[1]==='download_click')[2].outreach_campaign,undefined);
+  }
+  const session=storage();run(campaignUrl(),' ',session);
+  const cached=JSON.parse(session.getItem('sarthi_outreach'));cached.at=Date.now()-31*60*1000;
+  session.setItem('sarthi_outreach',JSON.stringify(cached));
+  const r=run('https://interviewsarthi.com/live/','',session);r.window.sarthiTrack('download_click');
+  assert.equal(r.events.find(e=>e[1]==='download_click')[2].outreach_campaign,undefined);
+});
+test('receipt preserves checkout placement across tabs without replaying manual campaigns',()=>{
+  const session=storage(),local=storage();run(campaignUrl(),' ',session,local);
+  const checkout=run('https://interviewsarthi.com/live/','https://interviewsarthi.com/live/international.html',session,local);
+  const anchor={getAttribute:()=> 'https://license.interviewsarthi.com/buy?plan=30d&region=intl',closest:()=>null};
+  checkout.listeners.click({target:{closest:()=>anchor}});
+  const receipt=run('https://interviewsarthi.com/thanks.html?license_key=SECRET','https://checkout.dodopayments.com/private',storage(),local);
+  const config=receipt.events.find(e=>e[0]==='config')[2];
+  assert.equal(config.ignore_referrer,true);assert.equal(config.page_referrer,'');
+  assert.equal(config.campaign_name,undefined);
+  const purchase=receipt.events.find(e=>e[1]==='purchase')[2];
+  assert.equal(purchase.outreach_campaign,'international_us_live');
+  assert.equal(purchase.outreach_content,'software-review-01');
+  assert.equal(purchase.target_market,'us');assert.equal(purchase.currency,'USD');
+  assert.ok(!JSON.stringify(receipt.events).includes('SECRET'));
+});
+test('invalid stored attribution and lookalike payment hosts cannot inject campaign fields',()=>{
+  const local=storage();local.setItem('pending_pass',JSON.stringify({id:'2d',value:9.99,currency:'USD',at:Date.now(),campaign:{source:'career_creator',medium:'referral',name:'international_us_live',content:'private@example.test'}}));
+  const r=run('https://interviewsarthi.com/thanks.html?license_key=SECRET','https://checkout.dodopayments.com.evil.test/',storage(),local);
+  assert.equal(r.events.find(e=>e[0]==='config')[2].ignore_referrer,undefined);
+  assert.equal(r.events.find(e=>e[1]==='purchase')[2].outreach_content,undefined);
+  assert.ok(!JSON.stringify(r.events).includes('private@example.test'));
+});
 test('LinkedIn campaign survives URL sanitisation without unrelated query data',()=>{
   const r=run('https://interviewsarthi.com/prep/?utm_source=linkedin&utm_medium=social&utm_campaign=linkedin_product_growth&utm_content=li-20260929-prep-project&email=private@example.test');
   const c=r.events.find(e=>e[0]==='config')[2];

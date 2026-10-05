@@ -42,6 +42,49 @@
     catch (e) { gaOn = false; clarityOn = false; }
   }
 
+  // Only the planned outreach codes are accepted, never arbitrary UTM text.
+  // Target market is the intended campaign audience, not the visitor's country.
+  function outreachCampaign(values) {
+    if (!values) return null;
+    var campaign = /^international_(us|uk)_(live|prep)$/.exec(values.name || "");
+    var content = /^(software|data|cloud)-(post|community|review|newsletter)-0[1-5]$/.exec(values.content || "");
+    var channels = {
+      linkedin: ["social", "post"], reddit: ["referral", "community"],
+      facebook: ["referral", "community"], career_creator: ["referral", "review"],
+      career_newsletter: ["email", "newsletter"]
+    };
+    if (!Object.prototype.hasOwnProperty.call(channels, values.source)) return null;
+    var channel = channels[values.source];
+    if (!campaign || !content || values.medium !== channel[0] || content[2] !== channel[1]) return null;
+    return {source: values.source, medium: values.medium, name: values.name,
+      content: values.content, market: campaign[1], product: campaign[2]};
+  }
+  function outreachPayload(campaign) {
+    return campaign ? {outreach_campaign: campaign.name, outreach_source: campaign.source,
+      outreach_content: campaign.content, target_market: campaign.market} : {};
+  }
+  var receiptPage = location.pathname === "/thanks.html";
+  var newOutreach = !privateReturn && !receiptPage ? outreachCampaign({
+    source: incomingParams.get("utm_source"), medium: incomingParams.get("utm_medium"),
+    name: incomingParams.get("utm_campaign"), content: incomingParams.get("utm_content")
+  }) : null;
+  var outreach = newOutreach;
+  try {
+    var storedOutreach = JSON.parse(sessionStorage.getItem("sarthi_outreach") || "null");
+    var age = storedOutreach && Date.now() - storedOutreach.at;
+    var externalReferrer = false;
+    try { externalReferrer = new URL(document.referrer).origin !== location.origin; } catch (e) { }
+    // An unrelated new campaign or external referral must not inherit the old placement.
+    if (!outreach && !incomingParams.has("utm_source") && !externalReferrer &&
+        storedOutreach && age >= 0 && age < 30 * 60 * 1000) {
+      outreach = outreachCampaign(storedOutreach.campaign);
+    }
+    if (gaOn && !privateReturn && !receiptPage) {
+      if (outreach) sessionStorage.setItem("sarthi_outreach", JSON.stringify({campaign: outreach, at: Date.now()}));
+      else sessionStorage.removeItem("sarthi_outreach");
+    }
+  } catch (e) { /* A blocked or malformed store never stops navigation. */ }
+
   if (gaOn) {
     var s = document.createElement("script");
     s.async = true;
@@ -53,6 +96,22 @@
       page_location: location.origin + location.pathname,
       page_referrer: safeReferrer(document.referrer)
     };
+    // Hosted checkout is part of the purchase, not a new acquisition source.
+    if (receiptPage) {
+      try {
+        if (["api.cashfree.com", "payments.cashfree.com", "checkout.cashfree.com",
+             "checkout.dodopayments.com"].indexOf(new URL(document.referrer).hostname) !== -1) {
+          gaConfig.ignore_referrer = true;
+          gaConfig.page_referrer = "";
+        }
+      } catch (e) { }
+    }
+    if (newOutreach) {
+      gaConfig.campaign_source = newOutreach.source;
+      gaConfig.campaign_medium = newOutreach.medium;
+      gaConfig.campaign_name = newOutreach.name;
+      gaConfig.campaign_content = newOutreach.content;
+    }
     /* Preserve the known LinkedIn product campaign without exposing arbitrary query
      * values, receipt keys or email addresses in page_location. GA4 uses these
      * campaign fields for session attribution and subsequent funnel events. */
@@ -106,9 +165,12 @@
    * Named so the same call reaches both tools: GA4 gets a gtag event, Clarity
    * gets a tag you can filter recordings by. */
   function track(name, params) {
-    if (gaOn) gtag("event", name, params || {});
+    // Receipt attribution comes from the checkout's saved placement, not a new visit.
+    var context = name === "purchase" ? {} : outreachPayload(outreach);
+    if (gaOn) gtag("event", name, Object.assign(context, params || {}));
     if (clarityOn && window.clarity) window.clarity("set", name, "yes");
   }
+  if (newOutreach) track("outreach_visit", outreachPayload(newOutreach));
 
   function safeReferrer(value) {
     try { var url = new URL(value); return url.origin + url.pathname; }
@@ -228,7 +290,8 @@
        * never the product. */
       try {
         localStorage.setItem("pending_pass", JSON.stringify({
-          id: buy[1], name: pass.name, value: value, currency: currency, at: Date.now()
+          id: buy[1], name: pass.name, value: value, currency: currency,
+          campaign: outreach, at: Date.now()
         }));
       } catch (e) { /* private mode: the purchase still reports, without value */ }
       track("begin_checkout", {
@@ -262,6 +325,9 @@
     if (!(pending && pending.value) && passLabel) pending = passByName(passLabel);
 
     var payload = { transaction_id: txid };
+    if (pending && pending.at && Date.now() - pending.at >= 0 && Date.now() - pending.at < 24 * 60 * 60 * 1000) {
+      Object.assign(payload, outreachPayload(outreachCampaign(pending.campaign)));
+    }
     if (pending && pending.value) {
       payload.currency = pending.currency || "INR";
       payload.value = pending.value;
