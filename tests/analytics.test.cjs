@@ -90,6 +90,35 @@ test('checkout still records the selected 1-month product and price',()=>{
   assert.equal(JSON.parse(local.getItem('pending_pass')).value,299);
   assert.equal(r.events.find(e=>e[1]==='begin_checkout')[2].items[0].item_name,'1-Month Pass');
 });
+test('international checkout and its receipt preserve USD amounts without exposing the key',()=>{
+  for (const [plan,value] of [['2d',9.99],['30d',29.99]]) {
+    const local=storage();
+    const checkout=run('https://interviewsarthi.com/live/international.html','',storage(),local);
+    const anchor={getAttribute:()=>`https://license.interviewsarthi.com/buy?plan=${plan}&region=intl`,closest:()=>null};
+    checkout.listeners.click({target:{closest:()=>anchor}});
+    const begin=checkout.events.find(e=>e[1]==='begin_checkout')[2];
+    assert.equal(begin.currency,'USD');assert.equal(begin.value,value);
+    assert.equal(begin.items[0].price,value);
+    const receipt=run('https://interviewsarthi.com/thanks.html?license_key=PRIVATE-KEY','',storage(),local);
+    const paid=receipt.events.find(e=>e[1]==='purchase')[2];
+    assert.equal(paid.currency,'USD');assert.equal(paid.value,value);
+    assert.ok(!JSON.stringify(receipt.events).includes('PRIVATE-KEY'));
+  }
+});
+test('receipt with no known price leaves currency and amount absent',()=>{
+  const r=run('https://interviewsarthi.com/thanks.html?license_key=PRIVATE-KEY');
+  const paid=r.events.find(e=>e[1]==='purchase')[2];
+  assert.equal(paid.currency,undefined);assert.equal(paid.value,undefined);
+});
+test('local previews suppress analytics and Clarity while retaining receipt handling',()=>{
+  for (const host of ['localhost','127.0.0.1','[::1]']) {
+    const r=run(`http://${host}/thanks.html?license_key=LOCAL-KEY`);
+    assert.ok(!r.scripts.some(s=>s.includes('googletagmanager') || s.includes('clarity.ms')));
+    assert.equal(r.events.length,0);
+    assert.equal(typeof r.window.sarthiReportPurchase,'function');
+    assert.equal(r.location.search,'');
+  }
+});
 test('a Cashfree order reports the purchase once, valued by the plan label, without the key',()=>{
   const local=storage(); const r=run('https://interviewsarthi.com/thanks.html?order_id=order_123','',storage(),local);
   r.window.sarthiReportPurchase('IS-TEST-KEY','1-Month Pass');

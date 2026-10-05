@@ -22,8 +22,10 @@
   var GA4_ID = "G-CCFHWPJD9K";
   var CLARITY_ID = "yb9mq7tzkq";
 
-  var gaOn = GA4_ID.indexOf("XXXX") === -1;
-  var clarityOn = CLARITY_ID.indexOf("XXXX") === -1;
+  // Local previews must not pollute live country or conversion reports.
+  var localPreview = /^(localhost|127\.0\.0\.1|\[?::1\]?)$/.test(location.hostname);
+  var gaOn = !localPreview && GA4_ID.indexOf("XXXX") === -1;
+  var clarityOn = !localPreview && CLARITY_ID.indexOf("XXXX") === -1;
 
   /* ---- Google Analytics 4 ---- */
   window.dataLayer = window.dataLayer || [];
@@ -179,7 +181,7 @@
         var productPath = target.pathname.replace(/\/index\.html$/, "/").replace(/\/$/, "");
         if (productPath === "/apply") product = "apply";
         if (productPath === "/prep" || productPath === "/mock") product = "prep";
-        if (productPath === "/live") product = "live";
+        if (productPath === "/live" || productPath === "/live/international.html") product = "live";
         if (productPath === "/prep/app" || productPath === "/mock/app") {
           product = "prep"; kind = "application";
         }
@@ -217,18 +219,22 @@
     var buy = href.match(/license\.interviewsarthi\.com\/buy\?plan=(\d+d)\b/);
     if (buy) {
       var pass = PASSES[buy[1]] || { name: buy[1], value: 0 };
+      var region = new URL(href, location.href).searchParams.get("region");
+      var currency = region === "intl" ? "USD" : "INR";
+      var usdPrices = { "2d": 9.99, "30d": 29.99 };
+      var value = currency === "USD" ? usdPrices[buy[1]] : pass.value;
       /* Park it so the purchase event on thanks.html can report the amount.
        * The return trip carries the key (Dodo) or an order id (Cashfree),
        * never the product. */
       try {
         localStorage.setItem("pending_pass", JSON.stringify({
-          id: buy[1], name: pass.name, value: pass.value, at: Date.now()
+          id: buy[1], name: pass.name, value: value, currency: currency, at: Date.now()
         }));
       } catch (e) { /* private mode: the purchase still reports, without value */ }
       track("begin_checkout", {
-        currency: "INR",
-        value: pass.value,
-        items: [{ item_id: buy[1], item_name: pass.name, price: pass.value, quantity: 1 }]
+        currency: currency,
+        value: value,
+        items: [{ item_id: buy[1], item_name: pass.name, price: value, quantity: 1 }]
       });
     }
   }, true);
@@ -255,8 +261,9 @@
      * parked; the licence server's pass label fills the gap. */
     if (!(pending && pending.value) && passLabel) pending = passByName(passLabel);
 
-    var payload = { currency: "INR", transaction_id: txid };
+    var payload = { transaction_id: txid };
     if (pending && pending.value) {
+      payload.currency = pending.currency || "INR";
       payload.value = pending.value;
       payload.items = [{
         item_id: pending.id, item_name: pending.name,
