@@ -1,5 +1,5 @@
 {
-  "latest": "1.0.32",
-  "note": "Answers now appear at the top of your screen, just under your webcam, so your eyes stay near the camera while you read. One slim control bar at the bottom, and the panel opens where you left it last time.",
+  "latest": "1.0.33",
+  "note": "Setup has two new boxes: the job description and your own examples. Answers use the role's words and your real stories, and say so plainly when none of them fits instead of making one up.",
   "url": "https://interviewsarthi.com/#download"
 }
