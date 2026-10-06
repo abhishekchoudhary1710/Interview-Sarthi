@@ -22,3 +22,20 @@ test('failed/pending orders never count, unknown amounts stay absent, storage fa
   assert.equal(events[0][1].value,undefined);assert.equal(events[0][1].currency,undefined);
   assert.equal(events[0][1].transaction_id,events[1][1].transaction_id);
 });
+test('demo purchases retain their offer source and count once alongside purchase',async()=>{
+  for (const where of ['demo_call','demo_exit']) {
+    const events=[], store=storage(), record=(...args)=>events.push(args);
+    const pending={order_id:`order-${where}`,where,amount:99,currency:'INR'};
+    await reportPaidOrder(pending,{status:'paid',plan:'month'},record,store,webcrypto);
+    await reportPaidOrder(pending,{status:'paid',plan:'month'},record,store,webcrypto);
+    assert.deepEqual(events.map(([name])=>name),['purchase','mock_offer_paid']);
+    assert.deepEqual(events[1][1],{where});
+  }
+});
+test('ordinary purchases and unrecognized offer sources do not count as demo conversions',async()=>{
+  for (const where of [undefined,'report','interview','unexpected']) {
+    const events=[];
+    await reportPaidOrder({order_id:'ordinary',where},{status:'paid'},(...args)=>events.push(args),storage(),webcrypto);
+    assert.deepEqual(events.map(([name])=>name),['purchase']);
+  }
+});

@@ -14,7 +14,7 @@
  */
 
 import { LICENSE_API, LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20261005-busy";
-import { reportPaidOrder } from "./purchase-analytics.js?v=20260928";
+import { reportPaidOrder } from "./purchase-analytics.js?v=20261006-demo-buy";
 
 const $ = (id) => document.getElementById(id);
 const PENDING = "ps_pending_order";
@@ -26,6 +26,7 @@ let googleReady = null;   // the one in-flight or finished attempt to draw Googl
 let step = "choose";     // choose | checkout | signin (a buyer on a new device, not buying)
 const PHONE = "ps_phone";
 let extendOpen = false;
+let offerWhere = null;
 
 /* One load per address, and the promise only settles when the script has
  * really run. Two callers asking at once share the same wait, instead of the
@@ -133,6 +134,7 @@ export async function initPasses(context) {
     if (asked.buy) { step = "checkout"; ctx.show("s-pass"); }
     document.documentElement.classList.remove("ps-pass", "ps-checkout", "ps-confirm");
   }
+  ctx.restoreReport?.();
   if (await resumePendingOrder()) return;
   if (asked.buy) {
     ctx.track("mock_buy_link", { plan: asked.buy });
@@ -160,6 +162,7 @@ function choosePlan(id) {
  *        header's Sign in button lands on the sign-in step alone
  */
 export async function openPasses(message, opts = {}) {
+  offerWhere = ["demo_call", "demo_exit"].includes(opts.where) ? opts.where : null;
   ctx.show("s-pass");
   say(message || "");
   if (opts.plan && planOf(opts.plan)) choosePlan(opts.plan);
@@ -258,6 +261,7 @@ function paint() {
   }
   if (buying && (step === "checkout" || signinOnly)) showGoogleButton();
 }
+export function refreshPasses() { if (ctx) paint(); }
 
 /* A Google account is all it takes. No Gemini key is needed to sign in or to
  * buy; the key only matters once an interview starts. */
@@ -276,6 +280,7 @@ async function onGoogle(credential) {
 }
 
 async function pay() {
+  if (ctx.running?.()) return;
   const abroad = intl();
   const phone = $("phone").value.replace(/\D/g, "");
   if (!abroad && phone.length < 10) { say("Enter your 10-digit mobile number. Cashfree needs it for the receipt.", "bad"); return; }
@@ -288,6 +293,7 @@ async function pay() {
         order_id: order.order_id, hash: ctx.state.hash || null,
         gateway: order.gateway || "cashfree", at: Date.now(),
         amount: order.amount, currency: order.currency || "INR",
+        ...(offerWhere ? { where: offerWhere } : {}),
       }));
       if (!abroad) localStorage.setItem(PHONE, phone.slice(-10));
     } catch (_) { /* private mode */ }
@@ -336,6 +342,7 @@ async function resumePendingOrder() {
       payment_id: paymentId || (pending && pending.payment_id) || null,
       amount: sameOrder ? pending.amount : undefined,
       currency: sameOrder ? pending.currency : undefined,
+      where: sameOrder ? pending.where : undefined,
     };
     // Written back because Dodo's payment_id lives only in the URL, and the head
     // script clears the URL: a reload would otherwise lose the reference.
@@ -343,7 +350,7 @@ async function resumePendingOrder() {
   }
   if (!pending || !session.get() || Date.now() - (pending.at || 0) > 3600_000) {
     document.documentElement.classList.remove("ps-pass", "ps-confirm");
-    if (fromUrl) { ctx.show("s-pass"); $("pass-body").style.display = "block"; say("That payment could not be matched to this browser. If money left your account, sign in below with the same Google account and your pass will be there.", ""); return true; }
+    if (fromUrl) { ctx.show("s-pass"); $("pass-body").style.display = "block"; paint(); say("That payment could not be matched to this browser. If money left your account, sign in below with the same Google account and your pass will be there.", ""); ctx.paymentResult?.("pending", pending); return true; }
     return false;
   }
   ctx.state.hash = ctx.state.hash || pending.hash;
@@ -366,6 +373,7 @@ async function resumePendingOrder() {
       say(`Paid. Your ${r.plan} is live. Practise as much as you like.`, "ok");
       askHeardFrom(pending.order_id);
       $("pass-back").textContent = "Back";
+      ctx.paymentResult?.("paid", pending);
       return true;
     }
     if (r.status === "failed") {
@@ -373,6 +381,7 @@ async function resumePendingOrder() {
       step = "choose";
       $("pass-body").style.display = "block"; paint();
       say("That payment did not go through, and nothing was charged. You can try again.", "bad");
+      ctx.paymentResult?.("failed", pending);
       return true;
     }
     await new Promise((ok) => setTimeout(ok, 2500));
@@ -384,10 +393,12 @@ async function resumePendingOrder() {
     say(pending.gateway === "dodo"
       ? "We could not confirm a payment for that order. If money did leave your account, your pass will appear here within a few minutes; nothing else is needed from you."
       : "That payment was not completed, and nothing was charged. You can pay whenever you are ready.", "");
+    ctx.paymentResult?.("pending", pending);
     return true;
   }
   $("pass-body").style.display = "block"; paint();
   say("The payment is still being confirmed. If money left your account, your pass will appear here within a few minutes. Otherwise write to support@interviewsarthi.com.", "");
+  ctx.paymentResult?.("pending", pending);
   return true;
 }
 

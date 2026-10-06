@@ -14,6 +14,9 @@ function fixture() {
   } };
   return { options, calls, values, setDown(v) { down = v; }, advance(v) { time += v; } };
 }
+test('buy has its own interview end reason in local diagnostics', () => {
+  assert.deepEqual(cleanData({ reason: 'buy', elapsed: 12, email: 'private@example.com' }), { reason: 'buy', elapsed: 12 });
+});
 
 test('outbox strips private content before persistence and uploads ordered attempt events', async () => {
   const f = fixture(), d = createDiagnostics(f.options); d.begin({ kind: 'demo', email: 'private@example.com' });

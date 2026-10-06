@@ -94,6 +94,7 @@ def run(p, scenario):
     try: expect(page.locator('#line')).to_contain_text('check it worked', timeout=20000)   # the answer is in the transcript
     except AssertionError: raise AssertionError(('the call never ran', page.locator('#live-notice').inner_text(), calls, errors))
     page.locator('#end').click()
+    page.locator('#demo-exit-end').click()
     for _ in range(100):
         if held: break
         page.wait_for_timeout(100)

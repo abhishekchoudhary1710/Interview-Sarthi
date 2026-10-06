@@ -265,6 +265,7 @@ function startHarness(generate, extra = {}) {
     performance, setTimeout, AbortController, navigator: { userAgent: "test" },
     diagnosticEvent() {}, errorClass: () => 'unknown', beginDiagnostics() {},
     phase: "idle", startController: null, assessmentPlan: null, planPending: null, reportWriting: false,
+    store: { del() {} },
     // The free demo (billing.js): off unless a test turns it on.
     demo: null, requestDemo: async () => ({ ok: false, reason: "unavailable" }), demoTransport: (id) => ({ demoId: id }),
     demoUsed: { set() { context.demoMarked = true; } }, demoReplace: { get: () => "", set() {}, clear() {} }, passCtx: { passesOn: false }, openPasses(text) { context.passes = text; },

@@ -23,7 +23,7 @@ import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite } from "./billing.js?v=20261005-busy";
-import { initPasses, isIntl, openPasses, priceOf, renderInvite } from "./pass.js?v=20261005-busy";
+import { initPasses, isIntl, openPasses, priceOf, refreshPasses, renderInvite } from "./pass.js?v=20261006-demo-buy";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
@@ -77,6 +77,14 @@ let micStats = { chunks: 0, voiced: 0, maxRms: 0 };
 let sheStoppedAt = 0, quietMax = 0, micWarned = false;
 let youClearTimer = null;
 let offerShown = false;
+let exitCardOpen = false;
+let deferredReportOffer = null;
+let demoPurchase = (() => {
+  try {
+    const saved = JSON.parse(store.get("ps_demo_purchase", "null"));
+    return saved && Date.now() - saved.at < 24 * 3600_000 ? saved : null;
+  } catch { return null; }
+})();
 let liveTrouble = 0;           // Google drops and silences in this call (a demo ruined by them is replaced, not spent)
 let booted = false;
 const bubbles = new Map();
@@ -99,6 +107,7 @@ function show(id) {
   document.documentElement.dataset.screen = id;      // the report and progress screens take the full width
   window.scrollTo({ top: 0 });
   window.dispatchEvent(new CustomEvent("prep:screen", { detail: { id } }));
+  if (id === "s-report") { paintReportPass(); revealReportOffer(); }
 }
 function notice(id, text, cls = "") { const el = $(id); el.textContent = text || ""; el.className = "notice " + cls; }
 function log(name, data) {
@@ -184,6 +193,8 @@ const passCtx = {
     S.ent = ent; renderEntitlement();
     window.dispatchEvent(new CustomEvent("prep:account"));
     if (ent && ent.kind === "pass") unlockSavedReport();
+    if (ent && ent.kind === "pass") { hideOffer("report-offer"); deferredReportOffer = null; }
+    paintReportPass();
     if (ent && ent.account) flushOutbox().catch(() => {});
     // The server says this once, on the call that created the trial: tell the person where the minutes came from.
     if (ent && ent.welcome) showApplyWelcome(`ApplySarthi bonus added: ${ent.welcome.minutes} extra free minutes, so you have ${Math.round(ent.secondsLeft / 60)} in total.`);
@@ -195,6 +206,7 @@ const passCtx = {
   resume() {
     $("pass-back").textContent = "Back";
     if (["call", "preparing"].includes(phase)) { show("s-live"); return; }
+    if (demoPurchase?.hasAnswers || (lastScreen === "s-report" && window.__lastReport)) { show("s-report"); return; }
     if (S.key && S.ent && lastScreen === "s-live") preLive();
     else show(lastScreen === "s-live" || lastScreen === "s-report" ? (S.key ? lastScreen : "s-cv") : lastScreen);
   },
@@ -203,6 +215,37 @@ const passCtx = {
     $("pass-back").textContent = "Back";
     if (["call", "preparing"].includes(phase)) { show("s-live"); return; }
     if (S.key && S.ent) preLive(); else if (S.cv || $("cv").value) showKeyStep(); else show("s-cv");
+  },
+  restoreReport() {
+    if (demoPurchase?.reportId) {
+      let record;
+      try { record = JSON.parse(store.get("ps_last_report", "null")); } catch { /* corrupt storage */ }
+      if (record?.id === demoPurchase.reportId) {
+        window.__lastReport = record;
+        $("report-wait").style.display = "none";
+        renderReport(record);
+        offerReport("That was your free demo.", record.report, "demo_report");
+        if (!pendingPayment()) show("s-report");
+      }
+    }
+    void resumePendingReport();
+  },
+  paymentResult(status, pending) {
+    if (!["demo_call", "demo_exit"].includes(pending?.where) || !demoPurchase) return false;
+    if (!demoPurchase.hasAnswers) {
+      if (status === "paid") { showKeyStep(); return true; }
+      return false;
+    }
+    const note = $("report-payment-note");
+    note.hidden = status === "paid";
+    note.textContent = status === "failed" ? "Your payment did not go through. Your interview report is here, and you can try again whenever you're ready."
+      : "Your payment has not been confirmed. Your report is here. You can check your pass or try again whenever you're ready.";
+    if (!window.__lastReport?.report && !readPendingReport()) {
+      $("report-wait").style.display = "none";
+      $("report").innerHTML = '<div class="card"><h2>Your interview has ended</h2><p class="muted">The saved report is no longer available on this device. You can still check your pass below.</p></div>';
+    }
+    show("s-report");
+    return true;
   },
 };
 function currentLanguage() {
@@ -246,7 +289,6 @@ async function restore() {
   }
   booted = true;
   renderEntitlement();
-  void resumePendingReport();
 }
 
 $("language").onchange = () => { $("language-other").style.display = $("language").value === "other" ? "block" : "none"; };
@@ -416,8 +458,8 @@ $("micselect").onchange = async () => {
 };
 
 function showOffer(id, text) { $(id + "-text").textContent = text; $(id).style.display = "flex"; }
-// One pass since 25 Sep 2026: a month of unlimited mocks, Rs 99 in India ($9.99 abroad).
-const monthPrice = () => priceOf("m") || "Rs 99";
+// Use the same country-specific monthly price as checkout, without guessing while config is unavailable.
+const monthPrice = () => priceOf("m") || "the checkout price";
 const clip = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 
 /* The report is where someone decides whether to keep practising. From 20 to 25 Sep 2026 about seven
@@ -436,9 +478,65 @@ function showReportOffer(lead, rep) {
 }
 function hideOffer(id) { $(id).style.display = "none"; }
 
+function pendingPayment() { return !!store.get("ps_pending_order") || !!window.__ps?.order; }
+function paintReportPass() {
+  const active = S.ent?.kind === "pass" && !S.key;
+  $("report-pass-active").hidden = !active;
+}
+$("report-key-setup").onclick = () => showKeyStep();
+function offerReport(lead, report, where) {
+  deferredReportOffer = { lead, report, where };
+  if ($("s-report").classList.contains("on")) revealReportOffer();
+}
+function revealReportOffer() {
+  if (!deferredReportOffer || S.ent?.kind === "pass" || !passCtx.passesOn) return;
+  const { lead, report, where } = deferredReportOffer;
+  showReportOffer(lead, report);
+  track("mock_offer_shown", { where });
+  deferredReportOffer = null;
+}
+function showDemoOffer() {
+  $("demo-call-offer").hidden = false;
+  $("s-live").classList.add("demo-active");
+  document.documentElement.classList.add("demo-call-on");
+  $("demo-call-price").textContent = monthPrice();
+  $("demo-exit-buy").textContent = `Get unlimited practice · ${monthPrice()}`;
+  const benefits = [...$("checkout-what").querySelectorAll("li")];
+  $("demo-call-benefits").replaceChildren(...[benefits[0], benefits[2]].filter(Boolean).map((source) => {
+    const item = document.createElement("li"); item.textContent = source.textContent; return item;
+  }));
+  track("mock_offer_shown", { where: "demo_call" });
+}
+function closeExitCard() {
+  exitCardOpen = false;
+  $("demo-exit-card").hidden = true;
+  $("demo-offer-content").hidden = false;
+}
+function buyDemo(where) {
+  if (phase !== "call" || ending || S.ent?.kind !== "demo") return;
+  track("mock_offer_click", { where });
+  void openPasses("", { plan: "m", checkout: true, where });
+  void endInterview("buy");
+}
+$("demo-call-buy").onclick = () => buyDemo("demo_call");
+$("demo-exit-buy").onclick = () => { track("mock_exit_card", { choice: "buy" }); buyDemo("demo_exit"); };
+$("demo-exit-keep").onclick = () => {
+  track("mock_exit_card", { choice: "keep" }); closeExitCard();
+  sheStoppedAt = nowS(); quietMax = 0;
+  refreshWheel(); $("end").focus();
+};
+$("demo-exit-end").onclick = () => { track("mock_exit_card", { choice: "end" }); closeExitCard(); void endInterview("user"); };
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && exitCardOpen) $("demo-exit-keep").click();
+});
+
 function preLive() {
   hideDemoFull();
   phase = "idle";
+  closeExitCard();
+  $("demo-call-offer").hidden = true;
+  $("s-live").classList.remove("demo-active");
+  document.documentElement.classList.remove("demo-call-on");
   hideOffer("live-offer"); offerShown = false;
   show("s-live");
   wheel.start(); wheel.setState("idle"); wheel.setLevel(0); wheel.setMic(0);
@@ -534,6 +632,7 @@ function onTranscript(u, done) {
 
 function refreshWheel() {
   if (phase !== "call" || !live) return;
+  if (exitCardOpen) { wheel.setState("idle"); return; }
   if (linkState === "busy" && !speaking) { wheel.setState("reconnecting"); return; }
   if (speaking) { wheel.setState("speaking"); return; }
   if (micWarned) { wheel.setState("listening"); return; }
@@ -553,6 +652,7 @@ function wireAudio() {
   };
   audio.onLevel = (level) => wheel.setLevel(level * 5);
   audio.onChunk = (pcm, rms) => {
+    if (exitCardOpen || ending) return;
     const t = nowS();
     const voiced = rms >= VOICE_RMS;
     micStats.chunks++; if (voiced) micStats.voiced++; if (rms > micStats.maxRms) micStats.maxRms = rms;
@@ -635,7 +735,7 @@ async function startInterview() {
     diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'livetest' });
   } else if (isDemo) {
     if (!grant.ok) { diagnosticEvent('demo_refused', { reason: grant.reason }); await demoRefused(grant.reason); return; }
-    demo = grant;
+    demo = { ...grant, startedAt: new Date().toISOString() };
     demoReplace.clear();
     diagnosticEvent('demo_granted', { demo_id: demo.demo, stage: 'demo' });
     // Not marked used here: if the call cannot connect, pressing Start again resumes the same demo.
@@ -721,6 +821,11 @@ function startCall() {
   if (phase === "call") return;
   $("youbar").style.display = "flex";
   phase = "call";
+  if (S.ent.kind !== "livetest") {
+    demoPurchase = null; store.del("ps_demo_purchase");
+    $("report-payment-note").hidden = true;
+  }
+  if (S.ent.kind === "demo" && passCtx.passesOn) showDemoOffer();
   startedAt = nowS(); voiceLog = []; ending = false; bookedSeconds = 0; tickPending = null;
   speaking = false; heardSinceShe = false; lastVoiceAt = 0; sheStoppedAt = 0; quietMax = 0; micWarned = false; liveTrouble = 0;
   trialLeftAtStart = S.ent.secondsLeft;
@@ -747,7 +852,7 @@ function startCall() {
       : buildInterviewerInstructions(brief),
     notes: redrill ? redrillNotes() : undefined,
     getInterviewProgress: currentProgress,
-    onAudio: (pcm) => audio && audio.play(pcm),
+    onAudio: (pcm) => !exitCardOpen && !ending && audio && audio.play(pcm),
     onInterrupted: () => audio && audio.clear(),
     onTranscript,
     onStatus: (s) => {
@@ -813,6 +918,7 @@ async function onSecond() {
     track("mock_offer_shown", { where: "interview" });
   }
   if (remaining <= 0) { endInterview("time"); return; }
+  if (exitCardOpen) return;
 
   // The interviewer asked, and the microphone has delivered exact digital silence ever since (a mute key or a
   // dead input, not someone thinking), or nothing loud enough to be a voice since the call began: the check that
@@ -849,6 +955,17 @@ async function onSecond() {
 
 $("end").onclick = () => {
   if (phase === "preparing") { cancelStart(); return; }
+  if (S.ent?.kind === "demo" && phase === "call" && !ending) {
+    if (exitCardOpen) return;
+    exitCardOpen = true;
+    audio?.clear();
+    speaking = false; live?.setPlaying(false); wheel.setState("idle");
+    $("demo-offer-content").hidden = true;
+    $("demo-exit-card").hidden = false;
+    $("demo-exit-buy").textContent = `Get unlimited practice · ${monthPrice()}`;
+    $("demo-exit-title").focus({ preventScroll: true });
+    return;
+  }
   if (confirm(S.ent && S.ent.kind === "livetest" ? "End the test now?" : "End the interview now and get your report?")) endInterview("user");
 };
 
@@ -864,9 +981,27 @@ async function endInterview(reason) {
   const turns = live ? live.transcript.turns.map((u) => ({ ...u })) : [];
   const usage = live ? { ...live.usage } : {};
   if (live) { live.close(); live = null; }
-  if (audio) { await audio.stop(); audio = null; }
+  audio?.clear();
+  const stopped = audio ? audio.stop() : Promise.resolve();
+  let purchaseJob = null;
+  if (reason === "buy") {
+    demoUsed.set();
+    demoPurchase = { at: Date.now(), hasAnswers: turns.some((u) => u.who === "candidate" && u.text?.trim()), reportId: null };
+    store.set("ps_demo_purchase", JSON.stringify(demoPurchase));
+    if (demoPurchase.hasAnswers) purchaseJob = rememberPendingReport(makeReportJob(turns, elapsed, usage, true));
+    closeExitCard();
+  }
+  await stopped;
+  audio = null;
   phase = "idle";
+  if (reason === "buy") refreshPasses();
   wheel.setState("idle"); wheel.setLevel(0); wheel.setMic(0);
+  if (reason === "buy") {
+    wheel.stop();
+    if (purchaseJob) await whileWriting(() => writeReport(turns, elapsed, usage, purchaseJob));
+    else { demo = null; S.ent = { ...S.ent, kind: "none", secondsLeft: 0, hasTrial: false }; renderEntitlement(); }
+    return;
+  }
   // Book the tail of the session.
   if (S.ent.kind === "trial") {
     if (tickPending) await tickPending;
@@ -954,6 +1089,11 @@ const DEMO_REPORT_MINUTES = 55;       // the licence server stops answering a de
 let reportBusyWake = null;            // ends the current wait early: true = try now, false = stop trying
 
 function rememberPendingReport(job) { store.set("ps_pending_report", JSON.stringify(job)); return job; }
+function makeReportJob(turns, elapsed, usage, purchase = false) {
+  return { at: new Date().toISOString(), turns, elapsed, usage, metrics: computeMetrics(turns, voiceLog),
+    cv: S.cv, jd: S.jd, language: S.language, plan: assessmentPlan, needsPlan: true, focus: focusCarried,
+    demo: demo ? { demo: demo.demo, seconds: demo.seconds, startedAt: demo.startedAt } : null, purchase };
+}
 function forgetPendingReport() { try { localStorage.removeItem("ps_pending_report"); } catch (_) { /* private mode */ } }
 function readPendingReport() {
   try { const j = JSON.parse(store.get("ps_pending_report", "null")); return j && Array.isArray(j.turns) && j.turns.length ? j : null; }
@@ -991,7 +1131,8 @@ async function resumePendingReport() {
   const job = readPendingReport();
   if (!job) return;
   const ageMin = (Date.now() - Date.parse(job.at || 0)) / 60000;
-  const usable = ageMin >= 0 && ageMin <= PENDING_REPORT_HOURS * 60 && (S.key || (job.demo && ageMin <= DEMO_REPORT_MINUTES));
+  const demoAge = (Date.now() - Date.parse(job.demo?.startedAt || job.at)) / 60000;
+  const usable = ageMin >= 0 && ageMin <= PENDING_REPORT_HOURS * 60 && (S.key || (job.demo && demoAge >= 0 && demoAge <= DEMO_REPORT_MINUTES));
   if (!usable) { forgetPendingReport(); return; }
   // A demo visitor has no entitlement until Start is pressed (line above startInterview): give the report the one it had.
   if (!S.key && !S.ent) { S.ent = { kind: "demo", secondsLeft: 0, hasTrial: false }; renderEntitlement(); }
@@ -1002,17 +1143,21 @@ async function resumePendingReport() {
 async function writeReport(turns, elapsed, usage, pending = null) {
   const reportStarted = performance.now();
   diagnosticEvent('report_start', { stage: 'report', resumed: !!pending });
-  show("s-report");
+  const job = pending || rememberPendingReport(makeReportJob(turns, elapsed, usage));
+  deferredReportOffer = null; hideOffer("report-offer");
+  if (!(job.purchase && ($("s-pass").classList.contains("on") || pendingPayment()))) show("s-report");
   $("report").innerHTML = ""; $("report-wait").style.display = "block";
   $("report-wait").querySelector("h2").textContent = pending ? "Finishing your report" : "Writing your report";
   $("report-status").textContent = pending ? `From your interview at ${new Date(pending.at).toLocaleString()}. About twenty seconds.` : "Scoring every answer against your CV. About twenty seconds.";
   const stale = $("report-busy-actions"); if (stale) stale.remove();
   waitWheel.start(); waitWheel.setState("thinking");
-  const metrics = pending ? pending.metrics : computeMetrics(turns, voiceLog);
-  if (!pending) assessmentPlan = await planForReport();
-  // Everything the report needs, kept on this device until it is written or given up on.
-  const job = pending || rememberPendingReport({ at: new Date().toISOString(), turns, elapsed, usage, metrics, cv: S.cv, jd: S.jd, language: S.language,
-    plan: assessmentPlan, focus: focusCarried, demo: demo ? { demo: demo.demo, seconds: demo.seconds } : null });
+  const metrics = job.metrics;
+  // Save the answers before waiting for the in-flight plan or contacting Google.
+  if (job.needsPlan) {
+    job.plan = (await planForReport()) || job.plan;
+    delete job.needsPlan;
+    rememberPendingReport(job);
+  }
   const transport = job.demo && !S.key ? demoTransport(job.demo.demo) : undefined;    // a buyer since then writes it on their own key
   let result, err;
   for (let attempt = 0; ; attempt++) {
@@ -1041,31 +1186,36 @@ async function writeReport(turns, elapsed, usage, pending = null) {
     // The same interview again, not a new one: both Hyderabad demos that lost their report on 30 Sep were redone in full.
     $("report-retry").onclick = () => { track("mock_report_retry", { demo: !!job.demo }); void whileWriting(() => writeReport(turns, elapsed, usage, job)); };
     window.__lastReport = { turns, metrics, elapsed };
+    if (job.demo && S.ent?.kind !== "pass") offerReport("Your interview answers are saved.", { questions: [] }, "demo_report");
     return;
   }
-  forgetPendingReport();
   waitWheel.stop(); $("report-wait").style.display = "none";
   diagnosticEvent('report_ready', { stage: 'report', model: result.model, duration_ms: Math.round(performance.now() - reportStarted) });
   void flushDiagnostics();
-  const record = { id: "iv-" + crypto.randomUUID(), at: new Date().toISOString(), elapsed, language: S.language, model: result.model,
-    rubric: RUBRIC_VERSION, demo: S.ent.kind === "demo", report: result.report, metrics, transcript: turns, usage,
+  const record = { id: "iv-" + crypto.randomUUID(), at: new Date().toISOString(), elapsed, language: job.language, model: result.model,
+    rubric: RUBRIC_VERSION, demo: !!job.demo, report: result.report, metrics, transcript: turns, usage,
     ...(focusCarried ? { focus_carried: focusCarried } : {}) };
   // Owner, 1 Oct 2026: the free demo's report is shown in full, like every other (it was locked from 26 Sep).
   // "+8 since last time": against this person's earlier interviews in the current pass (progress.js).
   try { record.changes = reportChanges(summarize(record), knownSummaries(), currentPeriod()); } catch (_) { /* no badges */ }
   window.__lastReport = record;
   saveHistory(record);
+  if (job.purchase && demoPurchase) {
+    demoPurchase.reportId = record.id;
+    store.set("ps_demo_purchase", JSON.stringify(demoPurchase));
+  }
+  forgetPendingReport();
   renderReport(record);
   announceReport(record);
-  if (S.ent.kind === "demo") {
+  if (job.demo) {
     // The demo is over: this is the moment to offer the pass. A second demo is not offered.
     track("mock_demo_end", { score: result.report.overall_score });
     demoUsed.set();
     demo = null;
-    S.ent = { kind: "none", secondsLeft: 0, hasTrial: false }; renderEntitlement();   // spent: the chip now says "Get a pass"
-    if (passCtx.passesOn) {
-      showReportOffer("That was your free demo.", result.report);
-      track("mock_offer_shown", { where: "demo_report" });
+    if (!S.ent || S.ent.kind === "demo") S.ent = { ...S.ent, kind: "none", secondsLeft: 0, hasTrial: false };
+    renderEntitlement();
+    if (passCtx.passesOn && S.ent.kind !== "pass") {
+      offerReport("That was your free demo.", result.report, "demo_report");
     } else hideOffer("report-offer");
     track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
     // Just seen their score: the moment to pass the app on. The link is this browser's, no key or sign-in needed.
@@ -1076,8 +1226,7 @@ async function writeReport(turns, elapsed, usage, pending = null) {
   renderInvite($("invite-report"), result.report.overall_score);
   if (S.ent.kind !== "pass" && passCtx.passesOn) {
     const left = Math.round((S.ent.secondsLeft || 0) / 60);
-    showReportOffer(left > 0 ? `You have ${left} free minute${left === 1 ? "" : "s"} left.` : "Your free minutes are used up.", result.report);
-    track("mock_offer_shown", { where: "report" });
+    offerReport(left > 0 ? `You have ${left} free minute${left === 1 ? "" : "s"} left.` : "Your free minutes are used up.", result.report, "report");
   } else hideOffer("report-offer");
   track("mock_report", { score: result.report.overall_score, questions: (result.report.questions || []).length, model: result.model });
 }
@@ -1130,6 +1279,7 @@ function renderReport(r) {
   $("report").innerHTML = reportHtml(r);
   wireReport($("report").querySelector(".rd"));
   window.dispatchEvent(new CustomEvent("prep:report-rendered", { detail: { record: r, locked: false } }));
+  paintReportPass();
 }
 
 /* A pass was just bought (or found): a demo report saved locked before 1 Oct 2026 opens in full and joins the

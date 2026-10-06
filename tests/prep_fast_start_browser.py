@@ -121,6 +121,8 @@ def run(p, *, plan_answer, storage=None, status=None, focus='general_cv'):
     if held:
         held.pop().fulfill(json=gemini(plan('General CV practice', 'No target seniority')), headers=cors)
     page.locator('#end').click()
+    if page.locator('#demo-exit-card').is_visible():
+        page.locator('#demo-exit-end').click()
     expect(page.locator('#report-wait')).to_be_hidden(timeout=30000)
     expect(page.locator('#report')).to_contain_text('Clear answer, thin on checks.')
     assert not errors, errors

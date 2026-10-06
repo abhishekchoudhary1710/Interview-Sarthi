@@ -100,6 +100,8 @@ def talk_and_end(page, calls, errors):
     try: expect(page.locator('#line')).to_contain_text('check it worked', timeout=15000)
     except AssertionError: raise AssertionError(('the call never ran', page.locator('#live-notice').inner_text(), calls, errors))
     page.locator('#end').click()
+    if page.locator('#demo-exit-card').is_visible():
+        page.locator('#demo-exit-end').click()
 
 
 def events(page):

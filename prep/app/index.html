@@ -36,6 +36,7 @@
   </script>
   <link rel="stylesheet" href="../prep.css?v=20261001-what">
   <link rel="stylesheet" href="./progress-view.css?v=20261001-site">
+  <link rel="stylesheet" href="./demo-offer.css?v=20261006-demo-buy">
   <style>
     .screen{display:none;padding:8px 0 40px} .screen.on{display:block}
     /* the report and the progress screens are dashboards: they get the site's full width (app.js show() sets data-screen) */
@@ -183,6 +184,7 @@
 
   <!-- 3. Interview -->
   <section class="screen" id="s-live">
+    <div class="demo-call-layout">
     <div class="call big">
       <div class="top"><span class="live" id="livetag">Ready</span><span class="clock" id="clock">12:00</span></div>
       <div class="wheelwrap" id="wheel"></div>
@@ -211,6 +213,25 @@
         <small id="left">You're on</small>
         <button class="pill small danger" id="end">End</button>
       </div>
+    </div>
+    <aside class="demo-pass-card" id="demo-call-offer" hidden aria-label="Prep pass">
+      <div id="demo-offer-content">
+        <p class="demo-pass-price"><b id="demo-call-price"></b> <span>· 30 days</span></p>
+        <h2>Not ready today? That's normal.</h2>
+        <ul id="demo-call-benefits"></ul>
+        <button class="pill wide" id="demo-call-buy">Get unlimited practice</button>
+        <p class="demo-pass-note">Your free interview stops here and your report is saved.</p>
+      </div>
+      <div id="demo-exit-card" hidden role="group" aria-labelledby="demo-exit-title">
+        <h2 id="demo-exit-title" tabindex="-1">Leaving the interview?</h2>
+        <p class="demo-exit-copy">That's fine. With a pass you can practise as often as you like.</p>
+        <div class="demo-exit-actions">
+          <button class="pill ghost" id="demo-exit-keep">Keep going</button>
+          <button class="pill" id="demo-exit-buy">Get unlimited practice</button>
+          <button class="linkink" id="demo-exit-end">End and see my report</button>
+        </div>
+      </div>
+    </aside>
     </div>
     <div class="notice" id="live-notice"></div>
     <!-- The free demo when both of our keys are busy (12 interviews at once): the visitor chooses. -->
@@ -267,7 +288,7 @@
       <!-- step 1: choose a pass -->
       <div id="buy-block">
         <div class="plans">
-          <button class="plan on" data-plan="m"><span class="label">One month</span><b>30 days</b><span class="price">Rs 99</span><small>Unlimited mocks for every interview this month. One payment, never renews.</small></button>
+          <button class="plan on" data-plan="m"><span class="label">One month</span><b>30 days</b><span class="price">Loading price…</span><small>Unlimited mocks for every interview this month. One payment, never renews.</small></button>
         </div>
         <div class="actions"><button class="pill wide" id="buy-cta">Buy the 30-day pass →</button></div>
         <p class="notice ok" id="invited-note" style="display:none;margin:12px 0 0">Invited by a friend: your first pass lasts 37 days instead of 30.</p>
@@ -282,7 +303,7 @@
           <script>
             (function () {
               var buy = window.__ps && window.__ps.buy;
-              if (buy) document.getElementById("checkout-plan").textContent = { m: "30-Day Pass · Rs 99" }[buy];
+              if (buy) document.getElementById("checkout-plan").textContent = { m: "30-Day Pass · Loading price…" }[buy];
             })();
           </script>
           <button class="linkink" id="checkout-back">Change</button>
@@ -311,7 +332,7 @@
           <p class="muted" style="margin:0"><span id="pass-who2"></span> · <button class="linkink" id="signout2">not you?</button></p>
           <label class="f">Mobile number, for the payment receipt</label>
           <input type="text" id="phone" inputmode="numeric" autocomplete="tel-national" placeholder="10-digit mobile number">
-          <div class="actions"><button class="pill wide" id="pay">Pay Rs 99 →</button></div>
+          <div class="actions"><button class="pill wide" id="pay">Pay securely →</button></div>
         </div>
       </div>
 
@@ -335,6 +356,11 @@
 
   <!-- 4. Report -->
   <section class="screen" id="s-report">
+    <div class="offer" id="report-pass-active" hidden>
+      <p><b>Your pass is active.</b> One last step: add your free Gemini key, about a minute.</p>
+      <button class="pill" id="report-key-setup">Set up my key →</button>
+    </div>
+    <p class="notice" id="report-payment-note" hidden role="status"></p>
     <div class="card writing" id="report-wait">
       <div class="wheelwrap" id="wheel-wait"></div>
       <h2 style="font-size:26px">Writing your report</h2>
@@ -378,7 +404,7 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20261005-busy"></script>
+<script type="module" src="./app.js?v=20261006-demo-buy"></script>
 <script type="module" src="./progress-view.js?v=20261001-site"></script>
 </body>
 </html>

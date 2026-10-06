@@ -15,6 +15,7 @@ export async function reportPaidOrder(pending, result, track, storage = localSto
       payload.items = [{ item_id: "prep_pass", item_name: "Prep Sarthi pass", price: pending.amount, quantity: 1 }];
     }
     track("purchase", payload);
+    if (["demo_call", "demo_exit"].includes(pending.where)) track("mock_offer_paid", { where: pending.where });
     try { storage.setItem(key, "1"); } catch (_) { /* storage may be blocked */ }
   } catch (_) { /* Analytics must never interrupt payment confirmation. */ }
 }
