@@ -1,6 +1,6 @@
 # Interview Sarthi
 
-> InterviewSarthi is three apps for job seekers: Apply Sarthi finds jobs and helps fill applications (always free), Prep Sarthi runs spoken mock interviews from your CV (free 7-minute demo, no sign-up, works on a phone), and Live Sarthi shows answer suggestions during interview calls on Windows (30 minutes free). The homepage at https://interviewsarthi.com/ explains all three. Paid passes are one-time and never renew. Prices are given in rupees for India and in US dollars for everyone else. Built and run by Abhishek Choudhary. Facts reviewed 2 October 2026.
+> InterviewSarthi is three apps for job seekers: Apply Sarthi finds jobs and helps fill applications (always free), Prep Sarthi runs spoken mock interviews from your CV (free 7-minute demo, no sign-up, works on a phone), and Live Sarthi shows answer suggestions during interview calls on Windows (30 minutes free). The homepage at https://interviewsarthi.com/ explains all three. Paid passes are one-time and never renew. Prices are given in rupees for India and in US dollars for everyone else. Built and run by Abhishek Choudhary. Facts reviewed 8 October 2026.
 
 Product and guide pages contain readable HTML. Interactive app features require JavaScript. Facts pages carry review dates and a corrections address.
 
@@ -12,6 +12,12 @@ Product and guide pages contain readable HTML. Interactive app features require 
 
 - [Resume-based mock interview walkthrough](https://interviewsarthi.com/prep/mock-interview-from-resume.html): CV and job-description setup, spoken practice and how to use feedback.
 - [Public job directory](https://apply.interviewsarthi.com/jobs): job details, company pages and role categories; availability changes as employers update listings.
+
+## Live Sarthi setup and testing
+
+- With Bluetooth earphones: in your meeting app, pick the laptop's own microphone, not the earphones. Speaker: your earphones' 'Headphones' entry, not 'Headset'. Keep the earphones on. If that does not help: disconnect the earphones and use the laptop's own mic and speaker. In Interview Sarthi, click setup and keep both sound boxes on Automatic.
+- Sound stops during a call? In Interview Sarthi, click more, then reconnect. Keep your meeting open. Open Interview Sarthi once; clicking its icon again brings the same window forward. The message box grows to fit its text; drag the small grip below it to change its height, or double-click the grip to let it grow automatically again.
+- Test before your interview: open Interview Sarthi once, put on earphones and [open the AI interviewer](https://interviewsarthi.com/prep/app/?from=livesarthi). Add your resume and press Start. When the interviewer asks a question, check that a suggested answer appears in Interview Sarthi. With Bluetooth earphones, choose the laptop's own microphone on the practice page. If you test from your phone instead, keep the phone away from the laptop, or the app hears you twice. Ask interview questions in English or Hindi. [Setup and troubleshooting help](https://interviewsarthi.com/help.html).
 
 ## Product facts, with review dates
 

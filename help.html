@@ -68,7 +68,7 @@
 
   <p class="crumb" aria-label="Breadcrumb"><a href="/">Home</a> › Help &amp; troubleshooting</p>
 <h1>Help &amp; troubleshooting</h1>
-  <p class="lead">Most problems are one of the eight below. Each takes under two minutes to fix.</p>
+  <p class="lead">Find your problem below and follow the steps. Before an interview, try the two-minute test.</p>
 
   <h2>Setup</h2>
   <details open><summary>“Key not working” when I press Test or Save</summary>
@@ -89,6 +89,17 @@
     <p>Click <b>More info → Run anyway</b>. The installer is unsigned (signing certificates cost more than the app earns for now). It installs only into your own user folder, needs no admin rights, and adds a Start-menu and Desktop shortcut. Prefer no installer? The portable <code>Interview-Sarthi.exe</code> on the <a href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest" target="_blank" rel="noopener">releases page</a> runs from anywhere.</p></details>
 
   <h2>During a call</h2>
+  <details><summary>Bluetooth earphones: I cannot hear the interviewer, or the app cannot hear them</summary>
+    <p>In your meeting app, pick the laptop's own microphone, not the earphones. Speaker: your earphones' 'Headphones' entry, not 'Headset'. Keep the earphones on.</p>
+    <p>If that does not help: disconnect the earphones and use the laptop's own mic and speaker.</p>
+    <p>In Interview Sarthi, click <b>setup</b> and keep both sound boxes on <b>Automatic</b>. Then <a href="/prep/app/?from=livesarthi">test with the AI interviewer</a> before your next interview.</p></details>
+  <details><summary>Sound stops during the interview</summary>
+    <p>In Interview Sarthi, click <b>more</b>, then <b>reconnect</b>. Keep your meeting open.</p>
+    <p>If you do not see <b>reconnect</b>, <a href="https://github.com/abhishekchoudhary1710/Interview-Sarthi/releases/latest/download/Interview-Sarthi-Setup.exe">download the update</a> and install it over your old copy. Your key and settings stay.</p></details>
+  <details><summary>I clicked the app icon twice</summary>
+    <p>Open Interview Sarthi once. Clicking its icon again brings the same window forward.</p></details>
+  <details><summary>How do I make the message box bigger?</summary>
+    <p>The message box grows to fit its text. Drag the small grip below it up or down to change its height. Double-click the grip to let it grow automatically again.</p></details>
   <details><summary>“cannot open system audio: Error 0x80070490” (or “cannot open mic audio”)</summary>
     <p>Windows found no audio device. This happens on desktop PCs with nothing plugged into the audio jack, or when the sound device is disabled.</p>
     <ol>
@@ -97,20 +108,27 @@
       <li>Close and start Interview Sarthi again. It listens to whatever Windows plays through, so a working output device is required.</li>
     </ol></details>
   <details><summary>The transcript stays empty. The interviewer is never heard</summary>
-    <p>The app listens to the device Windows plays sound through. Check, in order:</p>
+    <p>Make sure you can hear the interviewer through this computer. Check, in order:</p>
     <ol>
-      <li>Sound is actually playing through the computer (not a Bluetooth headset paired to your phone).</li>
-      <li>Click <b>setup</b> in the overlay's header and set <b>Interviewer / desktop sound</b> to the exact device you hear the call on, the one showing a moving green bar in Windows Sound settings.</li>
-      <li>Exclusive-mode audio apps (some games, DAWs) block capture. Close them.</li>
+      <li>In your meeting app, choose this computer's speakers or earphones for listening. Keep the call's sound on this computer.</li>
+      <li>With Bluetooth earphones, pick the laptop's own microphone in your meeting app. Speaker: the earphones' <b>Headphones</b> entry. If that does not help, disconnect the earphones and use the laptop's own mic and speaker.</li>
+      <li>In Interview Sarthi, click <b>setup</b> and keep both sound boxes on <b>Automatic</b>.</li>
+      <li>Click <b>more</b>, then <b>reconnect</b>, and <a href="/prep/app/?from=livesarthi">try the AI interviewer</a>.</li>
     </ol></details>
   <details><summary>It answers my own voice, or answers twice</summary>
-    <p>Your microphone is picking up the speakers. Use headphones or earphones, any kind. In the wizard, <b>Your microphone</b> should be your mic, not “Stereo Mix”.</p></details>
+    <p>Put on earphones. With Bluetooth earphones, pick the laptop's own microphone in your meeting app and the earphones' <b>Headphones</b> entry for the speaker.</p>
+    <p>If you are testing a call from your phone, keep the phone away from the laptop, or the app hears you twice.</p></details>
   <details><summary>Answers are generic, nothing from my resume</summary>
     <p>Click <b>setup</b> in the overlay's header and check the resume line says “Resume ready: N lines”. If it says it could not be summarised, press Save again with internet on. Also check <b>Your field</b> is filled. It tunes the answers. The resume is summarised, so for answers that tell a real incident of yours (a bug you fixed, a deadline you saved), write it in <b>Your own examples</b> in setup; that box is used as you wrote it.</p></details>
   <details><summary>The overlay is visible in my shared screen</summary>
     <p>On Windows 10 (2004+) and 11, the overlay is hidden from supported screen sharing in compatible setups with Teams, Zoom, Google Meet, OBS and other apps. Visibility depends on the capture method and your setup. If the panel appears in your share, check your Windows version and sharing settings, then test both sides of a practice call.</p></details>
   <details><summary>“Gemini Live reconnecting” appears mid-call</summary>
     <p>Normal: Google limits a live session to about 10 minutes, and the app reconnects and carries the conversation over. You lose at most a few seconds. If it repeats every few seconds, your internet is dropping. Switch to a wired connection or mobile hotspot.</p></details>
+
+  <h2>Try it before your interview</h2>
+  <details><summary>How do I test Live Sarthi during the free trial?</summary>
+    <p>Open Interview Sarthi once, put on earphones and <a href="/prep/app/?from=livesarthi">open the AI interviewer</a>. Add your resume and press <b>Start</b>. When the interviewer asks a question, check that a suggested answer appears in Interview Sarthi.</p>
+    <p>With Bluetooth earphones, choose the laptop's own microphone on the practice page. If you test from your phone instead, keep the phone away from the laptop, or the app hears you twice. Ask interview questions in English or Hindi.</p></details>
 
   <h2>Your pass</h2>
   <details><summary>“Your pass has ended”</summary>
