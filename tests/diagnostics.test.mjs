@@ -18,6 +18,12 @@ test('buy has its own interview end reason in local diagnostics', () => {
   assert.deepEqual(cleanData({ reason: 'buy', elapsed: 12, email: 'private@example.com' }), { reason: 'buy', elapsed: 12 });
 });
 
+test('the Bluetooth call-mode fields survive cleanData, device names do not', () => {
+  assert.deepEqual(cleanData({ deviceRate: 48000, handsFree: true, sink: 'handsfree', micPreferred: false, label: 'Headset (JBL WAVE BEAM Hands-Free AG Audio)' }),
+    { deviceRate: 48000, handsFree: true, sink: 'handsfree', micPreferred: false });
+  assert.deepEqual(cleanData({ sink: 'SECRET', handsFree: 'yes' }), {});
+});
+
 test('outbox strips private content before persistence and uploads ordered attempt events', async () => {
   const f = fixture(), d = createDiagnostics(f.options); d.begin({ kind: 'demo', email: 'private@example.com' });
   d.event('request_start', { stage: 'report', model: 'gemini-3.6-flash', cv: 'SECRET CV', apiKey: 'SECRET KEY' });

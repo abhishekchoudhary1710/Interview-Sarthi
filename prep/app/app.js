@@ -11,7 +11,7 @@
  * interviewer she or he: see interviewerPersona.
  */
 
-import { AudioIO } from "./audio.js";
+import { AudioIO } from "./audio.js?v=20261008-bluetooth";
 import { GeminiLive } from "./live.js?v=20261005-busy";
 import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261005-busy";
 import { readDocFile, tidy, guessName } from "./cv.js";
@@ -133,13 +133,13 @@ function fmtLong(seconds) {
 /* What pressing Start on the CV screen does, said under the button: the free demo's terms come before the call. */
 function renderStartNote() {
   if (testing()) {
-    $("start-note").textContent = `Free Live Sarthi test, up to ${Math.round(DEMO_SECONDS / 60)} minutes. It runs on Google Gemini, which may use it to improve its services. Wear earphones; your interviewer speaks first.`;
+    $("start-note").textContent = `Free Live Sarthi test, up to ${Math.round(DEMO_SECONDS / 60)} minutes. It runs on Google Gemini, which may use it to improve its services. Wear wired earphones; your interviewer speaks first.`;
     return;
   }
   const demoNext = !S.key && passCtx.demoOn && !(S.ent && S.ent.kind === "pass") && !demoUsed.get();
   $("start-note").textContent = demoNext
-    ? `Free demo: a ${Math.round(DEMO_SECONDS / 60)}-minute interview, then your report. It runs on Google Gemini, which may use it to improve its services. Use earphones if you can; your interviewer speaks first.`
-    : "Use earphones if you can; your interviewer speaks first.";
+    ? `Free demo: a ${Math.round(DEMO_SECONDS / 60)}-minute interview, then your report. It runs on Google Gemini, which may use it to improve its services. Use wired earphones if you can; your interviewer speaks first.`
+    : "Use wired earphones if you can; your interviewer speaks first.";
 }
 /* The header's account button: the person's first name once they are signed
    in, "Sign in" until then. pass.js owns the clicks; this only paints. */
@@ -180,7 +180,7 @@ function showLiveTestIntro() {
   const cv = $("s-cv");
   cv.querySelector(".label").textContent = "Live Sarthi test";
   cv.querySelector("h1").innerHTML = "Test Live Sarthi with <em>our</em> AI interviewer.";
-  cv.querySelector(".lede").textContent = "Keep Live Sarthi running and wear earphones. Add your CV and press Start: the interviewer asks you "
+  cv.querySelector(".lede").textContent = "Keep Live Sarthi running and wear wired earphones. Add your CV and press Start: the interviewer asks you "
     + "questions out loud, and a suggested answer appears in the Live Sarthi window a few seconds after each one. "
     + `The test is free and takes up to ${Math.round(DEMO_SECONDS / 60)} minutes.`;
 }
@@ -437,6 +437,11 @@ function setLink(state, label) {
 
 // ---- microphone help: shown when the mic check fails, or the mic dies mid-call
 
+/* A Bluetooth headset whose microphone is open is in call mode, and this browser cannot
+ * send the interviewer to its call-mode output (audio.js _routeOutput). */
+const HANDS_FREE_UNSUPPORTED = "Your Bluetooth headset is in call mode and this browser cannot play the interviewer "
+  + "through it. Pick your laptop's microphone below, or use wired earphones.";
+
 async function showMicFix(text) {
   $("micfix-text").textContent = text;
   const mics = await AudioIO.listMics();
@@ -450,8 +455,10 @@ $("micselect").onchange = async () => {
   if (!audio) return;
   try {
     const info = await audio.useMic($("micselect").value);
-    log("mic_switched", { label: info.label });
-    $("micfix-text").textContent = `Switched to ${info.label || "the other microphone"}. Go ahead and answer.`;
+    log("mic_switched", { label: info.label, handsFree: info.handsFree, sink: info.sink });
+    $("micfix-text").textContent = info.handsFree && info.sink === "unsupported" ? HANDS_FREE_UNSUPPORTED
+      : info.handsFree ? `Switched to ${info.label}. Your headset is in call mode now, so the interviewer plays through it in phone quality. Go ahead and answer.`
+      : `Switched to ${info.label || "the other microphone"}. Go ahead and answer.`;
   } catch (err) {
     $("micfix-text").textContent = "That microphone could not be opened: " + err.message;
   }
@@ -548,7 +555,7 @@ function preLive() {
   setLink("idle", "Ready");
   const p = who();
   setCaption("Your interviewer", `${p.They} speaks first. Answer out loud, like a real call.`);
-  $("tip-speaker").textContent = `Use earphones if you can. From a loud speaker ${p.they} can hear ${p.themself}.`;
+  $("tip-speaker").textContent = `Use wired earphones if you can. From a loud speaker ${p.they} can hear ${p.themself}. Bluetooth earbuds work best with the laptop's microphone.`;
   $("tip-interrupt").textContent = `You can interrupt, and so can ${p.they}.`;
   if (S.ent.kind === "livetest") {
     $("start").disabled = false;
@@ -748,7 +755,11 @@ async function startInterview() {
       return;
     }
   }
-  log("mic", { label: audio.micLabel, deviceRate: audio.sampleRate });
+  log("mic", { label: audio.micLabel, deviceRate: audio.sampleRate, handsFree: audio.handsFree, sink: audio.sink, micPreferred: audio.micPreferred });
+  // Bluetooth earbuds (micpick.js): say which microphone was taken instead, or that this
+  // browser cannot play through a headset in call mode.
+  if (audio.micPreferred) notice("live-notice", `Using ${audio.micLabel || "the laptop's microphone"}, so your Bluetooth earbuds stay in stereo.`, "ok");
+  else if (audio.handsFree && audio.sink === "unsupported") showMicFix(HANDS_FREE_UNSUPPORTED);
   micStats = { chunks: 0, voiced: 0, maxRms: 0 };
   wireAudio();
   diagnosticEvent('preparation_ready', { stage: 'live', duration_ms: Math.round(performance.now() - started) });

@@ -28,3 +28,5 @@ jobs:
       - run: node --test tests/coaching.test.mjs
       - run: node --test tests/report_view.test.mjs
       - run: node --test tests/ats_engine.test.mjs
+      - run: node --test tests/micpick.test.mjs
+      - run: node --test tests/diagnostics.test.mjs

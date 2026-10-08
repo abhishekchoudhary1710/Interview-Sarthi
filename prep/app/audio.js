@@ -18,6 +18,8 @@
  * wrong input.
  */
 
+import { isHandsFree, preferredMic, handsFreeOutputFor } from "./micpick.js";
+
 const CAPTURE_RATE = 16000;
 const PLAYBACK_RATE = 24000;
 
@@ -139,6 +141,9 @@ export class AudioIO {
     this.micLabel = "";
     this.micId = "";
     this._muted = false;
+    this.handsFree = false;     // the open microphone is a Bluetooth Hands-Free endpoint (micpick.js)
+    this.sink = "default";      // where the interviewer plays: default, handsfree, communications, unsupported
+    this.micPreferred = false;  // start() swapped a Hands-Free default for a real microphone
   }
 
   get sampleRate() { return this.ctx ? this.ctx.sampleRate : 0; }
@@ -183,6 +188,41 @@ export class AudioIO {
     this.playback.connect(this.ctx.destination);
 
     await this.useMic(deviceId);
+    // Left to choose and handed a Bluetooth Hands-Free microphone: take another
+    // one, so the earbuds stay in stereo (micpick.js). useMic stops the Hands-Free
+    // track and Windows returns the headset to stereo on its own.
+    if (!deviceId && this.handsFree) this.micPreferred = await this._preferOtherMic();
+  }
+
+  async _preferOtherMic() {
+    let mics = [];
+    try { mics = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audioinput"); } catch (_) { return false; }
+    const other = preferredMic(mics, this.micLabel);
+    if (!other) return false;
+    try { await this.useMic(other.deviceId); return true; } catch (_) { return false; }
+  }
+
+  /* Where the interviewer's voice goes. With a Hands-Free microphone open, Windows
+   * mutes the headset's Stereo device, which is the browser's default output, so
+   * the voice is sent to the headset's Hands-Free output instead (phone quality,
+   * but heard). Chrome, Edge and Brave can do this; Firefox and Safari cannot, and
+   * the page then says so and offers the laptop microphone. */
+  async _routeOutput() {
+    const ctx = this.ctx;
+    if (!ctx || typeof ctx.setSinkId !== "function") { this.sink = this.handsFree ? "unsupported" : "default"; return; }
+    if (!this.handsFree) {
+      if (this.sink !== "default") { try { await ctx.setSinkId(""); } catch (_) { /* already default */ } }
+      this.sink = "default";
+      return;
+    }
+    let outputs = [];
+    try { outputs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "audiooutput"); } catch (_) { /* no list: try the communications device */ }
+    const twin = handsFreeOutputFor(this.micLabel, outputs);
+    for (const [id, name] of [[twin && twin.deviceId, "handsfree"], ["communications", "communications"]]) {
+      if (!id) continue;
+      try { await ctx.setSinkId(id); this.sink = name; return; } catch (_) { /* next */ }
+    }
+    this.sink = "unsupported";
   }
 
   /* Open a microphone (the default one when no id is given) and feed it to the
@@ -201,12 +241,14 @@ export class AudioIO {
     const settings = track && track.getSettings ? track.getSettings() : {};
     this.micLabel = (track && track.label) || "";
     this.micId = settings.deviceId || deviceId || "";
+    this.handsFree = isHandsFree(this.micLabel);
     if (track) {
       track.onmute = () => this.onMicMuted && this.onMicMuted(true);
       track.onunmute = () => this.onMicMuted && this.onMicMuted(false);
       if (track.muted && this.onMicMuted) this.onMicMuted(true);
     }
-    return { label: this.micLabel, id: this.micId, settings };
+    await this._routeOutput();
+    return { label: this.micLabel, id: this.micId, settings, handsFree: this.handsFree, sink: this.sink };
   }
 
   /* Gemini's audio parts are 24 kHz Int16 PCM. */
