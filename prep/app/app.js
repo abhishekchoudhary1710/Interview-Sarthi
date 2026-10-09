@@ -22,7 +22,7 @@ import { assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite } from "./billing.js?v=20261009-live-gift";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite, session as accountSession } from "./billing.js?v=20261009-live-gift";
 import { initPasses, isIntl, noticeLiveGift, openPasses, priceOf, refreshPasses, renderInvite } from "./pass.js?v=20261009-polish";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
@@ -30,6 +30,7 @@ import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from 
 // Progress across the month (plan approved 29 Sep 2026). These modules hold the logic; the screens that show
 // it are drawn elsewhere and reach this page through window.prepApp and the prep:* events below.
 import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries, saveInterview, saveItem } from "./history.js";
+import { fillFrom, readProfile, saveFromPrep, saveKey } from "./mysarthi.js?v=20261010-mysarthi";
 import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
 import { coachingBrief } from "./coaching.js?v=20261001-faststart";
 import { refreshAnalyses } from "./insights.js";
@@ -198,6 +199,7 @@ const passCtx = {
     if (ent && ent.kind === "pass") { hideOffer("report-offer"); deferredReportOffer = null; }
     paintReportPass();
     if (ent && ent.account) flushOutbox().catch(() => {});
+    if (ent && ent.account) fillFromMySarthi();
     // The server says this once, on the call that created the trial: tell the person where the minutes came from.
     if (ent && ent.welcome) showApplyWelcome(`ApplySarthi bonus added: ${ent.welcome.minutes} extra free minutes, so you have ${Math.round(ent.secondsLeft / 60)} in total.`);
   },
@@ -291,7 +293,42 @@ async function restore() {
   }
   booted = true;
   renderEntitlement();
+  fillFromMySarthi();
 }
+
+/* My Sarthi (interviewsarthi.com/account/): signed in, the EMPTY boxes fill from the profile saved there, once per
+ * sign-in. The Gemini key goes into the key step's box only; it is kept on this device when that step is passed, as
+ * a typed key is. Nothing happens when My Sarthi is not open or the person is signed out (mysarthi.js is silent). */
+let mySarthiFor = "";
+async function fillFromMySarthi() {
+  const token = accountSession.get();
+  if (!token || token === mySarthiFor) return;
+  mySarthiFor = token;
+  const profile = await readProfile();
+  if (!profile) return;
+  $("save-mysarthi").hidden = false;
+  const have = { cv: !!$("cv").value.trim(), jd: !!$("jd").value.trim(), name: !!$("name").value.trim(), key: !!($("key").value.trim() || store.get("ps_gemini_key")) };
+  const got = await fillFrom(profile, have);
+  const done = [];
+  if (got.cv && !$("cv").value.trim()) { $("cv").value = got.cv; store.set("ps_cv", got.cv); done.push("CV"); }
+  if (got.jd && !$("jd").value.trim()) { $("jd").value = got.jd; store.set("ps_jd", got.jd); updateNoJdOptions(); done.push("job description"); }
+  if (got.name && !$("name").value.trim()) { $("name").value = got.name; store.set("ps_name", got.name); done.push("name"); }
+  if (got.key && !$("key").value.trim()) { $("key").value = got.key; done.push("Gemini key"); }
+  if (done.length) notice("cv-notice", `Filled from My Sarthi: ${done.join(", ")}.`, "ok");
+}
+
+$("save-mysarthi").onclick = async () => {
+  readForm();
+  $("save-mysarthi").disabled = true;
+  try {
+    const r = await saveFromPrep({ cv: S.cv, jd: S.jd, name: S.name, language: S.language, role: S.targetRole, level: S.targetLevel });
+    if (!r.ok) { notice("cv-notice", r.error, "bad"); return; }
+    const key = $("key").value.trim() || store.get("ps_gemini_key");
+    let withKey = false;
+    if (key && !r.geminiSaved && confirm("Also keep your Gemini key in My Sarthi, encrypted, for Live Sarthi?")) withKey = await saveKey(key);
+    notice("cv-notice", `Saved to My Sarthi${withKey ? ", with your Gemini key" : ""}. Live Sarthi can fill its setup from it.`, "ok");
+  } finally { $("save-mysarthi").disabled = false; }
+};
 
 $("language").onchange = () => { $("language-other").style.display = $("language").value === "other" ? "block" : "none"; };
 /* The CV and the JD each take a PDF or a text file from the small button on
