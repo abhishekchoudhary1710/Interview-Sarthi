@@ -151,6 +151,7 @@ export async function initPasses(context) {
   $("signout2").onclick = signOut;
   $("acct-out").onclick = () => { acctMenu(false); signOut(); };
   $("start-days").onclick = startDays;
+  $("free-days-buy").onclick = () => { extendOpen = true; step = "choose"; paint(); $("buy-block").scrollIntoView({ behavior: "smooth", block: "center" }); };
   $("live-gift-form").onsubmit = claimGift;
   if (testLogin) {
     $("testlogin").style.display = "block";
@@ -195,7 +196,7 @@ export async function openPasses(message, opts = {}) {
   ctx.show("s-pass");
   say(message || "");
   if (opts.plan && planOf(opts.plan)) choosePlan(opts.plan);
-  if (opts.checkout) { step = "checkout"; if (ctx.state.ent && ctx.state.ent.kind === "pass") extendOpen = true; }
+  if (opts.checkout) { step = "checkout"; if (ctx.state.ent && (ctx.state.ent.kind === "pass" || ctx.state.ent.invite?.banked_days > 0)) extendOpen = true; }
   if (opts.signin) { step = "signin"; extendOpen = false; }
   if (!ctx.passesOn) {
     $("pass-body").style.display = "none";
@@ -238,6 +239,8 @@ function paint() {
   $("pay").disabled = running;
   const account = ent.account;
   const live = ent.kind === "pass";
+  const banked = (ent.invite && ent.invite.banked_days) || 0;
+  const freeReady = !!account && banked > 0;
 
   // Your account, when a pass is running.
   $("account-card").style.display = live ? "block" : "none";
@@ -253,7 +256,7 @@ function paint() {
   }
 
   // Buying: hidden behind "Extend" once a pass is live.
-  const buying = !live || extendOpen;
+  const buying = (!live && !freeReady) || extendOpen;
   const signinOnly = step === "signin" && !account;
   if (step === "signin" && account) step = "choose";       // signed in: nothing left to ask
   $("buy-block").style.display = buying && step === "choose" ? "block" : "none";
@@ -271,18 +274,19 @@ function paint() {
   if (account) $("pass-who2").textContent = `Signed in as ${account.email}`;
 
   // Words at the top follow the state, so the page never asks for money twice.
-  $("pass-kicker").textContent = live ? "Your account" : "Passes";
-  $("pass-title").innerHTML = live ? 'Your pass is <em>live.</em>' : 'Unlimited mocks, <em>one payment.</em>';
+  $("pass-kicker").textContent = live ? "Your account" : freeReady ? "Free days" : "Passes";
+  $("pass-title").innerHTML = live ? 'Your pass is <em>live.</em>' : freeReady ? 'Your free days are <em>ready.</em>' : 'Unlimited mocks, <em>one payment.</em>';
   $("pass-lede").textContent = live
     ? "Practise as much as you like until it ends. Buying again adds the days on top, and nothing renews by itself."
-    : "No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.";
+    : freeReady ? "Start them when you are ready to practise. Your free days wait until you press Start."
+      : "No subscription, and it never renews by itself. The clock starts when you pay, and the pass ends exactly on time.";
 
   // Arrived through a friend's link: the first pass is a week longer, so say so where the price is.
   const note = $("invited-note");
   if (note) note.style.display = !live && invitedBy() ? "block" : "none";
 
-  const banked = (ent.invite && ent.invite.banked_days) || 0;
   $("freedays").style.display = banked > 0 ? "block" : "none";
+  $("free-days-buy").hidden = !account;
   if (banked > 0) {
     const gift = ent.live_gift;
     const friends = Number(ent.invite?.friends_bought || 0) > 0 || banked > Number(gift?.total_days || gift?.days || 0);
@@ -338,7 +342,8 @@ async function onGoogle(credential) {
     ctx.setEntitlement(await signIn(credential, ctx.state.hash));
     ctx.track("mock_sign_in", { with_key: !!ctx.state.hash, to_buy: !cameToSignIn });
     const live = ctx.state.ent.kind === "pass";
-    if (cameToSignIn) { step = "choose"; say(live ? "Welcome back. Your pass is live." : "Signed in. There is no active pass on this account, so choose one below.", live ? "ok" : ""); }
+    const freeReady = (ctx.state.ent.invite?.banked_days || 0) > 0;
+    if (cameToSignIn) { step = "choose"; say(live ? "Welcome back. Your pass is live." : freeReady ? "Signed in. You have free days ready to start." : "Signed in. Choose a pass below.", live || freeReady ? "ok" : ""); }
     else say("");
     paint();
     if (!cameToSignIn && !live) $("phone").focus();

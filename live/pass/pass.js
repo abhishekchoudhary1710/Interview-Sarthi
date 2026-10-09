@@ -53,6 +53,7 @@
       disabled: "This pass is disabled."
     };
     $("pass-state").textContent = states[p.state] || p.state;
+    $("activation-help").hidden = p.state !== "not_activated";
     $("computers").textContent = `${p.devices_used} of ${p.devices_max} computers`;
     $("email-hint").textContent = p.email_hint ? "Bought with " + p.email_hint : "";
     $("pass-prep").hidden = !data.prep_gift;
@@ -65,7 +66,7 @@
       $("upgrade-prep").hidden = !(u.prep_gift_days > 0);
       $("upgrade-prep").textContent = u.prep_gift_days > 0 ? `Prep Sarthi (₹99) included free for ${u.prep_gift_days} days` : "";
       $("offer-until").textContent = "Open until " + when(u.offer_until);
-      $("upgrade-window").textContent = u.kind === "comeback" ? "Your comeback offer is open for 7 days from your email. An ended pass gets 30 days from payment. Once per key." : "Open before activation and for 3 days (72 hours) after first activation. Your month ends 30 days after first activation. Once per key.";
+      $("upgrade-window").textContent = u.kind === "comeback" ? "You have 7 days from your email to use this offer. If your pass has ended, you get 30 days from payment. You can upgrade each key once." : "You can upgrade before you activate, or within 3 days (72 hours) of first activation. Your pass ends 30 days after first activation. You can upgrade each key once.";
     } else {
       $("unavailable-message").textContent = u.message || "There is no upgrade available for this pass.";
       $("buy-links").hidden = !["window", "expired", "plan", "india_only"].includes(u.reason);
