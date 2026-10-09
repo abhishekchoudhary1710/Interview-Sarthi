@@ -58,7 +58,6 @@ export function noticeLiveGift(ent) {
   const account = ent?.account?.sub || ent?.account?.email || null;
   if (account !== noticeAccount) { notice.hidden = true; noticeAccount = account; }
   const gift = ent?.live_gift;
-  if (gift && !notice.hidden && ent.kind === "pass") $("live-gift-notice-text").textContent = giftNoticeText(ent, gift);
   if (!account || !gift?.just_claimed) return;
   const token = JSON.stringify([account, gift.claimed_at, gift.days]);
   let hash = 2166136261;
@@ -478,6 +477,7 @@ async function startDays() {
   try {
     await startFreeDays();
     ctx.setEntitlement(await ctx.refresh());
+    $("live-gift-notice").hidden = true;
     extendOpen = false; step = "choose";
     paint();
     say("Your free days have started. Unlimited mocks until they end.", "ok");

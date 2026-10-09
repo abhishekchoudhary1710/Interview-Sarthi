@@ -144,6 +144,7 @@
 
   async function checkPayment() {
     if (polling || !orderId) return;
+    if (key) $("lookup-card").hidden = true;
     polling = true; $("upgrade-card").hidden = true; $("unavailable-card").hidden = true;
     paymentButtons(false); say("Confirming your payment… keep this page open.");
     const deadline = Date.now() + 180000;
