@@ -260,6 +260,7 @@ function paint() {
   const signinOnly = step === "signin" && !account;
   if (step === "signin" && account) step = "choose";       // signed in: nothing left to ask
   $("buy-block").style.display = buying && step === "choose" ? "block" : "none";
+  $("live-month-included").hidden = live;
   $("checkout").style.display = buying && (step === "checkout" || signinOnly) ? "block" : "none";
   $("pass-signin").style.display = account ? "none" : "block";
   $("pass-pay").style.display = account && !signinOnly ? "block" : "none";
