@@ -48,6 +48,12 @@ function el(tag, props = {}, ...kids) {
   return e;
 }
 
+/* A link from the server, only if it is https or a path on this site: never javascript: or data:. */
+function safe(url) {
+  const u = String(url || "");
+  return /^https:\/\//i.test(u) || (u.startsWith("/") && !u.startsWith("//")) ? u : null;
+}
+
 function say(message, bad = false) {
   $("notice").textContent = message || "";
   $("notice").className = "notice" + (bad ? " bad" : "");
@@ -166,7 +172,7 @@ function renderBell() {
       el("b", { text: item.title }),
       item.body ? el("p", { text: item.body }) : null,
       item.until ? el("p", { text: `Until ${when(item.until)}` }) : null,
-      item.link ? el("a", { href: item.link, text: "Open →" }) : null));
+      safe(item.link) ? el("a", { href: safe(item.link), text: "Open →" }) : null));
   }
 }
 
@@ -226,9 +232,9 @@ function keyCard(k) {
       k.devices && k.devices.length ? el("span", { text: `On: ${k.devices.map((d) => d.name).join(", ")}` }) : null,
       el("span", { text: `Bought ${day(k.created_at)}` })),
     k.prep_gift ? el("p", { class: "gift", text: `Prep Sarthi free for ${k.prep_gift.days} days with this pass.${k.prep_gift.claimed ? " Added to your Prep account." : " Sign in to Prep with this Google account to get it."}` }) : null);
-  if (k.upgrade) card.append(upgradeBox(k.upgrade));
+  if (k.upgrade && safe(k.upgrade.url)) card.append(upgradeBox(k.upgrade));
   const actions = el("div", { class: "actions" });
-  if (k.manage_url) actions.append(el("a", { class: "btn ghost", href: k.manage_url, text: "Manage this pass" }));
+  if (safe(k.manage_url)) actions.append(el("a", { class: "btn ghost", href: safe(k.manage_url), text: "Manage this pass" }));
   if (k.how === "pasted") actions.append(el("button", { class: "btn ghost", type: "button", text: "Remove from my account", onclick: (e) => act(e.target, async () => {
     if (!confirm("Take this key off your My Sarthi account? The pass itself keeps working.")) return;
     await call("/account/unlink", { key: k.key });
@@ -246,7 +252,7 @@ function upgradeBox(u) {
       : `${u.to_label} until ${when(u.ends_after)}, ${u.devices_after} computers.` }),
     u.prep_gift_days ? el("p", { class: "gift", text: `Prep Sarthi free for ${u.prep_gift_days} days included.` }) : null,
     el("p", { class: "fine", text: `Open until ${when(u.offer_until)}. India only: paid through Cashfree on your pass page.` }),
-    el("a", { class: "btn primary", href: u.url, text: `Upgrade for ₹${u.amount}` }));
+    el("a", { class: "btn primary", href: safe(u.url), text: `Upgrade for ₹${u.amount}` }));
 }
 
 $("link-form").addEventListener("submit", (e) => {
@@ -508,7 +514,7 @@ function renderPrep() {
     h.recent.length ? el("ul", { class: "list" }, h.recent.map((r) => el("li", {},
       el("b", { text: r.role || "Practice interview" }),
       el("span", { class: "meta", text: [day(r.at), r.score != null ? `${r.score}/10` : "", r.minutes != null ? `${r.minutes} min` : ""].filter(Boolean).join(" · ") })))) : null,
-    el("a", { class: "btn primary", href: p.app_url, text: "Open Prep Sarthi" })].filter(Boolean));
+    el("a", { class: "btn primary", href: safe(p.app_url) || "/prep/app/", text: "Open Prep Sarthi" })].filter(Boolean));
 }
 
 function renderPurchases() {
@@ -534,7 +540,7 @@ function renderTickets() {
     list.append(el("li", {},
       el("div", {}, el("b", { text: `#${t.number} ${t.problem}` }),
         el("div", { class: "meta", text: `${t.replied ? "We replied" : t.open ? "Open" : "Closed"} · ${day(t.updated_at)}` })),
-      el("a", { class: "btn ghost", href: t.link, text: "Open conversation" })));
+      safe(t.link) ? el("a", { class: "btn ghost", href: safe(t.link), text: "Open conversation" }) : null));
   }
 }
 
@@ -544,9 +550,9 @@ function renderInvite() {
   if (!r) return;
   $("invite-card").replaceChildren(
     el("p", { text: "When a friend buys a Live Sarthi pass with your code, you both get a free interview day." }),
-    el("div", { class: "keyline" }, el("code", { text: r.code }), copyButton(r.link, "Copy invite link")),
+    el("div", { class: "keyline" }, el("code", { text: r.code }), copyButton(String(r.link || ""), "Copy invite link")),
     el("p", { class: "fine", text: `Friends who bought with it: ${r.friends}.` }),
-    el("a", { href: r.page, text: "Share it →" }));
+    ...(safe(r.page) ? [el("a", { href: safe(r.page), text: "Share it →" })] : []));
 }
 
 // ------------------------------------------------------------------ account
