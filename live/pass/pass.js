@@ -7,7 +7,7 @@
   const returned = window.__livePassReturn || {};
   let key = returned.key || read(KEY_STORE), orderId = returned.order || read(ORDER_STORE);
   delete window.__livePassReturn;
-  let current = null, polling = false, paying = false, generation = 0;
+  let current = null, polling = false, paying = false, generation = 0, paymentCheck = 0;
   const paidReported = new Set();
   let cashfreeScript = null;
   const dates = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
@@ -105,7 +105,7 @@
 
   async function pay() {
     if (paying || polling || !key || !current?.upgrade?.eligible) return;
-    paying = true; $("upgrade-pay").disabled = true; paymentButtons(false);
+    paying = true; $("upgrade-pay").disabled = true; paymentButtons(false); $("payment-back").hidden = true;
     track("upgrade_click", { kind: current.upgrade.kind });
     say("Opening secure checkout…");
     try {
@@ -128,13 +128,13 @@
     track("upgrade_paid", { kind, value: 200, currency: "INR" });
   }
 
-  async function success(result) {
-    clearOrder(); paymentButtons(false); say("");
+  async function success(result, checkingOrder) {
+    clearOrder(); paymentButtons(false); $("payment-back").hidden = true; say("");
     $("upgrade-card").hidden = true; $("unavailable-card").hidden = true;
     $("success").hidden = false;
     $("success-end").textContent = result.started ? "Active until " + when(result.ends_at) : "Your 30 days start when you activate" + (result.activate_by ? ". Activate by " + when(result.activate_by) + "." : ".");
     $("success-devices").textContent = `${result.devices_max} computers`;
-    reportPaid(orderId, result.kind);
+    reportPaid(checkingOrder, result.kind);
     const data = await lookup(true);
     const gift = result.prep_gift || data?.prep_gift;
     $("success-prep").hidden = !gift;
@@ -144,18 +144,21 @@
 
   async function checkPayment() {
     if (polling || !orderId) return;
+    const thisCheck = ++paymentCheck, checkingOrder = orderId;
     if (key) $("lookup-card").hidden = true;
     polling = true; $("upgrade-card").hidden = true; $("unavailable-card").hidden = true;
+    $("payment-back").hidden = !key;
     paymentButtons(false); say("Confirming your payment… keep this page open.");
     const deadline = Date.now() + 180000;
     try {
-      while (Date.now() < deadline) {
+      while (Date.now() < deadline && thisCheck === paymentCheck) {
         let result;
-        try { result = await request("/upgrade/orders/" + encodeURIComponent(orderId)); }
-        catch (err) { say(err.message, true); paymentButtons(true); return; }
-        if (result.status === "paid") { await success(result); return; }
+        try { result = await request("/upgrade/orders/" + encodeURIComponent(checkingOrder)); }
+        catch (err) { if (thisCheck !== paymentCheck) return; say(err.message, true); paymentButtons(true); return; }
+        if (thisCheck !== paymentCheck) return;
+        if (result.status === "paid") { await success(result, checkingOrder); return; }
         if (["failed", "not_found", "duplicate"].includes(result.status)) {
-          clearOrder();
+          clearOrder(); $("payment-back").hidden = true;
           if (key) await lookup();
           say(result.status === "duplicate" ? result.message : result.status === "failed" ? "The payment did not go through. You can try again." : "We could not find that payment. Check the link in your email, or reply to your key email.", true);
           paymentButtons(false);
@@ -165,9 +168,20 @@
         }
         await new Promise((resolve) => setTimeout(resolve, 3000));
       }
-      say("Paid? It can take a few minutes; we email you as soon as it is done.");
+      if (thisCheck !== paymentCheck) return;
+      clearOrder(); $("payment-back").hidden = true;
+      const latestPass = key ? await lookup() : null;
+      if (thisCheck !== paymentCheck) return;
+      if (!key || latestPass) say("Paid? It can take a few minutes; we email you as soon as it is done.");
       paymentButtons(true);
-    } finally { polling = false; }
+    } finally { if (thisCheck === paymentCheck) polling = false; }
+  }
+
+  async function backToPass() {
+    if (!key || paying) return;
+    paymentCheck++; polling = false; orderId = ""; clearOrder();
+    $("payment-back").hidden = true; paymentButtons(false);
+    await lookup();
   }
 
   $("lookup").onsubmit = async (event) => {
@@ -176,17 +190,18 @@
     key = $("key").value.trim(); if (!key) return;
     generation++; save(KEY_STORE, key); save(ORDER_STORE, ""); orderId = "";
     $("key").value = ""; current = null; $("success").hidden = true;
-    $("pass-card").hidden = true; $("upgrade-card").hidden = true; $("unavailable-card").hidden = true; paymentButtons(false);
+    $("pass-card").hidden = true; $("upgrade-card").hidden = true; $("unavailable-card").hidden = true; $("payment-back").hidden = true; paymentButtons(false);
     await lookup();
   };
   $("change-key").onclick = () => {
     if (polling || paying) return;
     generation++; key = ""; current = null; orderId = ""; save(KEY_STORE, ""); clearOrder();
     for (const id of ["pass-card", "upgrade-card", "unavailable-card", "success"]) $(id).hidden = true;
-    $("lookup-card").hidden = false; paymentButtons(false); say(""); $("key").focus();
+    $("lookup-card").hidden = false; $("payment-back").hidden = true; paymentButtons(false); say(""); $("key").focus();
   };
   $("upgrade-pay").onclick = pay; $("retry-payment").onclick = pay;
   $("check-payment").onclick = checkPayment;
+  $("back-to-pass").onclick = backToPass;
   async function start() {
     if (returned.key && !returned.order) { orderId = ""; clearOrder(); }
     if (orderId) { save(ORDER_STORE, orderId); await checkPayment(); }

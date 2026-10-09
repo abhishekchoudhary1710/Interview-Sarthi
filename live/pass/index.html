@@ -21,7 +21,7 @@
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
   <link rel="stylesheet" href="./pass.css?v=20261009-polish">
-  <script defer src="./pass.js?v=20261009-polish"></script>
+  <script defer src="./pass.js?v=20261009-backout"></script>
 </head>
 <body>
   <div class="wrap">
@@ -46,6 +46,7 @@
       </section>
 
       <p class="notice" id="notice" role="status" aria-live="polite"></p>
+      <p class="fine" id="payment-back" hidden><button class="text-button" id="back-to-pass" type="button">I didn't pay yet: back to my pass</button></p>
       <div class="actions" id="payment-actions" hidden>
         <button class="btn ghost" id="check-payment" type="button">Check payment again</button>
         <button class="btn ghost" id="retry-payment" type="button" hidden>Try again</button>
