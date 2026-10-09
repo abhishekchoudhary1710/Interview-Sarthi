@@ -410,10 +410,12 @@ $("connect-form").addEventListener("submit", (e) => {
     button.addEventListener("click", () => act(button, async () => {
       const out = await call("/account/connect", { user_code: info.user_code, live_history: keep.checked, improve: keep.checked && improve.checked });
       body.replaceChildren(el("p", { text: `Connected: ${out.name}.` }),
-        el("p", { text: "Go back to Live Sarthi: it fills its empty boxes now. Press Save there to keep them." }));
+        el("p", { text: "Go back to Live Sarthi: it fills its empty boxes now. Press Save there to keep them. The PC appears under Your PCs once the app has picked up the connection, in a few seconds." }));
       $("connect-code").value = "";
       await load();
       $("connect-card").hidden = false;
+      // The app collects its token on its next poll (every 5 s): one more look, so the PC shows without a reload.
+      setTimeout(() => load().then(() => { $("connect-card").hidden = false; }).catch(() => {}), 7000);
     }));
   });
 });
@@ -530,8 +532,8 @@ $("profile-delete").addEventListener("click", (e) => act(e.target, async () => {
   await call("/account/profile/delete");
   $("profile-form").hidden = true;
   $("profile-open").hidden = false;
-  say("Your profile was deleted.");
   await load();
+  say("Your profile was deleted.");
 }));
 
 // ------------------------------------------------------------------ Prep, purchases, help, invite
