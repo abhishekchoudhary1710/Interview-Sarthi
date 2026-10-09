@@ -1,0 +1,560 @@
+/* My Sarthi: everything one person has with Interview Sarthi, after a Google sign-in (owner, 9 Oct 2026).
+ *
+ * The server side is the licence worker's /account routes (AI-Helps_SAAS license-server/src/account.js and the
+ * modules it routes to). Sign-in is Prep Sarthi's own: the same Google button, the same 30-day session in the same
+ * localStorage key, so someone signed in to Prep is signed in here too.
+ *
+ * Every piece of text from the server is set with textContent, never as HTML: a Live interview's transcript is
+ * whatever the interviewer said. No analytics script runs on this page. */
+
+const LOCAL = /^(127\.0\.0\.1|localhost)$/.test(location.hostname);
+const API = LOCAL ? "https://interview-sarthi-license-test.interview-sarthi-license.workers.dev" : "https://license.interviewsarthi.com";
+const $ = (id) => document.getElementById(id);
+
+const mem = {
+  get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+  set(k, v) { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch { /* private mode */ } },
+};
+const tab = {
+  get(k) { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } },
+  set(k, v) { try { v ? sessionStorage.setItem(k, v) : sessionStorage.removeItem(k); } catch { /* private mode */ } },
+};
+const session = { get: () => mem.get("ps_session"), set: (v) => mem.set("ps_session", v), clear: () => mem.set("ps_session", "") };
+
+let connectCode = window.__msConnect || tab.get("ms_connect");
+delete window.__msConnect;
+let data = null, profile = null, jds = [], liveItems = [], readerId = "";
+
+const full = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true });
+const short = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
+const when = (iso) => (iso ? full.format(new Date(iso)) : "");
+const day = (iso) => (iso ? short.format(new Date(iso)) : "");
+const KEEP_TEXT = "Each interview that ends on a connected PC is kept here: the interviewer's words, the screen text the app read and " +
+  "every answer it showed you. Your own spoken words, the audio and screenshots are never sent. Interviews are deleted after 365 days; " +
+  "switching this off stops new ones and deletes nothing. We may also look at them, without your name or email, to improve " +
+  "Live Sarthi's answers.";
+
+/* A node: el("p", { class: "fine", text: "..." }, child, ...). Strings become text, never markup. */
+function el(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) e.append(kid instanceof Node ? kid : String(kid));
+  return e;
+}
+
+function say(message, bad = false) {
+  $("notice").textContent = message || "";
+  $("notice").className = "notice" + (bad ? " bad" : "");
+  if (message) $("notice").scrollIntoView({ block: "nearest" });
+}
+
+async function call(path, body = {}, { auth = true } = {}) {
+  const abort = new AbortController(), timer = setTimeout(() => abort.abort(), 20000);
+  try {
+    const res = await fetch(API + path, { method: "POST", cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: abort.signal,
+      headers: { "content-type": "application/json" }, body: JSON.stringify(auth ? { session: session.get(), ...body } : body) });
+    let out = {};
+    try { out = await res.json(); } catch { /* not JSON */ }
+    if (!res.ok) { const err = new Error(out.error || "Something went wrong. Please try again."); err.status = res.status; throw err; }
+    return out;
+  } catch (err) {
+    if (err.status) throw err;
+    throw new Error("Could not reach the server just now. Please try again.");
+  } finally { clearTimeout(timer); }
+}
+
+async function act(button, work) {
+  if (button) button.disabled = true;
+  try { return await work(); } catch (err) { say(err.message, true); return null; } finally { if (button) button.disabled = false; }
+}
+
+// ------------------------------------------------------------------ sign-in
+
+function show(view) {
+  $("signed-out").hidden = view !== "out";
+  $("signed-in").hidden = view !== "in";
+  $("closed").hidden = view !== "closed";
+  $("bell").hidden = view !== "in";
+  if (view !== "in") $("bell-panel").hidden = true;
+}
+
+async function showSignedOut() {
+  show("out");
+  if (connectCode) say("Sign in to connect your PC to My Sarthi.");
+  if (LOCAL) $("test-login").hidden = false;
+  try {
+    const cfg = await call("/mock/config", {}, { auth: false });
+    if (!cfg.google_client_id) return;
+    await new Promise((resolve, reject) => {
+      if (window.google && window.google.accounts) return resolve();
+      const s = el("script", { src: "https://accounts.google.com/gsi/client", async: true, onload: resolve, onerror: reject });
+      document.head.append(s);
+    });
+    window.google.accounts.id.initialize({ client_id: cfg.google_client_id, callback: (r) => signedIn(r.credential), ux_mode: "popup" });
+    window.google.accounts.id.renderButton($("gbutton"), { theme: "filled_blue", size: "large", shape: "pill", text: "continue_with", width: 300 });
+  } catch {
+    say("Google sign-in did not load. Turn off any content blocker for this page and reload.", true);
+  }
+}
+
+async function signedIn(idToken) {
+  const out = await act(null, () => call("/mock/auth/google", { id_token: idToken }, { auth: false }));
+  if (!out || !out.session) return;
+  session.set(out.session);
+  say("");
+  await load();
+}
+
+$("test-login").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const email = $("test-email").value.trim();
+  if (email) signedIn(`test:${email}`);
+});
+
+// ------------------------------------------------------------------ the page
+
+async function load() {
+  try {
+    data = await call("/account");
+  } catch (err) {
+    if (err.status === 401) { session.clear(); return showSignedOut(); }
+    if (err.status === 404) return show("closed");
+    return say(err.message, true);
+  }
+  show("in");
+  render();
+  if (connectCode) renderConnect();
+}
+
+function unavailable(name) { return (data.unavailable || []).includes(name); }
+function missing(target) { target.replaceChildren(el("p", { class: "fine", text: "Couldn't load this part. Reload the page to try again." })); }
+
+function render() {
+  const a = data.account;
+  $("hello").textContent = a.name ? `Hi, ${a.name.split(" ")[0]}` : "Your account";
+  $("hello-sub").textContent = `Signed in as ${a.email}`;
+  $("account-line").textContent = `Signed in with Google as ${a.email}${a.name ? ` (${a.name})` : ""}.`;
+  renderBell();
+  renderKeys();
+  renderInterviews();
+  renderPcs();
+  renderProfileSummary();
+  renderPrep();
+  renderPurchases();
+  renderTickets();
+  renderInvite();
+}
+
+// ------------------------------------------------------------------ the bell
+
+function renderBell() {
+  const n = data.notices || { items: [], unread: 0 };
+  $("bell").hidden = unavailable("notices");
+  $("bell-count").hidden = !n.unread;
+  $("bell-count").textContent = String(n.unread);
+  const list = $("bell-list");
+  list.replaceChildren();
+  if (!n.items.length) list.append(el("li", {}, el("p", { text: "Nothing new." })));
+  for (const item of n.items) {
+    list.append(el("li", { class: item.unread ? "unread" : "" },
+      el("b", { text: item.title }),
+      item.body ? el("p", { text: item.body }) : null,
+      item.until ? el("p", { text: `Until ${when(item.until)}` }) : null,
+      item.link ? el("a", { href: item.link, text: "Open →" }) : null));
+  }
+}
+
+$("bell").addEventListener("click", async () => {
+  const open = $("bell-panel").hidden;
+  $("bell-panel").hidden = !open;
+  $("bell").setAttribute("aria-expanded", String(open));
+  if (open && data && data.notices && data.notices.unread) {
+    $("bell-count").hidden = true;
+    data.notices.unread = 0;
+    call("/account/notices/seen").catch(() => {});
+  }
+});
+
+// ------------------------------------------------------------------ Live Sarthi
+
+const STATES = {
+  active: (p) => `Active until ${when(p.ends_at)}`,
+  not_activated: (p) => `Not activated yet: activate by ${when(p.activate_by)}. Its days start when you activate it in the app.`,
+  ended: (p) => `Ended on ${when(p.ends_at)}`,
+  expired_unused: (p) => `Not activated in time: the deadline was ${when(p.activate_by)}`,
+  disabled: () => "This pass is disabled. Write to support@interviewsarthi.com.",
+};
+
+function copyButton(text, label = "Copy") {
+  return el("button", { class: "text-button", type: "button", text: label, onclick: async (e) => {
+    try { await navigator.clipboard.writeText(text); e.target.textContent = "Copied"; setTimeout(() => { e.target.textContent = label; }, 1500); }
+    catch { say(text); }
+  } });
+}
+
+function renderKeys() {
+  const box = $("live-keys");
+  if (unavailable("live")) return missing(box);
+  box.replaceChildren();
+  const keys = data.live.keys;
+  if (!keys.length) {
+    box.append(el("div", { class: "card" },
+      el("p", { text: "No Live Sarthi pass on this Google account yet. If you bought one with another email, add its key below." }),
+      el("a", { class: "btn ghost", href: "/live/", text: "About Live Sarthi →" })));
+    return;
+  }
+  for (const k of keys) box.append(keyCard(k));
+}
+
+function keyCard(k) {
+  const p = k.pass;
+  const card = el("div", { class: "card" },
+    el("div", { class: "card-top" },
+      el("p", { class: "eyebrow", text: "Live Sarthi" }),
+      k.how === "pasted" ? el("span", { class: "tag", text: "Added by key" }) : null),
+    el("h3", { text: p.label }),
+    el("p", { class: "state", text: (STATES[p.state] || (() => p.state))(p) }),
+    el("div", { class: "keyline" }, el("code", { text: k.key }), copyButton(k.key, "Copy key")),
+    el("div", { class: "details" },
+      el("span", { text: `${p.devices_used} of ${p.devices_max} computer${p.devices_max === 1 ? "" : "s"}` }),
+      k.devices && k.devices.length ? el("span", { text: `On: ${k.devices.map((d) => d.name).join(", ")}` }) : null,
+      el("span", { text: `Bought ${day(k.created_at)}` })),
+    k.prep_gift ? el("p", { class: "gift", text: `Prep Sarthi free for ${k.prep_gift.days} days with this pass.${k.prep_gift.claimed ? " Added to your Prep account." : " Sign in to Prep with this Google account to get it."}` }) : null);
+  if (k.upgrade) card.append(upgradeBox(k.upgrade));
+  const actions = el("div", { class: "actions" });
+  if (k.manage_url) actions.append(el("a", { class: "btn ghost", href: k.manage_url, text: "Manage this pass" }));
+  if (k.how === "pasted") actions.append(el("button", { class: "btn ghost", type: "button", text: "Remove from my account", onclick: (e) => act(e.target, async () => {
+    if (!confirm("Take this key off your My Sarthi account? The pass itself keeps working.")) return;
+    await call("/account/unlink", { key: k.key });
+    await load();
+  }) }));
+  if (actions.childElementCount) card.append(actions);
+  return card;
+}
+
+function upgradeBox(u) {
+  return el("div", { class: "upgrade" },
+    u.kind === "comeback" ? el("p", { class: "eyebrow", text: "Your ₹99 still counts." }) : null,
+    el("h3", { text: `Make this pass a month: ₹${u.amount} more` }),
+    el("p", { text: u.starts_on_activation ? `${u.to_label}: 30 days from when you activate, ${u.devices_after} computers.`
+      : `${u.to_label} until ${when(u.ends_after)}, ${u.devices_after} computers.` }),
+    u.prep_gift_days ? el("p", { class: "gift", text: `Prep Sarthi free for ${u.prep_gift_days} days included.` }) : null,
+    el("p", { class: "fine", text: `Open until ${when(u.offer_until)}. India only: paid through Cashfree on your pass page.` }),
+    el("a", { class: "btn primary", href: u.url, text: `Upgrade for ₹${u.amount}` }));
+}
+
+$("link-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  act(e.submitter, async () => {
+    const out = await call("/account/link", { key: $("link-key").value });
+    $("link-key").value = "";
+    say(out.linked ? "Key added." : "That key is already in your account.");
+    await load();
+  });
+});
+
+// ------------------------------------------------------------------ Live interviews and PCs
+
+function renderInterviews() {
+  const iv = data.live.interviews;
+  $("keep-text").replaceChildren(KEEP_TEXT + " ", el("a", { href: "/privacy.html", text: "Privacy" }));
+  if (unavailable("live_interviews") || !iv) { missing($("live-list")); return; }
+  $("keep-live").checked = iv.enabled;
+  $("no-pc").hidden = (data.live.pcs || []).length > 0;
+  liveItems = iv.recent.slice();
+  paintLiveList(iv.more);
+}
+
+function paintLiveList(more) {
+  const list = $("live-list");
+  list.replaceChildren();
+  if (!liveItems.length) list.append(el("li", { class: "empty", text: "No Live interviews kept yet." }));
+  for (const it of liveItems) {
+    list.append(el("li", {},
+      el("div", {}, el("b", { text: when(it.started_at) }),
+        el("div", { class: "meta", text: `${it.minutes ?? "?"} min · ${it.questions} interviewer lines · ${it.answers} answers shown` })),
+      el("div", {},
+        el("button", { class: "btn ghost", type: "button", text: "Read", onclick: (e) => act(e.target, () => openReader(it.id)) }))));
+  }
+  $("live-more").hidden = !more;
+  $("live-delete-all").hidden = !liveItems.length;
+}
+
+$("keep-live").addEventListener("change", (e) => act(e.target, async () => {
+  const out = await call("/account/live/prefs", { enabled: e.target.checked });
+  e.target.checked = out.enabled;
+  say(out.enabled ? "Your Live interviews will be kept here from now on." : "Switched off. New interviews stay only on your PC; nothing was deleted.");
+}));
+
+$("live-more").addEventListener("click", (e) => act(e.target, async () => {
+  const last = liveItems[liveItems.length - 1];
+  const out = await call("/account/live/list", { before: last && last.started_at, limit: 20 });
+  liveItems = liveItems.concat(out.items);
+  paintLiveList(out.more);
+}));
+
+$("live-delete-all").addEventListener("click", (e) => act(e.target, async () => {
+  if (!confirm("Delete every Live interview kept in My Sarthi? The copies on your PC stay.")) return;
+  await call("/account/live/delete", { all: true });
+  $("reader").hidden = true;
+  await load();
+}));
+
+async function openReader(id) {
+  const out = await call("/account/live/get", { id });
+  readerId = id;
+  $("reader-title").textContent = `Interview, ${when(out.item.started_at)}`;
+  $("reader-transcript").textContent = out.item.transcript || "(nothing heard)";
+  $("reader-answers").textContent = out.item.answers || "(no answers)";
+  $("reader").hidden = false;
+  $("reader").scrollIntoView({ block: "start" });
+}
+
+$("reader-close").addEventListener("click", () => { $("reader").hidden = true; });
+$("reader-delete").addEventListener("click", (e) => act(e.target, async () => {
+  if (!readerId || !confirm("Delete this interview from My Sarthi? The copy on your PC stays.")) return;
+  await call("/account/live/delete", { id: readerId });
+  $("reader").hidden = true;
+  await load();
+}));
+
+function renderPcs() {
+  const list = $("pcs");
+  if (unavailable("pcs")) return missing(list);
+  list.replaceChildren();
+  const pcs = data.live.pcs || [];
+  if (!pcs.length) list.append(el("li", { class: "empty", text: "No PC connected. In Live Sarthi: settings → 5. My Sarthi → Connect." }));
+  for (const pc of pcs) {
+    list.append(el("li", {},
+      el("div", {}, el("b", { text: pc.name }), el("div", { class: "meta", text: `Connected ${day(pc.linked_at)} · last used ${day(pc.last_used_at)}` })),
+      el("button", { class: "btn ghost", type: "button", text: "Disconnect", onclick: (e) => act(e.target, async () => {
+        if (!confirm(`Disconnect ${pc.name}? It stops reading your profile and sending interviews.`)) return;
+        await call("/account/pcs/remove", { id: pc.id });
+        await load();
+      }) })));
+  }
+}
+
+// ------------------------------------------------------------------ connecting a PC (?connect=CODE)
+
+async function renderConnect() {
+  const card = $("connect-card"), body = $("connect-body");
+  card.hidden = false;
+  body.replaceChildren(el("p", { text: "Checking the code…" }));
+  card.scrollIntoView({ block: "start" });
+  let info;
+  try {
+    info = await call("/account/connect/check", { user_code: connectCode });
+  } catch (err) {
+    body.replaceChildren(el("p", { text: err.message }));
+    endConnect();
+    return;
+  }
+  const keep = el("input", { type: "checkbox", id: "connect-keep" });
+  const button = el("button", { class: "btn primary", type: "button", text: "Connect" });
+  body.replaceChildren(
+    el("p", { text: "Is this your PC, showing this code in Live Sarthi?" }),
+    el("p", { class: "pc", text: info.name }),
+    el("p", { class: "code", text: info.user_code }),
+    el("p", { class: "fine", text: "Only connect a code you see on your own screen. A connected PC can read your profile (resume, job descriptions, examples and Gemini key) to fill its empty boxes." }),
+    el("label", { class: "switch", for: "connect-keep" }, keep, el("span", { text: "Also keep my Live interviews in My Sarthi" })),
+    el("p", { class: "fine" }, KEEP_TEXT + " ", el("a", { href: "/privacy.html", text: "Privacy" })),
+    el("div", { class: "actions" }, button,
+      el("button", { class: "btn ghost", type: "button", text: "Not my PC", onclick: () => { endConnect(); card.hidden = true; } })));
+  button.addEventListener("click", () => act(button, async () => {
+    const out = await call("/account/connect", { user_code: info.user_code, live_history: keep.checked });
+    endConnect();
+    body.replaceChildren(el("p", { text: `Connected: ${out.name}.` }),
+      el("p", { text: "Go back to Live Sarthi: it fills its empty boxes now. Press Save there to keep them." }));
+    await load();
+    card.hidden = false;
+  }));
+}
+
+function endConnect() { connectCode = ""; tab.set("ms_connect", ""); }
+
+// ------------------------------------------------------------------ profile
+
+function renderProfileSummary() {
+  const p = data.profile, out = $("profile-summary");
+  if (unavailable("profile") || !p) return missing(out);
+  const parts = [];
+  if (p.cv) parts.push(`Resume${p.cv.file_name ? ` (${p.cv.file_name})` : ""}`);
+  if (p.jds.length) parts.push(`${p.jds.length} job description${p.jds.length === 1 ? "" : "s"}`);
+  if (p.examples) parts.push("your examples");
+  if (p.gemini.saved) parts.push(`Gemini key ${p.gemini.hint}`);
+  out.textContent = parts.length ? `Saved: ${parts.join(" · ")}.` : "Nothing saved yet.";
+  geminiState(p.gemini);
+}
+
+function geminiState(g) {
+  $("gemini-state").textContent = g.saved ? `A key ending ${g.hint.replace("…", "")} is saved.` : "No key saved.";
+  $("gemini-remove").hidden = !g.saved;
+}
+
+$("profile-open").addEventListener("click", (e) => act(e.target, async () => {
+  profile = await call("/account/profile");
+  $("pf-name").value = profile.name || "";
+  $("pf-language").value = profile.language || "";
+  $("pf-role").value = profile.target_role || "";
+  $("pf-level").value = profile.target_level || "";
+  $("pf-cv").value = profile.cv ? profile.cv.text : "";
+  $("pf-cv").dataset.file = profile.cv ? profile.cv.file_name || "" : "";
+  $("pf-examples").value = profile.examples ? profile.examples.text : "";
+  jds = (profile.jds || []).map((j) => ({ id: j.id, title: j.title, text: j.text }));
+  paintJds();
+  cvCount();
+  $("profile-form").hidden = false;
+  e.target.hidden = true;
+}));
+
+function cvCount() { $("pf-cv-count").textContent = `${$("pf-cv").value.length.toLocaleString("en-IN")} / 20,000 characters`; }
+$("pf-cv").addEventListener("input", cvCount);
+
+$("pf-cv-file").addEventListener("change", (e) => act(null, async () => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const { readDocFile } = await import("/prep/app/cv.js");
+  const text = await readDocFile(file, "CV");
+  if (!text) throw new Error("No text could be read from that file (a scanned PDF?). Paste the text instead.");
+  $("pf-cv").value = text.slice(0, 20000);
+  $("pf-cv").dataset.file = file.name;
+  cvCount();
+}));
+
+function paintJds() {
+  const box = $("pf-jds");
+  box.replaceChildren();
+  jds.forEach((j, i) => {
+    const title = el("input", { type: "text", maxlength: "120", placeholder: "Title, e.g. Data Analyst at Acme" });
+    title.value = j.title || "";
+    title.addEventListener("input", () => { j.title = title.value; });
+    const text = el("textarea", { rows: "5", maxlength: "20000", placeholder: "Paste the responsibilities and requirements" });
+    text.value = j.text || "";
+    text.addEventListener("input", () => { j.text = text.value; });
+    box.append(el("div", { class: "jd" },
+      el("div", { class: "input-row" }, title,
+        el("button", { class: "text-button", type: "button", text: "Remove", onclick: () => { jds.splice(i, 1); paintJds(); } })),
+      text));
+  });
+  $("pf-jd-add").hidden = jds.length >= 10;
+}
+
+$("pf-jd-add").addEventListener("click", () => { jds.push({ title: "", text: "" }); paintJds(); });
+
+$("profile-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  act(e.submitter, async () => {
+    const cvText = $("pf-cv").value.trim(), examples = $("pf-examples").value.trim();
+    const p = { name: $("pf-name").value, language: $("pf-language").value, target_role: $("pf-role").value, target_level: $("pf-level").value,
+      jds: jds.filter((j) => (j.text || "").trim()).map((j) => ({ ...(j.id ? { id: j.id } : {}), title: j.title || "", text: j.text })) };
+    // Only what changed, so an unchanged resume keeps its date.
+    if (cvText !== (profile.cv ? profile.cv.text : "")) p.cv = cvText ? { text: cvText, file_name: $("pf-cv").dataset.file || "" } : null;
+    if (examples !== (profile.examples ? profile.examples.text : "")) p.examples = examples || null;
+    profile = await call("/account/profile/save", { profile: p });
+    jds = profile.jds.map((j) => ({ id: j.id, title: j.title, text: j.text }));
+    paintJds();
+    say("Profile saved. Your apps fill their empty boxes from it.");
+    data.profile = { cv: profile.cv ? { file_name: profile.cv.file_name } : null, jds: profile.jds, examples: Boolean(profile.examples), gemini: profile.gemini };
+    renderProfileSummary();
+  });
+});
+
+$("gemini-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  act(e.submitter, async () => {
+    const key = $("gemini-key").value.trim();
+    if (!key) return;
+    const out = await call("/account/profile/gemini", { key });
+    $("gemini-key").value = "";
+    geminiState(out.gemini);
+    say("Gemini key saved, encrypted.");
+    await load();
+  });
+});
+
+$("gemini-remove").addEventListener("click", (e) => act(e.target, async () => {
+  if (!confirm("Remove the saved Gemini key from My Sarthi? Your apps keep their own copy.")) return;
+  const out = await call("/account/profile/gemini", { key: "" });
+  geminiState(out.gemini);
+  await load();
+}));
+
+$("profile-delete").addEventListener("click", (e) => act(e.target, async () => {
+  if (!confirm("Delete your whole My Sarthi profile (resume, job descriptions, examples and Gemini key)? Your apps keep their own copies.")) return;
+  await call("/account/profile/delete");
+  $("profile-form").hidden = true;
+  $("profile-open").hidden = false;
+  say("Your profile was deleted.");
+  await load();
+}));
+
+// ------------------------------------------------------------------ Prep, purchases, help, invite
+
+function renderPrep() {
+  const card = $("prep-card"), p = data.prep;
+  if (unavailable("prep") || !p) return missing(card);
+  const h = p.history;
+  card.replaceChildren(...[
+    el("p", { class: "state", text: p.pass.valid ? `Pass active until ${when(p.pass.expires_at)}` : p.pass.ended_at ? `Your pass ended on ${when(p.pass.ended_at)}` : "No Prep Sarthi pass yet." }),
+    p.banked_days ? el("p", { class: "gift", text: `${p.banked_days} free days waiting. They start when you press Start in Prep Sarthi.` }) : null,
+    el("p", { class: "fine", text: h.enabled ? `${h.saved} saved item${h.saved === 1 ? "" : "s"} in your account.` : "Saving interviews is off. Switch it on in Prep Sarthi to keep your reports." }),
+    h.recent.length ? el("ul", { class: "list" }, h.recent.map((r) => el("li", {},
+      el("b", { text: r.role || "Practice interview" }),
+      el("span", { class: "meta", text: [day(r.at), r.score != null ? `${r.score}/10` : "", r.minutes != null ? `${r.minutes} min` : ""].filter(Boolean).join(" · ") })))) : null,
+    el("a", { class: "btn primary", href: p.app_url, text: "Open Prep Sarthi" })].filter(Boolean));
+}
+
+function renderPurchases() {
+  const list = $("purchase-list");
+  if (unavailable("purchases")) return missing(list);
+  list.replaceChildren();
+  if (!data.purchases.length) list.append(el("li", { class: "empty", text: "Nothing bought with this Google account's email yet." }));
+  for (const p of data.purchases) {
+    const product = p.product === "prep" ? "Prep Sarthi" : "Live Sarthi";
+    list.append(el("li", {},
+      el("div", {}, el("b", { text: `${product}: ${p.label}` }),
+        el("div", { class: "meta", text: [day(p.paid_at), p.amount ? `₹${p.amount}` : "", p.abroad ? "paid abroad" : "", p.order_id].filter(Boolean).join(" · ") }))));
+  }
+}
+
+function renderTickets() {
+  const list = $("tickets");
+  if (unavailable("support")) return missing(list);
+  list.replaceChildren();
+  const tickets = (data.support || []).slice().sort((a, b) => Number(b.open) - Number(a.open));
+  if (!tickets.length) list.append(el("li", { class: "empty", text: "No support conversations." }));
+  for (const t of tickets) {
+    list.append(el("li", {},
+      el("div", {}, el("b", { text: `#${t.number} ${t.problem}` }),
+        el("div", { class: "meta", text: `${t.replied ? "We replied" : t.open ? "Open" : "Closed"} · ${day(t.updated_at)}` })),
+      el("a", { class: "btn ghost", href: t.link, text: "Open conversation" })));
+  }
+}
+
+function renderInvite() {
+  const r = data.live.referral;
+  $("invite").hidden = !r;
+  if (!r) return;
+  $("invite-card").replaceChildren(
+    el("p", { text: "When a friend buys a Live Sarthi pass with your code, you both get a free interview day." }),
+    el("div", { class: "keyline" }, el("code", { text: r.code }), copyButton(r.link, "Copy invite link")),
+    el("p", { class: "fine", text: `Friends who bought with it: ${r.friends}.` }),
+    el("a", { href: r.page, text: "Share it →" }));
+}
+
+// ------------------------------------------------------------------ account
+
+$("sign-out").addEventListener("click", () => {
+  session.clear();
+  try { window.google && window.google.accounts && window.google.accounts.id.disableAutoSelect(); } catch { /* not loaded */ }
+  location.reload();
+});
+
+if (session.get()) load(); else showSignedOut();
