@@ -13,7 +13,7 @@
  * score worth showing.
  */
 
-import { LICENSE_API, LOCAL, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20261005-busy";
+import { LICENSE_API, LOCAL, claimLiveGift, config, deviceInvite, inviteLink, invitedBy, orderStatus, session, signIn, startFreeDays, startOrder } from "./billing.js?v=20261009-live-gift";
 import { reportPaidOrder } from "./purchase-analytics.js?v=20261006-demo-buy";
 
 const $ = (id) => document.getElementById(id);
@@ -27,6 +27,9 @@ let step = "choose";     // choose | checkout | signin (a buyer on a new device,
 const PHONE = "ps_phone";
 let extendOpen = false;
 let offerWhere = null;
+let claimingGift = false;
+let noticeAccount = null;
+const seenGiftNotices = new Set();
 
 /* One load per address, and the promise only settles when the script has
  * really run. Two callers asking at once share the same wait, instead of the
@@ -45,9 +48,34 @@ function loadScript(src) {
   return scripts.get(src);
 }
 function say(text, cls = "") { const el = $("pass-notice"); el.textContent = text || ""; el.className = "notice " + cls; }
-function when(isoTime) { return new Date(isoTime).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); }
+function when(isoTime) { return new Date(isoTime).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }); }
 function escapeHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function planOf(id) { return (cfg && cfg.plans && cfg.plans[id]) || null; }
+
+// Called wherever entitlement changes, including a gift claimed on page load.
+export function noticeLiveGift(ent) {
+  const notice = $("live-gift-notice");
+  const account = ent?.account?.sub || ent?.account?.email || null;
+  if (account !== noticeAccount) { notice.hidden = true; noticeAccount = account; }
+  const gift = ent?.live_gift;
+  if (gift && !notice.hidden && ent.kind === "pass") $("live-gift-notice-text").textContent = giftNoticeText(ent, gift);
+  if (!account || !gift?.just_claimed) return;
+  const token = JSON.stringify([account, gift.claimed_at, gift.days]);
+  let hash = 2166136261;
+  for (const c of token) hash = Math.imul(hash ^ c.charCodeAt(0), 16777619);
+  const once = "ps_live_gift_notice_" + (hash >>> 0).toString(36);
+  if (seenGiftNotices.has(once)) return;
+  try { if (localStorage.getItem(once)) return; localStorage.setItem(once, "1"); } catch (_) { /* memory still stops repeats */ }
+  seenGiftNotices.add(once);
+  $("live-gift-notice-text").textContent = giftNoticeText(ent, gift);
+  notice.hidden = false;
+  $("live-gift-notice-close").onclick = () => { notice.hidden = true; };
+}
+function giftNoticeText(ent, gift) {
+  return `Prep Sarthi (₹99) included with your Live Sarthi month: ${gift.days} free days added. ` + (ent.kind === "pass"
+    ? `They have been added to your running pass, now ending ${when(ent.expiresAt)} (IST).`
+    : "They are waiting in your account. Open Passes and press Start my free days when you are ready.");
+}
 function daysLeft(seconds) {
   const d = Math.floor(seconds / 86400), h = Math.floor((seconds % 86400) / 3600);
   if (d >= 1) return `${d} day${d > 1 ? "s" : ""}${h ? ` ${h} h` : ""} left`;
@@ -118,11 +146,12 @@ export async function initPasses(context) {
   $("checkout-back").onclick = () => { step = "choose"; say(""); paint(); };
   try { $("phone").value = localStorage.getItem(PHONE) || ""; } catch (_) { /* private mode */ }
   $("pay").onclick = pay;
-  const signOut = () => { session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null, kind: ctx.state.ent && ctx.state.ent.hasTrial ? (ctx.state.ent.trialLeft > 0 ? "trial" : "none") : "none", secondsLeft: (ctx.state.ent && ctx.state.ent.trialLeft) || 0, expiresAt: null }); step = "choose"; extendOpen = false; paint(); };
+  const signOut = () => { session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null, invite: null, live_gift: null, kind: ctx.state.ent && ctx.state.ent.hasTrial ? (ctx.state.ent.trialLeft > 0 ? "trial" : "none") : "none", secondsLeft: (ctx.state.ent && ctx.state.ent.trialLeft) || 0, expiresAt: null }); step = "choose"; extendOpen = false; paint(); };
   $("signout").onclick = signOut;
   $("signout2").onclick = signOut;
   $("acct-out").onclick = () => { acctMenu(false); signOut(); };
   $("start-days").onclick = startDays;
+  $("live-gift-form").onsubmit = claimGift;
   if (testLogin) {
     $("testlogin").style.display = "block";
     $("testlogin-go").onclick = () => onGoogle("test:" + ($("testlogin-email").value.trim() || "tester@example.com"));
@@ -255,13 +284,50 @@ function paint() {
   const banked = (ent.invite && ent.invite.banked_days) || 0;
   $("freedays").style.display = banked > 0 ? "block" : "none";
   if (banked > 0) {
-    $("freedays-text").textContent = `You have ${banked} free day${banked > 1 ? "s" : ""} from friends who bought a pass.`;
+    const gift = ent.live_gift;
+    const friends = Number(ent.invite?.friends_bought || 0) > 0 || banked > Number(gift?.total_days || gift?.days || 0);
+    $("freedays-text").textContent = gift
+      ? friends ? `${banked} free days waiting (from your Live Sarthi month pass and friends).`
+        : `You have ${banked} free days from your Live Sarthi month pass.`
+      : `You have ${banked} free day${banked > 1 ? "s" : ""} from friends who bought a pass.`;
     $("start-days").textContent = account ? `Start my ${banked} free day${banked > 1 ? "s" : ""}` : "Sign in above to start them";
     $("start-days").disabled = !account;
+  }
+  $("live-gift-claim").hidden = !account;
+  if (!account) {
+    $("live-gift-claim").open = false;
+    $("live-gift-key").value = "";
+    $("live-gift-error").textContent = "";
   }
   if (buying && (step === "checkout" || signinOnly)) showGoogleButton();
 }
 export function refreshPasses() { if (ctx) paint(); }
+
+async function claimGift(event) {
+  event.preventDefault();
+  if (claimingGift || !ctx.state.ent?.account) return;
+  const key = $("live-gift-key").value.trim();
+  if (!key) return;
+  claimingGift = true;
+  const claimingSession = session.get();
+  const button = $("live-gift-submit"), status = $("live-gift-error");
+  button.disabled = true; status.className = "notice"; status.textContent = "Checking your Live key…";
+  try {
+    const result = await claimLiveGift(key, ctx.state.hash);
+    if (session.get() !== claimingSession) return;
+    ctx.setEntitlement(result.entitlement);
+    paint();
+    $("live-gift-key").value = "";
+    status.className = "notice ok";
+    status.textContent = result.alreadyYours ? "This key's free days are already in your account." : "Your free days have been added.";
+  } catch (err) {
+    status.className = "notice bad"; status.textContent = err.message;
+    if (err.status === 401) {
+      session.clear(); ctx.setEntitlement({ ...ctx.state.ent, account: null, invite: null, live_gift: null, kind: ctx.state.ent.hasTrial && ctx.state.ent.trialLeft > 0 ? "trial" : "none", secondsLeft: ctx.state.ent.trialLeft || 0, expiresAt: null });
+      paint(); say(err.message, "bad");
+    }
+  } finally { claimingGift = false; button.disabled = false; }
+}
 
 /* A Google account is all it takes. No Gemini key is needed to sign in or to
  * buy; the key only matters once an interview starts. */

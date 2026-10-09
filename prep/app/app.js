@@ -22,8 +22,8 @@ import { assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
 import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
 import { interviewContext } from "./interview-plan.js";
-import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite } from "./billing.js?v=20261005-busy";
-import { initPasses, isIntl, openPasses, priceOf, refreshPasses, renderInvite } from "./pass.js?v=20261006-demo-buy";
+import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite } from "./billing.js?v=20261009-live-gift";
+import { initPasses, isIntl, noticeLiveGift, openPasses, priceOf, refreshPasses, renderInvite } from "./pass.js?v=20261009-live-gift";
 import { Wheel } from "../wheel.js";
 import { MIC_HELP, MIC_DEAD_RMS } from "./miccheck.js";
 import { beginDiagnostics, diagnosticEvent, errorClass, flushDiagnostics } from './diagnostics.js';
@@ -155,6 +155,7 @@ function renderAccount() {
   if (!a) { $("acct-menu").hidden = true; btn.setAttribute("aria-expanded", "false"); }
 }
 function renderEntitlement() {
+  noticeLiveGift(S.ent);
   renderStartNote();
   renderAccount();
   const e = S.ent, el = $("entitle");

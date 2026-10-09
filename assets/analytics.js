@@ -149,7 +149,8 @@
   var inPrepApp = location.pathname.indexOf("/prep/app") === 0 ||
                   location.pathname.indexOf("/mock/app") === 0;
   /* The refer-a-friend page takes a licence key to look up the invite code: never recorded either. */
-  var keyPage = location.pathname === "/thanks.html" || location.pathname === "/live/invite.html";
+  var inLivePass = /^\/live\/pass(?:\/|$)/.test(location.pathname);
+  var keyPage = location.pathname === "/thanks.html" || location.pathname === "/live/invite.html" || inLivePass;
   /* The ATS resume checker prints the visitor's CV on screen ("What the parser sees"): never recorded. */
   var cvPage = location.pathname.indexOf("/apply/ats-resume-checker/") === 0;
   if (clarityOn && !privateReturn && !inPrepApp && !keyPage && !cvPage) {
@@ -360,6 +361,7 @@
    * loading, and hides itself on the pages its own settings list (the Prep interview app). */
   /* Like the measurement above, it must never stop the page: any failure here is silent. */
   try {
+    if (inLivePass) return;
     var chat = document.createElement("script");
     chat.src = "https://apply.interviewsarthi.com/chat/widget.js";
     chat.defer = true;

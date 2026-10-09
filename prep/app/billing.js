@@ -79,7 +79,7 @@ function shape(r, hash) {
   const hasTrial = !!(r.trial && typeof r.trial.seconds_left === "number");
   const trialLeft = hasTrial ? Math.max(0, Number(r.trial.seconds_left)) : 0;
   if (hasTrial && hash) localTrial.set(hash, Number(r.trial.total) - trialLeft);   // keep the local mirror honest
-  const base = { invite: r.invite || null, account: r.account || null, plans: r.plans || null, trialLeft, hasTrial,
+  const base = { invite: r.invite || null, account: r.account || null, plans: r.plans || null, live_gift: r.live_gift || null, trialLeft, hasTrial,
                  welcome: r.welcome || null, source: "server" };
   if (r.pass && r.pass.valid) return { ...base, kind: "pass", secondsLeft: Math.max(0, Number(r.pass.seconds_left)), expiresAt: r.pass.expires_at };
   if (!hasTrial) return { ...base, kind: "none", secondsLeft: 0 };
@@ -145,6 +145,11 @@ export async function orderStatus(orderId, hash, paymentId) {
 }
 
 export const startFreeDays = () => post("/mock/days/start", { session: session.get() });
+
+export async function claimLiveGift(key, hash) {
+  const r = await post("/mock/gift/claim", { session: session.get(), key, hash: hash || undefined, device: demoDevice() });
+  return { entitlement: shape(r, hash || null), claimed: !!r.claimed, alreadyYours: !!r.already_yours };
+}
 
 // Straight to /prep/ (was the retired /mock/, whose redirect page gave WhatsApp the preview "Moved to /prep/").
 export const inviteLink = (code) => `https://interviewsarthi.com/prep/?ref=${encodeURIComponent(code)}`;

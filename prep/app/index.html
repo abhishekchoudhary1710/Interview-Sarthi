@@ -92,6 +92,15 @@
     .writing{text-align:center;padding:60px 20px}
     .writing .wheelwrap{padding:0 0 18px}
     .writing .wheelwrap::before{display:none}
+    .live-gift-notice{display:flex;align-items:flex-start;gap:12px;margin:12px 0 20px;padding:14px 16px;border:1px solid #a7d9c4;border-radius:12px;background:#f0fdf6}
+    .live-gift-notice[hidden],#live-gift-claim[hidden]{display:none}
+    .live-gift-notice p{margin:0;flex:1}
+    #live-gift-notice-close{flex-shrink:0}
+    #live-gift-claim{margin:18px 0;color:var(--muted);font-size:14px}
+    #live-gift-claim summary{cursor:pointer;color:var(--prep);padding:8px 0;min-height:40px}
+    #live-gift-claim form{margin-top:10px}
+    #live-gift-key{min-width:0;font-family:ui-monospace,Consolas,monospace;font-size:14px}
+    @media(max-width:480px){#live-gift-form .row{flex-direction:column}#live-gift-submit{width:100%}}
     details.diag{margin:26px 0 0;color:var(--muted);font-size:13px}
     details.diag summary{cursor:pointer}
     #log{font:12px/1.45 ui-monospace,Consolas,monospace;max-height:220px;overflow:auto;white-space:pre-wrap;margin-top:10px}
@@ -106,6 +115,10 @@
   <span class="navright"><button class="navlink" id="open-progress" data-pg="open">My progress</button><button class="navlink" id="open-invite">Invite</button><button id="entitle" class="chip" title="Passes">…</button><span class="acct" id="acct" style="display:none"><button id="acct-btn" aria-haspopup="true" aria-expanded="false">Sign in</button><div class="acct-menu" id="acct-menu" hidden><p id="acct-name"></p><small id="acct-mail"></small><button class="linkink" id="acct-out">Sign out</button></div></span></span>
 </div></header>
 <div class="narrow">
+  <aside class="live-gift-notice notice ok" id="live-gift-notice" hidden role="status" aria-live="polite">
+    <p id="live-gift-notice-text"></p>
+    <button class="linkink" id="live-gift-notice-close" type="button" aria-label="Dismiss free days notice">Dismiss</button>
+  </aside>
 
   <!-- 1. CV -->
   <section class="screen on" id="s-cv">
@@ -341,6 +354,14 @@
         <p id="freedays-text" style="margin:8px 0 14px"></p>
         <button class="pill" id="start-days">Start my free days</button>
       </div>
+      <details id="live-gift-claim" hidden>
+        <summary>Have a Live Sarthi 1-Month Pass key?</summary>
+        <form id="live-gift-form">
+          <label class="f" for="live-gift-key">Paste it to add your free Prep month.</label>
+          <div class="row"><input id="live-gift-key" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" maxlength="100" placeholder="IS-XXXX-XXXX-XXXX-XXXX" required><button class="pill ghost" id="live-gift-submit" type="submit">Add my free month</button></div>
+          <p class="notice" id="live-gift-error" role="status" aria-live="polite"></p>
+        </form>
+      </details>
     </div>
     <div id="heard-from"></div>
     <div class="actions"><button class="pill ghost" id="pass-back">Back</button></div>
@@ -404,7 +425,7 @@
   <footer class="site" style="margin-top:30px">Prep Sarthi is part of <a href="/">Interview Sarthi</a> · <a href="/privacy.html">Privacy</a> · <a href="mailto:support@interviewsarthi.com">support@interviewsarthi.com</a></footer>
 </div>
 <script src="/assets/analytics.js" defer></script>
-<script type="module" src="./app.js?v=20261008-bluetooth"></script>
+<script type="module" src="./app.js?v=20261009-live-gift"></script>
 <script type="module" src="./progress-view.js?v=20261001-site"></script>
 </body>
 </html>
