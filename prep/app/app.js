@@ -199,7 +199,7 @@ const passCtx = {
     if (ent && ent.kind === "pass") { hideOffer("report-offer"); deferredReportOffer = null; }
     paintReportPass();
     if (ent && ent.account) flushOutbox().catch(() => {});
-    if (ent && ent.account) fillFromMySarthi();
+    fillFromMySarthi();                          // signed in: fill; signed out: hide the Save link
     // The server says this once, on the call that created the trial: tell the person where the minutes came from.
     if (ent && ent.welcome) showApplyWelcome(`ApplySarthi bonus added: ${ent.welcome.minutes} extra free minutes, so you have ${Math.round(ent.secondsLeft / 60)} in total.`);
   },
@@ -299,15 +299,22 @@ async function restore() {
 /* My Sarthi (interviewsarthi.com/account/): signed in, the EMPTY boxes fill from the profile saved there, once per
  * sign-in. The Gemini key goes into the key step's box only; it is kept on this device when that step is passed, as
  * a typed key is. Nothing happens when My Sarthi is not open or the person is signed out (mysarthi.js is silent). */
-let mySarthiFor = "";
 async function fillFromMySarthi() {
   const token = accountSession.get();
-  if (!token || token === mySarthiFor) return;
-  mySarthiFor = token;
+  if (!token) { $("save-mysarthi").hidden = true; return; }
+  // Once per sign-in (the token changes with each), remembered across page loads in this browser.
+  if (store.get("ps_mysarthi_filled") === token) { $("save-mysarthi").hidden = false; return; }
   const profile = await readProfile();
   if (!profile) return;
+  store.set("ps_mysarthi_filled", token);
   $("save-mysarthi").hidden = false;
-  const have = { cv: !!$("cv").value.trim(), jd: !!$("jd").value.trim(), name: !!$("name").value.trim(), key: !!($("key").value.trim() || store.get("ps_gemini_key")) };
+  // A job description is filled only where this browser never had one and no role was chosen instead: a person
+  // who practises for a role, or in general, or who emptied the box, keeps that choice.
+  let jdNull = false;
+  try { jdNull = localStorage.getItem("ps_jd") === null; } catch { /* private mode */ }
+  const roleChosen = !!$("target-role").value.trim() || $("practice-focus").value === "general_cv";
+  const have = { cv: !!$("cv").value.trim(), jd: !!$("jd").value.trim() || !jdNull || roleChosen, name: !!$("name").value.trim(),
+    key: !!($("key").value.trim() || store.get("ps_gemini_key")) };
   const got = await fillFrom(profile, have);
   const done = [];
   if (got.cv && !$("cv").value.trim()) { $("cv").value = got.cv; store.set("ps_cv", got.cv); done.push("CV"); }
@@ -324,9 +331,10 @@ $("save-mysarthi").onclick = async () => {
     const r = await saveFromPrep({ cv: S.cv, jd: S.jd, name: S.name, language: S.language, role: S.targetRole, level: S.targetLevel });
     if (!r.ok) { notice("cv-notice", r.error, "bad"); return; }
     const key = $("key").value.trim() || store.get("ps_gemini_key");
-    let withKey = false;
-    if (key && !r.geminiSaved && confirm("Also keep your Gemini key in My Sarthi, encrypted, for Live Sarthi?")) withKey = await saveKey(key);
-    notice("cv-notice", `Saved to My Sarthi${withKey ? ", with your Gemini key" : ""}. Live Sarthi can fill its setup from it.`, "ok");
+    let withKey = false, keyFailed = false;
+    if (key && !r.geminiSaved && confirm("Also keep your Gemini key in My Sarthi, encrypted, for Live Sarthi?")) { withKey = await saveKey(key); keyFailed = !withKey; }
+    notice("cv-notice", `Saved to My Sarthi${withKey ? ", with your Gemini key" : ""}. Live Sarthi can fill its setup from it.`
+      + (keyFailed ? " The Gemini key could not be saved; try again on the My Sarthi page." : ""), keyFailed ? "" : "ok");
   } finally { $("save-mysarthi").disabled = false; }
 };
 
@@ -412,8 +420,8 @@ $("to-key").onclick = async () => {
 function showKeyStep() {
   const paid = S.ent && S.ent.kind === "pass";
   $("key-lede").textContent = paid
-    ? "Your pass is active. One last step, about a minute: the interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google."
-    : "The interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google. If you use Live Sarthi or ApplySarthi, it is the same key.";
+    ? "Your pass is active. One last step, about a minute: the interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google, unless you save it to My Sarthi yourself."
+    : "The interviewer runs on Google's Gemini, on your own free key. It stays in this browser and is sent only to Google, unless you save it to My Sarthi yourself. If you use Live Sarthi or ApplySarthi, it is the same key.";
   show("s-key");
   if (!$("key").value) $("key").focus();
 }

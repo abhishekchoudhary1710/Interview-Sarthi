@@ -8,18 +8,18 @@
   <title>My Sarthi | Interview Sarthi</title>
   <meta name="description" content="Your Live Sarthi passes, Prep Sarthi practice, saved interviews and profile in one place.">
   <script>
-    // A connect code from the Live Sarthi app is read before anything else can see the URL, then removed from it.
+    // Live Sarthi opens this page with ?connect (no code in the URL: the person types the code shown in the app).
     (function () {
-      var q = new URLSearchParams(location.search), code = q.get("connect") || "";
-      try { if (code) sessionStorage.setItem("ms_connect", code); } catch (_) {}
-      window.__msConnect = code;
+      var q = new URLSearchParams(location.search);
+      try { if (q.has("connect")) sessionStorage.setItem("ms_connect", "1"); } catch (_) {}
+      window.__msConnect = q.has("connect");
       if (location.search) { try { history.replaceState(null, "", location.pathname); } catch (_) {} }
     })();
   </script>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
-  <link rel="stylesheet" href="./account.css?v=20261009-1">
-  <script type="module" src="./account.js?v=20261009-1"></script>
+  <link rel="stylesheet" href="./account.css?v=20261010-2">
+  <script type="module" src="./account.js?v=20261010-2"></script>
 </head>
 <body>
   <div class="wrap">
@@ -47,7 +47,7 @@
           <p>Use the Google account you use for Prep Sarthi, or the Gmail you bought Live Sarthi with. Your passes appear by themselves.</p>
           <div id="gbutton"></div>
           <form id="test-login" class="input-row" hidden>
-            <input id="test-email" type="email" placeholder="test sign-in (local preview only)" autocomplete="off">
+            <label for="test-email" class="sr">Test sign-in email</label><input id="test-email" type="email" placeholder="test sign-in (local preview only)" autocomplete="off">
             <button class="btn ghost" type="submit">Sign in</button>
           </form>
         </div>
@@ -68,7 +68,15 @@
 
         <section class="card connect" id="connect-card" hidden aria-labelledby="connect-title">
           <p class="eyebrow">Live Sarthi on your PC</p>
-          <h2 id="connect-title">Connect this PC</h2>
+          <h2 id="connect-title">Connect a PC</h2>
+          <form id="connect-form">
+            <label for="connect-code">Type the code shown in Live Sarthi (settings → 5. My Sarthi → Connect)</label>
+            <div class="input-row">
+              <input id="connect-code" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" maxlength="12" placeholder="ABCD-EFGH" required>
+              <button class="btn primary" type="submit">Check code</button>
+            </div>
+            <p class="fine warn">Only type a code you can see on your own screen. If someone sent you a code or a link, do not connect: a connected PC can read your saved resume, job descriptions, examples and Gemini key.</p>
+          </form>
           <div id="connect-body"></div>
         </section>
 
@@ -98,6 +106,8 @@
           <div class="card">
             <label class="switch"><input type="checkbox" id="keep-live"> <span>Keep my Live interviews in My Sarthi</span></label>
             <p class="fine" id="keep-text"></p>
+            <label class="switch"><input type="checkbox" id="improve-live"> <span>Also let Sarthi read them to improve Live Sarthi's answers (optional)</span></label>
+            <p class="fine" id="improve-text"></p>
             <p class="fine" id="no-pc" hidden>Connect Live Sarthi on your PC first: in the app open <b>settings</b>, then <b>5. My Sarthi</b>, then <b>Connect</b>.</p>
             <ul class="list" id="live-list"></ul>
             <div class="actions">
@@ -114,7 +124,7 @@
             <button class="btn ghost danger" id="reader-delete" type="button">Delete this interview</button>
           </article>
           <div class="card" id="pcs-card">
-            <h3>Your PCs</h3>
+            <div class="card-top"><h3>Your PCs</h3><button class="btn ghost" id="connect-open" type="button">Connect a PC</button></div>
             <ul class="list" id="pcs"></ul>
           </div>
         </section>
@@ -146,8 +156,9 @@
               <h3>Gemini key</h3>
               <p class="fine">Stored encrypted. It is only ever sent back to your own apps: Prep in your browser, or a PC you connected.</p>
               <p id="gemini-state"></p>
-              <form id="gemini-form" class="input-row">
-                <input id="gemini-key" type="password" autocomplete="off" spellcheck="false" placeholder="paste your Gemini API key" data-clarity-mask="true">
+              <form id="gemini-form" class="input-row" autocomplete="off">
+                <label for="gemini-key" class="sr">Gemini API key</label>
+                <input id="gemini-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="paste your Gemini API key" data-clarity-mask="true" data-lpignore="true" data-1p-ignore="true">
                 <button class="btn ghost" type="submit">Save key</button>
               </form>
               <button class="text-button" id="gemini-remove" type="button" hidden>Remove the saved key</button>

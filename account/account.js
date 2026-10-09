@@ -21,7 +21,7 @@ const tab = {
 };
 const session = { get: () => mem.get("ps_session"), set: (v) => mem.set("ps_session", v), clear: () => mem.set("ps_session", "") };
 
-let connectCode = window.__msConnect || tab.get("ms_connect");
+let wantConnect = Boolean(window.__msConnect) || tab.get("ms_connect") === "1";
 delete window.__msConnect;
 let data = null, profile = null, jds = [], liveItems = [], readerId = "";
 
@@ -29,10 +29,12 @@ const full = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "
 const short = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
 const when = (iso) => (iso ? full.format(new Date(iso)) : "");
 const day = (iso) => (iso ? short.format(new Date(iso)) : "");
-const KEEP_TEXT = "Each interview that ends on a connected PC is kept here: the interviewer's words, the screen text the app read and " +
-  "every answer it showed you. Your own spoken words, the audio and screenshots are never sent. Interviews are deleted after 365 days; " +
-  "switching this off stops new ones and deletes nothing. We may also look at them, without your name or email, to improve " +
-  "Live Sarthi's answers.";
+const KEEP_TEXT = "Each interview that ends on a connected PC is kept here: what the app heard from the call, the screen text it read " +
+  "and every answer it showed you, with the date, length and language. The app does not transcribe your microphone for this, and no audio " +
+  "or screenshot is ever sent. Interviews are deleted after 365 days; delete any of them here at any time. Switching this off stops new " +
+  "ones and deletes nothing. Kept only to show them to you, unless you also tick the next box.";
+const IMPROVE_TEXT = "Sarthi may read your kept interviews, not linked to your account's name or email, to improve Live Sarthi's " +
+  "answers. Keeping works without this; untick it at any time.";
 
 /* A node: el("p", { class: "fine", text: "..." }, child, ...). Strings become text, never markup. */
 function el(tag, props = {}, ...kids) {
@@ -77,7 +79,11 @@ async function call(path, body = {}, { auth = true } = {}) {
 
 async function act(button, work) {
   if (button) button.disabled = true;
-  try { return await work(); } catch (err) { say(err.message, true); return null; } finally { if (button) button.disabled = false; }
+  try { return await work(); }
+  catch (err) {
+    if (err.status === 401) { session.clear(); showSignedOut(); say("Your sign-in ended. Sign in again.", true); return null; }
+    say(err.message, true); return null;
+  } finally { if (button) button.disabled = false; }
 }
 
 // ------------------------------------------------------------------ sign-in
@@ -92,7 +98,7 @@ function show(view) {
 
 async function showSignedOut() {
   show("out");
-  if (connectCode) say("Sign in to connect your PC to My Sarthi.");
+  if (wantConnect) say("Sign in to connect your PC to My Sarthi.");
   if (LOCAL) $("test-login").hidden = false;
   try {
     const cfg = await call("/mock/config", {}, { auth: false });
@@ -135,11 +141,14 @@ async function load() {
   }
   show("in");
   render();
-  if (connectCode) renderConnect();
+  if (wantConnect) openConnect();
 }
 
 function unavailable(name) { return (data.unavailable || []).includes(name); }
-function missing(target) { target.replaceChildren(el("p", { class: "fine", text: "Couldn't load this part. Reload the page to try again." })); }
+function missing(target) {
+  const tag = target.tagName === "UL" ? "li" : "p";
+  target.replaceChildren(el(tag, { class: tag === "li" ? "empty" : "fine", text: "Couldn't load this part. Reload the page to try again." }));
+}
 
 function render() {
   const a = data.account;
@@ -184,8 +193,10 @@ $("bell").addEventListener("click", async () => {
     $("bell-count").hidden = true;
     data.notices.unread = 0;
     call("/account/notices/seen").catch(() => {});
+    setTimeout(() => { for (const n of data.notices.items) n.unread = false; renderBell(); $("bell-count").hidden = true; }, 1500);
   }
 });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("bell-panel").hidden) { $("bell-panel").hidden = true; $("bell").setAttribute("aria-expanded", "false"); } });
 
 // ------------------------------------------------------------------ Live Sarthi
 
@@ -269,9 +280,12 @@ $("link-form").addEventListener("submit", (e) => {
 
 function renderInterviews() {
   const iv = data.live.interviews;
-  $("keep-text").replaceChildren(KEEP_TEXT + " ", el("a", { href: "/privacy.html", text: "Privacy" }));
+  $("keep-text").replaceChildren(KEEP_TEXT + " ", el("a", { href: "/privacy.html#my-sarthi", text: "Privacy" }));
+  $("improve-text").textContent = IMPROVE_TEXT;
   if (unavailable("live_interviews") || !iv) { missing($("live-list")); return; }
   $("keep-live").checked = iv.enabled;
+  $("improve-live").checked = Boolean(iv.improve);
+  $("improve-live").disabled = !iv.enabled;
   $("no-pc").hidden = (data.live.pcs || []).length > 0;
   liveItems = iv.recent.slice();
   paintLiveList(iv.more);
@@ -293,9 +307,23 @@ function paintLiveList(more) {
 }
 
 $("keep-live").addEventListener("change", (e) => act(e.target, async () => {
-  const out = await call("/account/live/prefs", { enabled: e.target.checked });
+  const wanted = e.target.checked;
+  let out;
+  try { out = await call("/account/live/prefs", { enabled: wanted }); }
+  catch (err) { e.target.checked = !wanted; throw err; }         // the box shows what the server has
   e.target.checked = out.enabled;
+  $("improve-live").checked = Boolean(out.improve);
+  $("improve-live").disabled = !out.enabled;
   say(out.enabled ? "Your Live interviews will be kept here from now on." : "Switched off. New interviews stay only on your PC; nothing was deleted.");
+}));
+
+$("improve-live").addEventListener("change", (e) => act(e.target, async () => {
+  const wanted = e.target.checked;
+  let out;
+  try { out = await call("/account/live/prefs", { improve: wanted }); }
+  catch (err) { e.target.checked = !wanted; throw err; }
+  e.target.checked = Boolean(out.improve);
+  say(out.improve ? "Thank you. Sarthi may read your kept interviews, not linked to your name or email." : "Your kept interviews are for you only.");
 }));
 
 $("live-more").addEventListener("click", (e) => act(e.target, async () => {
@@ -347,43 +375,48 @@ function renderPcs() {
   }
 }
 
-// ------------------------------------------------------------------ connecting a PC (?connect=CODE)
+// ------------------------------------------------------------------ connecting a PC (a typed code)
 
-async function renderConnect() {
-  const card = $("connect-card"), body = $("connect-body");
-  card.hidden = false;
-  body.replaceChildren(el("p", { text: "Checking the code…" }));
-  card.scrollIntoView({ block: "start" });
-  let info;
-  try {
-    info = await call("/account/connect/check", { user_code: connectCode });
-  } catch (err) {
-    body.replaceChildren(el("p", { text: err.message }));
-    endConnect();
-    return;
-  }
-  const keep = el("input", { type: "checkbox", id: "connect-keep" });
-  const button = el("button", { class: "btn primary", type: "button", text: "Connect" });
-  body.replaceChildren(
-    el("p", { text: "Is this your PC, showing this code in Live Sarthi?" }),
-    el("p", { class: "pc", text: info.name }),
-    el("p", { class: "code", text: info.user_code }),
-    el("p", { class: "fine", text: "Only connect a code you see on your own screen. A connected PC can read your profile (resume, job descriptions, examples and Gemini key) to fill its empty boxes." }),
-    el("label", { class: "switch", for: "connect-keep" }, keep, el("span", { text: "Also keep my Live interviews in My Sarthi" })),
-    el("p", { class: "fine" }, KEEP_TEXT + " ", el("a", { href: "/privacy.html", text: "Privacy" })),
-    el("div", { class: "actions" }, button,
-      el("button", { class: "btn ghost", type: "button", text: "Not my PC", onclick: () => { endConnect(); card.hidden = true; } })));
-  button.addEventListener("click", () => act(button, async () => {
-    const out = await call("/account/connect", { user_code: info.user_code, live_history: keep.checked });
-    endConnect();
-    body.replaceChildren(el("p", { text: `Connected: ${out.name}.` }),
-      el("p", { text: "Go back to Live Sarthi: it fills its empty boxes now. Press Save there to keep them." }));
-    await load();
-    card.hidden = false;
-  }));
+/* The card opens from the app's link (?connect) or the "Connect a PC" button. The code is typed, never carried in a link:
+ * a code someone else made cannot connect their PC to this account by a click (owner, 10 Oct 2026). */
+function openConnect() {
+  wantConnect = false; tab.set("ms_connect", "");
+  $("connect-card").hidden = false;
+  $("connect-body").replaceChildren();
+  $("connect-card").scrollIntoView({ block: "start" });
+  $("connect-code").focus();
 }
+$("connect-open").addEventListener("click", openConnect);
 
-function endConnect() { connectCode = ""; tab.set("ms_connect", ""); }
+$("connect-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  act(e.submitter, async () => {
+    const body = $("connect-body");
+    const info = await call("/account/connect/check", { user_code: $("connect-code").value });
+    const keep = el("input", { type: "checkbox", id: "connect-keep" });
+    const improve = el("input", { type: "checkbox", id: "connect-improve", disabled: true });
+    keep.addEventListener("change", () => { improve.disabled = !keep.checked; if (!keep.checked) improve.checked = false; });
+    const button = el("button", { class: "btn primary", type: "button", text: "Connect this PC" });
+    body.replaceChildren(
+      el("p", { text: "Is this your PC, showing this code in Live Sarthi right now?" }),
+      el("p", { class: "pc", text: info.name }),
+      el("p", { class: "code", text: info.user_code }),
+      el("label", { class: "switch", for: "connect-keep" }, keep, el("span", { text: "Keep my Live interviews in My Sarthi" })),
+      el("p", { class: "fine" }, KEEP_TEXT + " ", el("a", { href: "/privacy.html#my-sarthi", text: "Privacy" })),
+      el("label", { class: "switch", for: "connect-improve" }, improve, el("span", { text: "Also let Sarthi read them to improve Live Sarthi's answers (optional)" })),
+      el("p", { class: "fine", text: IMPROVE_TEXT }),
+      el("div", { class: "actions" }, button,
+        el("button", { class: "btn ghost", type: "button", text: "Not my PC", onclick: () => { body.replaceChildren(); $("connect-card").hidden = true; } })));
+    button.addEventListener("click", () => act(button, async () => {
+      const out = await call("/account/connect", { user_code: info.user_code, live_history: keep.checked, improve: keep.checked && improve.checked });
+      body.replaceChildren(el("p", { text: `Connected: ${out.name}.` }),
+        el("p", { text: "Go back to Live Sarthi: it fills its empty boxes now. Press Save there to keep them." }));
+      $("connect-code").value = "";
+      await load();
+      $("connect-card").hidden = false;
+    }));
+  });
+});
 
 // ------------------------------------------------------------------ profile
 

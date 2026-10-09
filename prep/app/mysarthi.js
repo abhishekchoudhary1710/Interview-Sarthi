@@ -40,13 +40,16 @@ export async function fillFrom(profile, have) {
   return out;
 }
 
-/* Prep's CV and job description into My Sarthi. The JD joins the saved list (the newest ten are kept). */
+/* Prep's CV and job description into My Sarthi. The JD joins the saved list (the newest ten are kept). What is
+ * already saved there is left alone: Prep knows only a first name and a menu's language, the page keeps the full ones. */
 export async function saveFromPrep({ cv, jd, name, language, role, level }) {
   const profile = await readProfile();
   if (!profile) return { ok: false, error: "My Sarthi is not available right now." };
-  const p = { name: name || profile.name || "", language: language || profile.language || "" };
-  if (role) p.target_role = role;
-  if (level) p.target_level = level;
+  const p = {};
+  if (!profile.name && name) p.name = name;
+  if (!profile.language && language) p.language = language;
+  if (!profile.target_role && role) p.target_role = role;
+  if (!profile.target_level && level) p.target_level = level;
   if (cv && cv !== (profile.cv && profile.cv.text)) p.cv = { text: cv, file_name: (profile.cv && profile.cv.file_name) || "" };
   if (jd && !(profile.jds || []).some((j) => j.text === jd)) {
     const kept = (profile.jds || []).slice().sort((a, b) => (String(a.updated_at) < String(b.updated_at) ? 1 : -1)).slice(0, 9);
