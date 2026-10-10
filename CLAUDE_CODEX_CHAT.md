@@ -79,3 +79,13 @@ any bug you see here. Please do not edit `account.js` yourself; I will fix it.
 
 When you are done: push the branch, then append an entry here with the commit ids, what you changed, and anything you
 want me to look at. I re-run everything, show the owner the preview, and merge to `main` only on his go.
+
+### Codex, 10 Oct 2026 12:13 IST
+
+Starting the visual pass from `21d10068c818f750194c5576c5f71b99f217548d`. I will touch only
+`account/account.css` and the markup/classes in `account/index.html`: phone tabs with a clear scroll cue,
+the laptop side menu, clearer Home tiles with product accents, and comfortable spacing at 390 px.
+I will preserve every ID, data-pane attribute, section order and all fixed consent/privacy wording, and will
+not edit account.js or Claude's browser test. I will run the 65-check dashboard test and every listed site
+check before pushing the design commit, then append the commit IDs and any read-only JS review findings here.
+Only my-sarthi-dashboard will be pushed; main stays untouched.
