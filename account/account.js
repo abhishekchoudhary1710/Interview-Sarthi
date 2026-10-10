@@ -164,6 +164,133 @@ function render() {
   renderPurchases();
   renderTickets();
   renderInvite();
+  renderHome();
+  // The first draw opens the section the link names (or Home); a redraw after an action stays where the person is.
+  showPane(pane || paneFromHash());
+}
+
+// ------------------------------------------------------------------ one section at a time (owner, 10 Oct 2026)
+
+const PANES = ["home", "live", "interviews", "profile", "prep", "purchases", "help", "invite", "apply", "account"];
+let pane = "";
+
+function paneFromHash() {
+  const name = location.hash.slice(1);
+  return PANES.includes(name) ? name : "home";
+}
+
+function showPane(name, scroll = false) {
+  if (!PANES.includes(name) || $(name).hidden) name = "home";      // Invite only exists with an invite code
+  pane = name;
+  for (const p of PANES) $(p).classList.toggle("on", p === name);
+  for (const link of $("menu").querySelectorAll("a[data-pane]")) {
+    const on = link.dataset.pane === name;
+    link.classList.toggle("on", on);
+    if (on) link.setAttribute("aria-current", "page"); else link.removeAttribute("aria-current");
+  }
+  // On a phone the menu is a row of tabs wider than the screen: bring the chosen one into view.
+  const chosen = $("menu").querySelector(`a[data-pane="${name}"]`);
+  if (chosen) $("menu").scrollTo({ left: chosen.offsetLeft - 16, behavior: "smooth" });
+  if (scroll) {
+    // A long section was scrolled down: start the new one at its top, menu in view.
+    const top = $("dash").getBoundingClientRect().top + window.scrollY - 8;
+    if (window.scrollY > top) window.scrollTo({ top });
+  }
+}
+
+function go(name) {
+  if (location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
+  showPane(name, true);
+}
+
+$("menu").addEventListener("click", (e) => {
+  const link = e.target.closest("a[data-pane]");
+  if (!link) return;
+  e.preventDefault();                       // no jump down the page: the section replaces the one shown
+  go(link.dataset.pane);
+});
+window.addEventListener("popstate", () => { if (data) showPane(paneFromHash(), true); });
+
+// ------------------------------------------------------------------ home: where everything stands, one tile each
+
+function tile(title, value, detail, ...buttons) {
+  return el("div", { class: "card tile" },
+    el("p", { class: "eyebrow", text: title }),
+    el("p", { class: "value", text: value }),
+    detail ? el("p", { class: "fine", text: detail }) : null,
+    el("div", { class: "actions" }, buttons));
+}
+function open(name, label = "Open") {
+  return el("button", { class: "btn ghost", type: "button", text: label, onclick: () => go(name) });
+}
+const COULD_NOT = "Couldn't load this part. Reload the page to try again.";
+
+function renderHome() {
+  const box = $("home-tiles");
+  box.replaceChildren();
+
+  // Live Sarthi: the pass that matters most (active, then waiting to be activated, then the newest).
+  if (unavailable("live")) box.append(tile("Live Sarthi", "—", COULD_NOT, open("live")));
+  else {
+    const keys = data.live.keys;
+    const rank = { active: 0, not_activated: 1 };
+    const best = keys.slice().sort((a, b) => (rank[a.pass.state] ?? 2) - (rank[b.pass.state] ?? 2))[0];
+    box.append(best
+      ? tile("Live Sarthi", best.pass.label, (STATES[best.pass.state] || (() => best.pass.state))(best.pass) +
+          (keys.length > 1 ? ` · ${keys.length} passes in your account` : ""), open("live", "See your passes"))
+      : tile("Live Sarthi", "No pass yet", "Bought with another email? Add its key.", open("live")));
+  }
+
+  // Live interviews kept here.
+  const iv = data.live && data.live.interviews;
+  if (unavailable("live_interviews") || !iv) box.append(tile("Live interviews", "—", COULD_NOT, open("interviews")));
+  else {
+    const n = iv.recent.length;
+    const value = !iv.enabled ? "Not kept" : n ? `${n}${iv.more ? "+" : ""} kept` : "None yet";
+    const detail = !iv.enabled ? "Switch on keeping to read your interviews here, on your phone too."
+      : n ? `Latest: ${when(iv.recent[0].started_at)}` : "They appear here after your next interview on a connected PC.";
+    box.append(tile("Live interviews", value, detail, open("interviews", n ? "Read them" : "Open")));
+  }
+
+  // Profile: what the apps fill their empty boxes from.
+  const p = data.profile;
+  if (unavailable("profile") || !p) box.append(tile("Your profile", "—", COULD_NOT, open("profile")));
+  else {
+    const parts = [];
+    if (p.cv) parts.push("resume");
+    if (p.jds.length) parts.push(`${p.jds.length} job description${p.jds.length === 1 ? "" : "s"}`);
+    if (p.examples) parts.push("examples");
+    if (p.gemini.saved) parts.push("Gemini key");
+    box.append(tile("Your profile", parts.length ? `${parts.length} of 4 saved` : "Nothing saved yet",
+      parts.length ? `Saved: ${parts.join(", ")}.` : "Save your resume, job description and Gemini key once; the apps fill from it.",
+      open("profile", parts.length ? "Edit profile" : "Add your profile")));
+  }
+
+  // PCs connected to this account.
+  if (unavailable("pcs")) box.append(tile("Your PCs", "—", COULD_NOT, open("interviews")));
+  else {
+    const pcs = data.live.pcs || [];
+    box.append(tile("Your PCs", pcs.length ? `${pcs.length} connected` : "None connected",
+      pcs.length ? pcs.map((pc) => pc.name).join(", ") : "In Live Sarthi: settings → 5. My Sarthi → Connect.",
+      el("button", { class: "btn ghost", type: "button", text: "Connect a PC", onclick: () => { go("interviews"); openConnect(); } }),
+      pcs.length ? open("interviews", "Manage") : null));
+  }
+
+  // Prep Sarthi.
+  const pr = data.prep;
+  if (unavailable("prep") || !pr) box.append(tile("Prep Sarthi", "—", COULD_NOT, open("prep")));
+  else box.append(tile("Prep Sarthi", pr.pass.valid ? "Pass active" : "No pass",
+    pr.pass.valid ? `Until ${when(pr.pass.expires_at)}` : pr.banked_days ? `${pr.banked_days} free days waiting.` : "Practise out loud with an AI interviewer.",
+    open("prep")));
+
+  // Help: open conversations first.
+  if (unavailable("support")) box.append(tile("Help", "—", COULD_NOT, open("help")));
+  else {
+    const t = data.support || [];
+    const openOnes = t.filter((x) => x.open).length, replied = t.filter((x) => x.open && x.replied).length;
+    box.append(tile("Help", openOnes ? `${openOnes} open` : "All clear",
+      replied ? `We replied to ${replied}.` : openOnes ? "We'll reply in the app and here." : "No open conversations.", open("help")));
+  }
 }
 
 // ------------------------------------------------------------------ the bell
@@ -582,6 +709,7 @@ function renderTickets() {
 function renderInvite() {
   const r = data.live.referral;
   $("invite").hidden = !r;
+  $("menu").querySelector('a[data-pane="invite"]').hidden = !r;
   if (!r) return;
   $("invite-card").replaceChildren(
     el("p", { text: "When a friend buys a Live Sarthi pass with your code, you both get a free interview day." }),
