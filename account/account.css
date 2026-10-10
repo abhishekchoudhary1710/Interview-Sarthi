@@ -230,3 +230,4 @@ footer a { display: inline-flex; align-items: center; min-height: 44px; color: v
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
+.keep-again { margin: 10px 0 0; padding: 10px 12px; border: 1px solid #efdabd; border-radius: 9px; background: #fffaf0; color: #854510; }

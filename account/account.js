@@ -29,10 +29,14 @@ const full = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "
 const short = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric" });
 const when = (iso) => (iso ? full.format(new Date(iso)) : "");
 const day = (iso) => (iso ? short.format(new Date(iso)) : "");
-const KEEP_TEXT = "Each interview that ends on a connected PC is kept here: what the app heard from the call, the screen text it read " +
-  "and every answer it showed you, with the date, length and language. The app does not transcribe your microphone for this, and no audio " +
-  "or screenshot is ever sent. Interviews are deleted after 365 days; delete any of them here at any time. Switching this off stops new " +
-  "ones and deletes nothing. Kept only to show them to you, unless you also tick the next box.";
+// The owner's approved wording, 10 Oct 2026 (licence worker consent version "2026-10-10-past"). Not a word changes
+// without changing that version too.
+const KEEP_TEXT = "Your Live interviews from a connected PC are kept here. When you switch this on, each connected PC sends the " +
+  "interviews from the past year already on it, once, and after that each interview when it ends. Kept: what the app heard from " +
+  "the call, the screen text it read and every answer it showed you, with the date, length and language. The app does not " +
+  "transcribe your microphone for this (lines older versions took from it are left out), and no audio or screenshot is ever " +
+  "sent. Interviews are deleted after 365 days; delete any of them here at any time and it is not sent again. Switching this " +
+  "off stops new ones and deletes nothing. Kept only to show them to you, unless you also tick the next box.";
 const IMPROVE_TEXT = "Sarthi may read your kept interviews, not linked to your account's name or email, to improve Live Sarthi's " +
   "answers. Keeping works without this; untick it at any time.";
 
@@ -411,6 +415,8 @@ function renderInterviews() {
   $("improve-text").textContent = IMPROVE_TEXT;
   if (unavailable("live_interviews") || !iv) { missing($("live-list")); return; }
   $("keep-live").checked = iv.enabled;
+  // On under the earlier text: the server stopped keeping until the new one is agreed to. Say why the box is empty.
+  $("keep-again").hidden = !(!iv.enabled && iv.consent_version && iv.consent_version !== iv.current_consent_version);
   $("improve-live").checked = Boolean(iv.improve);
   $("improve-live").disabled = !iv.enabled;
   $("no-pc").hidden = (data.live.pcs || []).length > 0;
@@ -441,7 +447,9 @@ $("keep-live").addEventListener("change", (e) => act(e.target, async () => {
   e.target.checked = out.enabled;
   $("improve-live").checked = Boolean(out.improve);
   $("improve-live").disabled = !out.enabled;
-  say(out.enabled ? "Your Live interviews will be kept here from now on." : "Switched off. New interviews stay only on your PC; nothing was deleted.");
+  $("keep-again").hidden = true;
+  say(out.enabled ? "Your Live interviews will be kept here: the past year's from each connected PC the next time Live Sarthi starts, then each new one."
+    : "Switched off. New interviews stay only on your PC; nothing was deleted.");
 }));
 
 $("improve-live").addEventListener("change", (e) => act(e.target, async () => {
