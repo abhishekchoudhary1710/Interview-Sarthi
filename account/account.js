@@ -66,8 +66,20 @@ function say(message, bad = false) {
   if (message) $("notice").scrollIntoView({ block: "nearest" });
 }
 
-async function call(path, body = {}, { auth = true } = {}) {
-  const abort = new AbortController(), timer = setTimeout(() => abort.abort(), 20000);
+/* Reads only: sending them twice changes nothing. Owner's connection, 10 Oct 2026: about 1 in 3 requests got stuck
+ * on the way to the server while the next went straight through, so a read that gets no answer is sent once more. */
+const RETRY_READS = new Set(["/account", "/account/live/get", "/account/live/list", "/account/profile", "/mock/config"]);
+
+async function call(path, body = {}, options = {}) {
+  try { return await callOnce(path, body, options); }
+  catch (err) {
+    if (err.status || !RETRY_READS.has(path)) throw err;          // a "no" from the server is final
+    return callOnce(path, body, options);
+  }
+}
+
+async function callOnce(path, body = {}, { auth = true } = {}) {
+  const abort = new AbortController(), timer = setTimeout(() => abort.abort(), 12000);
   try {
     const res = await fetch(API + path, { method: "POST", cache: "no-store", credentials: "omit", referrerPolicy: "no-referrer", signal: abort.signal,
       headers: { "content-type": "application/json" }, body: JSON.stringify(auth ? { session: session.get(), ...body } : body) });

@@ -97,6 +97,18 @@ with sync_playwright() as p:
             return route.fulfill(status=503, body='{"error":"The server is busy. Try again in a minute."}',
                                  headers={"content-type": "application/json", "access-control-allow-origin": "*"})
         route.continue_()
+    # A read that gets no answer at all is sent once more by itself (owner's connection, 10 Oct 2026).
+    stuck = {"left": 1}
+    def stuck_once(route):
+        if stuck["left"] and route.request.url.endswith("/account"):
+            stuck["left"] -= 1
+            return route.abort("timedout")
+        route.continue_()
+    ctx.route(API + "/**", stuck_once)
+    pg.reload()
+    pg.wait_for_selector("#signed-in:not([hidden])", timeout=40000)
+    ok("one stuck request: the page retries by itself and loads the account", stuck["left"] == 0 and not pg.is_visible("#loading"))
+    ctx.unroute(API + "/**", stuck_once)
     ctx.route(API + "/**", account_route)
     pg.reload()
     pg.wait_for_selector("#loading-retry:not([hidden])", timeout=30000)
