@@ -231,3 +231,6 @@ footer a { display: inline-flex; align-items: center; min-height: 44px; color: v
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
 .keep-again { margin: 10px 0 0; padding: 10px 12px; border: 1px solid #efdabd; border-radius: 9px; background: #fffaf0; color: #854510; }
+.loading { max-width: 560px; }
+.loading p:first-child { margin-top: 0; font-weight: 600; overflow-wrap: anywhere; }
+.loading .btn { margin-top: 6px; }

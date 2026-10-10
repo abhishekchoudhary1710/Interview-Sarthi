@@ -96,6 +96,7 @@ function show(view) {
   $("signed-out").hidden = view !== "out";
   $("signed-in").hidden = view !== "in";
   $("closed").hidden = view !== "closed";
+  $("loading").hidden = view !== "loading";
   $("bell").hidden = view !== "in";
   if (view !== "in") $("bell-panel").hidden = true;
 }
@@ -136,12 +137,31 @@ $("test-login").addEventListener("submit", (e) => {
 // ------------------------------------------------------------------ the page
 
 async function load() {
+  // The first load says so while it waits (owner, 10 Oct 2026: a 20-second answer left the page blank). A reload
+  // after an action keeps the account on screen instead.
+  const first = !data;
+  let slow = null;
+  if (first) {
+    show("loading");
+    $("loading-text").textContent = "Loading your account…";
+    $("loading-retry").hidden = true;
+    $("loading-slow").hidden = true;
+    slow = setTimeout(() => { $("loading-slow").hidden = false; }, 6000);
+  }
   try {
     data = await call("/account");
   } catch (err) {
     if (err.status === 401) { session.clear(); return showSignedOut(); }
     if (err.status === 404) return show("closed");
+    if (first) {
+      $("loading-text").textContent = err.message;
+      $("loading-slow").hidden = true;
+      $("loading-retry").hidden = false;
+      return;
+    }
     return say(err.message, true);
+  } finally {
+    clearTimeout(slow);
   }
   show("in");
   render();
@@ -733,5 +753,7 @@ $("sign-out").addEventListener("click", () => {
   try { window.google && window.google.accounts && window.google.accounts.id.disableAutoSelect(); } catch { /* not loaded */ }
   location.reload();
 });
+
+$("loading-retry").addEventListener("click", () => { load(); });
 
 if (session.get()) load(); else showSignedOut();

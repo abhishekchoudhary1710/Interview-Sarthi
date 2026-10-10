@@ -19,8 +19,8 @@
   </script>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
-  <link rel="stylesheet" href="./account.css?v=20261010-past">
-  <script type="module" src="./account.js?v=20261010-past"></script>
+  <link rel="stylesheet" href="./account.css?v=20261010-loading">
+  <script type="module" src="./account.js?v=20261010-loading"></script>
 </head>
 <body>
   <div class="wrap">
@@ -37,6 +37,13 @@
 
     <main>
       <p class="notice" id="notice" role="status" aria-live="polite"></p>
+
+      <!-- Signed in, waiting for the account (owner, 10 Oct 2026: a slow answer left the page blank) -->
+      <section class="card loading" id="loading" hidden aria-live="polite">
+        <p id="loading-text">Loading your account…</p>
+        <p class="fine" id="loading-slow" hidden>Still loading. The server is slower than usual right now.</p>
+        <button class="btn ghost" id="loading-retry" type="button" hidden>Try again</button>
+      </section>
 
       <!-- Signed out -->
       <section id="signed-out" hidden>

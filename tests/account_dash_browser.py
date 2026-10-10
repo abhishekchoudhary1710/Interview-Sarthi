@@ -67,6 +67,44 @@ with sync_playwright() as p:
             ok("phone: tabs stay at the top while scrolling (sticky)", pos == "sticky", pos)
         ok(f"{label}: no script errors", not errors, "; ".join(errors)[:200])
         ctx.close()
+    # Owner, 10 Oct 2026: a 20-second server answer left the signed-in page blank. It now says it is loading,
+    # adds a "slower than usual" line after 6 s, and offers Try again when the answer fails. The delay is made
+    # inside the page (a wrapped fetch), so this script keeps watching while the page waits.
+    API = "https://interview-sarthi-license-test.interview-sarthi-license.workers.dev"
+    ctx = b.new_context(viewport={"width": 390, "height": 844}); ctx.route("http://127.0.0.1:8765/**", serve)
+    ctx.add_init_script("""(() => { const real = window.fetch;
+      window.fetch = async (url, opts) => {
+        const ms = Number(sessionStorage.getItem('test_slow_account') || 0);
+        if (ms && String(url).endsWith('/account')) await new Promise((r) => setTimeout(r, ms));
+        return real(url, opts);
+      }; })();""")
+    pg = ctx.new_page()
+    pg.goto("http://127.0.0.1:8765/account/"); pg.fill("#test-email", EMAIL); pg.click("#test-login button")
+    pg.wait_for_selector("#signed-in:not([hidden])", timeout=30000)
+    pg.evaluate("sessionStorage.setItem('test_slow_account', '8000')")
+    pg.reload(); pg.wait_for_timeout(1000)
+    ok("slow answer: the page says it is loading", pg.is_visible("#loading") and "Loading your account" in pg.inner_text("#loading-text"))
+    ok("slow answer: nothing else shows meanwhile", not pg.is_visible("#signed-in") and not pg.is_visible("#signed-out"))
+    ok("slow answer: no 'slower than usual' line yet", not pg.is_visible("#loading-slow"))
+    pg.wait_for_timeout(5800)
+    ok("slow answer: after 6 s it says the server is slow", pg.is_visible("#loading-slow"))
+    pg.wait_for_selector("#signed-in:not([hidden])", timeout=30000)
+    ok("slow answer: the account shows when it arrives, loading gone", not pg.is_visible("#loading"))
+    pg.evaluate("sessionStorage.removeItem('test_slow_account')")
+    fail = {"on": True}
+    def account_route(route):
+        if fail["on"] and route.request.url.endswith("/account"):
+            return route.fulfill(status=503, body='{"error":"The server is busy. Try again in a minute."}',
+                                 headers={"content-type": "application/json", "access-control-allow-origin": "*"})
+        route.continue_()
+    ctx.route(API + "/**", account_route)
+    pg.reload()
+    pg.wait_for_selector("#loading-retry:not([hidden])", timeout=30000)
+    ok("failed answer: the reason and Try again show", "busy" in pg.inner_text("#loading-text") and pg.is_visible("#loading-retry"))
+    fail["on"] = False; pg.click("#loading-retry")
+    pg.wait_for_selector("#signed-in:not([hidden])", timeout=30000)
+    ok("failed answer: Try again loads the account", not pg.is_visible("#loading"))
+    ctx.close()
     b.close()
 bad = [r for r in results if not r[0]]
 print(f"\n{len(results) - len(bad)}/{len(results)} passed")
