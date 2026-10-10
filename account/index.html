@@ -18,8 +18,8 @@
   </script>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
-  <link rel="stylesheet" href="./account.css?v=20261010-design">
-  <script type="module" src="./account.js?v=20261010-design"></script>
+  <link rel="stylesheet" href="./account.css?v=20261010-dash">
+  <script type="module" src="./account.js?v=20261010-dash"></script>
 </head>
 <body>
   <div class="wrap">
@@ -82,10 +82,26 @@
           <div id="connect-body"></div>
         </section>
 
-        <nav class="jump" aria-label="Sections">
-          <a href="#live">Live</a><a href="#interviews">Interviews</a><a href="#profile">Profile</a><a href="#prep">Prep</a>
-          <a href="#purchases">Purchases</a><a href="#help">Help</a><a href="#account">Account</a>
+        <!-- One section at a time (owner, 10 Oct 2026): a menu down the side on a laptop, a row of tabs on a phone. -->
+        <div class="dash" id="dash">
+        <nav class="menu" id="menu" aria-label="My Sarthi sections">
+          <a href="#home" data-pane="home">Home</a>
+          <a href="#live" data-pane="live">Live passes</a>
+          <a href="#interviews" data-pane="interviews">Interviews</a>
+          <a href="#profile" data-pane="profile">Profile</a>
+          <a href="#prep" data-pane="prep">Prep</a>
+          <a href="#purchases" data-pane="purchases">Purchases</a>
+          <a href="#help" data-pane="help">Help</a>
+          <a href="#invite" data-pane="invite" hidden>Invite</a>
+          <a href="#apply" data-pane="apply">ApplySarthi</a>
+          <a href="#account" data-pane="account">Account</a>
         </nav>
+        <div class="panes">
+
+        <section class="block" id="home" aria-labelledby="home-title">
+          <h2 id="home-title">Home</h2>
+          <div class="tiles" id="home-tiles"></div>
+        </section>
 
         <section class="block" id="live" aria-labelledby="live-title">
           <h2 id="live-title">Live Sarthi</h2>
@@ -216,6 +232,8 @@
             <p class="fine">Signing out here also signs you out of Prep Sarthi in this browser. <a href="/privacy.html">Privacy</a></p>
           </div>
         </section>
+        </div>
+        </div>
         <p class="fine dates">All dates are in India time (IST).</p>
       </div>
       <noscript><p>Turn on JavaScript to open My Sarthi.</p></noscript>
