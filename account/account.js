@@ -231,11 +231,11 @@ function renderKeys() {
 
 function keyCard(k) {
   const p = k.pass;
-  const card = el("div", { class: "card" },
+  const card = el("div", { class: "card pass-card" },
     el("div", { class: "card-top" },
       el("p", { class: "eyebrow", text: "Live Sarthi" }),
       k.how === "pasted" ? el("span", { class: "tag", text: "Added by key" }) : null),
-    el("h3", { text: p.label }),
+    el("h3", { class: "pass-name", text: p.label }),
     el("p", { class: "state", text: (STATES[p.state] || (() => p.state))(p) }),
     el("div", { class: "keyline" }, el("code", { text: k.key }), copyButton(k.key, "Copy key")),
     el("div", { class: "details" },

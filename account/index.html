@@ -18,8 +18,8 @@
   </script>
   <link rel="icon" href="/favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="/assets/mark.svg">
-  <link rel="stylesheet" href="./account.css?v=20261010-2">
-  <script type="module" src="./account.js?v=20261010-2"></script>
+  <link rel="stylesheet" href="./account.css?v=20261010-design">
+  <script type="module" src="./account.js?v=20261010-design"></script>
 </head>
 <body>
   <div class="wrap">
@@ -27,12 +27,12 @@
       <a class="logo" href="/"><img src="/assets/mark.svg" alt="" width="28" height="28"><span>My <i>Sarthi</i></span></a>
       <nav>
         <button class="bell" id="bell" type="button" aria-expanded="false" aria-controls="bell-panel" hidden>
-          <span aria-hidden="true">🔔</span><span class="sr">Notifications</span><span class="badge" id="bell-count" hidden></span>
+          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="sr">Notifications</span><span class="badge" id="bell-count" hidden></span>
         </button>
         <a href="/help.html">Help</a>
       </nav>
     </header>
-    <section class="card bell-panel" id="bell-panel" hidden aria-label="Notifications"><ul id="bell-list"></ul></section>
+    <section class="card bell-panel" id="bell-panel" hidden aria-label="Notifications"><h2>Notifications</h2><ul id="bell-list"></ul></section>
 
     <main>
       <p class="notice" id="notice" role="status" aria-live="polite"></p>
@@ -62,9 +62,11 @@
 
       <!-- Signed in -->
       <div id="signed-in" hidden>
-        <p class="eyebrow">My Sarthi</p>
-        <h1 id="hello">Your account</h1>
-        <p class="lead" id="hello-sub"></p>
+        <div class="account-intro">
+          <p class="eyebrow">My Sarthi</p>
+          <h1 id="hello">Your account</h1>
+          <p class="lead" id="hello-sub"></p>
+        </div>
 
         <section class="card connect" id="connect-card" hidden aria-labelledby="connect-title">
           <p class="eyebrow">Live Sarthi on your PC</p>
@@ -104,10 +106,16 @@
         <section class="block" id="interviews" aria-labelledby="interviews-title">
           <h2 id="interviews-title">Your Live interviews</h2>
           <div class="card">
-            <label class="switch"><input type="checkbox" id="keep-live"> <span>Keep my Live interviews in My Sarthi</span></label>
-            <p class="fine" id="keep-text"></p>
-            <label class="switch"><input type="checkbox" id="improve-live"> <span>Also let Sarthi read them to improve Live Sarthi's answers (optional)</span></label>
-            <p class="fine" id="improve-text"></p>
+            <div class="consents">
+              <div class="consent">
+                <label class="switch"><input type="checkbox" id="keep-live"> <span>Keep my Live interviews in My Sarthi</span></label>
+                <p class="fine" id="keep-text"></p>
+              </div>
+              <div class="consent">
+                <label class="switch"><input type="checkbox" id="improve-live"> <span>Also let Sarthi read them to improve Live Sarthi's answers (optional)</span></label>
+                <p class="fine" id="improve-text"></p>
+              </div>
+            </div>
             <p class="fine" id="no-pc" hidden>Connect Live Sarthi on your PC first: in the app open <b>settings</b>, then <b>5. My Sarthi</b>, then <b>Connect</b>.</p>
             <ul class="list" id="live-list"></ul>
             <div class="actions">
