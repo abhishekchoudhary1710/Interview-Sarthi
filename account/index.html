@@ -13,7 +13,8 @@
       var q = new URLSearchParams(location.search);
       try { if (q.has("connect")) sessionStorage.setItem("ms_connect", "1"); } catch (_) {}
       window.__msConnect = q.has("connect");
-      if (location.search) { try { history.replaceState(null, "", location.pathname); } catch (_) {} }
+      // Drop the query, keep the section (#profile): Codex found /account/?review=1#profile opening Home.
+      if (location.search) { try { history.replaceState(null, "", location.pathname + location.hash); } catch (_) {} }
     })();
   </script>
   <link rel="icon" href="/favicon.ico" sizes="any">

@@ -48,6 +48,14 @@ with sync_playwright() as p:
         ok(f"{label}: Back returns to the previous section", visible() == ["apply"], str(visible()))
         pg.goto("http://127.0.0.1:8765/account/#profile"); pg.wait_for_selector("#signed-in:not([hidden])", timeout=30000); pg.wait_for_timeout(600)
         ok(f"{label}: a link to #profile opens Profile", visible() == ["profile"], str(visible()))
+        # Codex, 10 Oct 2026: the startup script cleared the query AND the section.
+        pg.goto("http://127.0.0.1:8765/account/?review=1#profile"); pg.wait_for_selector("#signed-in:not([hidden])", timeout=30000); pg.wait_for_timeout(600)
+        ok(f"{label}: a query plus #profile still opens Profile", visible() == ["profile"], str(visible()))
+        ok(f"{label}: the query is cleared, the section kept", pg.evaluate("location.search + '|' + location.hash") == "|#profile",
+           pg.evaluate("location.search + '|' + location.hash"))
+        pg.goto("http://127.0.0.1:8765/account/?connect#interviews"); pg.wait_for_selector("#signed-in:not([hidden])", timeout=30000); pg.wait_for_timeout(600)
+        ok(f"{label}: ?connect#interviews opens the connect card on Interviews",
+           pg.is_visible("#connect-card") and visible() == ["interviews"], str(visible()))
         pg.click('#menu a[data-pane="home"]'); pg.wait_for_timeout(250)
         pg.locator("#home-tiles .tile", has_text="Live interviews").locator("button").first.click(); pg.wait_for_timeout(250)
         ok(f"{label}: Home tile button opens its section", visible() == ["interviews"], str(visible()))
