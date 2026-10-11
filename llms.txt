@@ -86,3 +86,4 @@ Product and guide pages contain readable HTML. Interactive app features require 
 - [Interview help in Hinglish](https://interviewsarthi.com/hinglish-interview-help.html)
 - [AI interview assistants in India: what to check](https://interviewsarthi.com/ai-interview-assistant-india.html)
 - [Comparisons with other tools](https://interviewsarthi.com/best-ai-interview-assistant-india.html)
+- [Best free AI mock interview in India: 9 tools checked](https://interviewsarthi.com/best-free-ai-mock-interview-india.html)

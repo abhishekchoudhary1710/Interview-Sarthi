@@ -1,5 +1,5 @@
 {
-  "about.html": "2026-09-25",
+  "about.html": "2026-10-11",
   "ai-interview-assistant-india.html": "2026-10-02",
   "ai-interview-statistics-india.html": "2026-09-25",
   "apply/ats-resume-checker/data-analyst.html": "2026-10-02",
@@ -25,7 +25,8 @@
   "apply/vs-lazyapply.html": "2026-09-24",
   "apply/vs-loopcv.html": "2026-09-24",
   "apply/vs-simplify-jobs.html": "2026-09-24",
-  "best-ai-interview-assistant-india.html": "2026-10-02",
+  "best-ai-interview-assistant-india.html": "2026-10-11",
+  "best-free-ai-mock-interview-india.html": "2026-10-11",
   "can-interviewer-see-my-screen.html": "2026-09-25",
   "facts.html": "2026-10-08",
   "free-gemini-api-key-guide.html": "2026-09-15",
@@ -75,9 +76,9 @@
   "privacy.html": "2026-10-06",
   "refunds.html": "2026-09-25",
   "terms.html": "2026-09-27",
-  "vs-cluely.html": "2026-10-05",
+  "vs-cluely.html": "2026-10-11",
   "vs-final-round-ai.html": "2026-10-05",
-  "vs-lockedin-ai.html": "2026-10-05",
-  "vs-ophyai.html": "2026-10-05",
-  "vs-parakeet-ai.html": "2026-10-05"
+  "vs-lockedin-ai.html": "2026-10-11",
+  "vs-ophyai.html": "2026-10-11",
+  "vs-parakeet-ai.html": "2026-10-11"
 }
