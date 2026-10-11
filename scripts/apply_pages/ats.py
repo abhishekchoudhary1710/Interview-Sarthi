@@ -222,8 +222,8 @@ MAIN = {
     'path': 'apply/ats-resume-checker/index.html',
     'trail': [('ApplySarthi', '/apply/'), ('ATS resume checker', BASE)],
     'title': 'Free ATS Resume Checker for India: No Sign-up, No Upload',
-    'description': 'Check whether an applicant tracking system can read your CV and which skills from the job '
-                   'it is missing. Runs in your browser, so your CV is never uploaded. Free, no sign-up.',
+    'description': 'Check if an applicant tracking system can read your CV and which job skills it is missing. '
+                   'Runs in your browser; your CV is never uploaded. Free, no sign-up.',
     'h1': 'Free ATS resume checker',
     'lead': 'See what an applicant tracking system can read in your CV, what it loses, and which words from '
             'the job your CV is missing. Your file is read inside this browser tab and never uploaded.',
