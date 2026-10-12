@@ -14,7 +14,9 @@ import { FOCUS_STATUSES, normalizeFocus } from "./progress.js";
 /* flash-lite first since 1 Oct 2026 (owner's call, Gemini only): on 30 Sep gemini-3.6-flash answered "high demand"
  * on 6 of 7 report requests, and each one cost the waiting candidate 5-15 s before flash-lite wrote the report
  * anyway. The desktop app has always led with flash-lite. */
-export const REPORT_MODELS = ["gemini-3.1-flash-lite", "gemini-3.6-flash"];
+/* 12 Oct 2026: gemini-3.5-flash-lite first. Four 20-minute transcripts: 8-14 s and no failures, with the measured pace
+ * and fillers in the delivery notes, against 11-33 s and one 503 for 3.1 flash-lite; 3.6-flash wrote none of the four. */
+export const REPORT_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 /* The scoring rules in force: this prompt, the assessment anchors in assessment.js and the plan rules in
  * plan-request.js. Saved with every report so the progress page can tell a change in the rules from a change
  * in the person. Change it whenever any of those rules change. */

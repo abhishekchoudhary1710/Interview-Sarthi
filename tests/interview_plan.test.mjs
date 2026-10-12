@@ -470,7 +470,7 @@ test("reports are written by flash-lite first, in the interview's language, with
   let request;
   ctx.mock.method(globalThis, "fetch", async (url, options) => { models.push(String(url).match(/models\/([^:]+)/)[1]); request = JSON.parse(options.body); return modelResponse({ overall_score: 60 }); });
   await generateReport({ apiKey: "test", ...documents, language: "Hinglish", transcript: conversation, metrics: computeMetrics([], []), minutes: 10 });
-  assert.deepEqual(models, ["gemini-3.1-flash-lite"]);
+  assert.deepEqual(models, ["gemini-3.5-flash-lite"]);
   const prompt = request.systemInstruction.parts[0].text;
   assert.match(prompt, /Never supply an example, project, number, tool or result the candidate did not say/);
   assert.match(prompt, /every text field in Hinglish, in Roman script/);

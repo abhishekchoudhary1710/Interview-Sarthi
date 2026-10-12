@@ -3,7 +3,9 @@ import { diagnosticEvent, measuredRequest } from './diagnostics.js';
 // visitor no longer waits for it. flash-lite first: measured through the demo relay on 27 Sep 2026 it took 5.7-7.1 s
 // on every try, against 7.9-16 s for 3.6-flash (up to a minute when Google answers "high demand", and ~20 free
 // requests a day). Both produce plans that pass validatePlan. Gemini only: there is no other writer (owner, 1 Oct).
-export const PLAN_MODELS = ["gemini-3.1-flash-lite", "gemini-3.6-flash"];
+// 12 Oct 2026: gemini-3.5-flash-lite first (plan 4.7 s vs 16.8 s for 3.1 flash-lite on the same CV and JD); 3.6-flash
+// dropped: 0 of 4 reports that day ("high demand", then its 20-a-day free cap).
+export const PLAN_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 import { PLAN_CATEGORIES, validatePlan, interviewContext } from "./interview-plan.js";
 
 const strings = { type: "ARRAY", items: { type: "STRING" } };
@@ -33,11 +35,7 @@ Mark an ability requiring executed code, a written artifact, design deliverable 
   };
   for (const model of PLAN_MODELS) {
     if (model !== PLAN_MODELS[0]) diagnosticEvent('model_fallback', { stage: 'plan', model });
-    // The visitor waits on this with nothing on screen but a spinner. Low thinking on the main model
-    // took 6.5 s against 9 to 14 s by default, with the same number and kind of questions (26 Sep 2026).
-    const body = JSON.stringify(model === "gemini-3.6-flash"
-      ? { ...request, generationConfig: { ...request.generationConfig, thinkingConfig: { thinkingLevel: "low" } } }
-      : request);
+    const body = JSON.stringify(request);
     signal?.throwIfAborted();
     const timeout = AbortSignal.timeout(45000);
     const both = signal ? AbortSignal.any([signal, timeout]) : timeout;

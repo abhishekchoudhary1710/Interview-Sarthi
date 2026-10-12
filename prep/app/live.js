@@ -19,12 +19,15 @@
  * Google.
  */
 
-import { NOTES } from "./interviewer.js?v=20261005-busy";
+import { NOTES } from "./interviewer.js?v=20261012-models38";
 
 // Two voice models that both answer the free tier. The first is the default; the other takes over when Google
 // retires the first, or when the first keeps failing mid-call (3 and 4 Oct 2026: "Internal error encountered"
 // drops and silent sessions on one model for an hour while the other kept working).
-export const LIVE_MODELS = ["gemini-3.1-flash-live-preview", "gemini-3.8-live"];
+// 3.8 first since 12 Oct 2026: two 20-minute runs each on the same CV, 3.8 kept one connection with no silence and
+// closed at 18-19.5 minutes; 3.1 refreshed every ~9 minutes, went quiet for 17 s once and invited closing questions
+// from minute 5 (once a full goodbye at minute 8) until the early-close nudge pulled it back.
+export const LIVE_MODELS = ["gemini-3.8-live", "gemini-3.1-flash-live-preview"];
 export const DEFAULT_MODEL = LIVE_MODELS[0];
 const LIVE_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=";
 // The free demo connects with a one-time token our licence server minted, never with a key.
@@ -33,6 +36,9 @@ const CAPTURE_RATE = 16000;
 
 const SETUP_TIMEOUT_SECONDS = 12;
 const REPLY_TIMEOUT_SECONDS = 15;
+// 3.8 can send its done signal 8-20 s after its last audio (Live Sarthi, 11 Oct 2026). A finished sentence and this
+// much quiet ends the turn, instead of 15 s of "still speaking" that ignores the candidate and then reconnects.
+const ANSWER_SETTLE_SECONDS = 3;
 // Only before the first connection: a call that has never connected says so and lets the page offer a way out.
 // Once the interview is running it keeps trying, as the desktop app does: ending it would lose the interview.
 const MAX_RETRIES = 5;
@@ -157,6 +163,7 @@ export class GeminiLive {
     this._audioEnded = false;
     this._congestedSince = null;
     this._cutOff = false;
+    this._settledAt = null;
     this._trouble = [];
     this._modelSwitches = 0;
     this._lastClockNoteAt = 0;
@@ -412,6 +419,10 @@ export class GeminiLive {
     if (this._goAway && !this._modelSpeaking && !this._playing && t - this._lastVoiced > 1 && this._replyPendingAt === null) {
       this._reconnect("scheduled_refresh"); return;
     }
+    if (this._modelSpeaking && !this._playing && t - this._lastOutput >= ANSWER_SETTLE_SECONDS) {
+      const open = this.transcript.open.interviewer;
+      if (open && /[.?!।]["')\]]*\s*$/.test(open.text)) { this._settle(t); return; }
+    }
     // A short answer followed by silence used to fall outside the old
     // "voiced in the last ten seconds" test, leaving the visitor waiting forever.
     const waiting = this._replyPendingAt !== null && t - this._replyPendingAt >= REPLY_TIMEOUT_SECONDS;
@@ -536,6 +547,7 @@ export class GeminiLive {
           this.sendText(resumed ? this.notes.reconnect : this.notes.opening);
         }
         this._cutOff = false;
+        this._settledAt = null;
       }
       return;
     }
@@ -595,7 +607,14 @@ export class GeminiLive {
       }
     }
 
+    if (content.turnComplete && this._settledAt !== null && this._lastOutput <= this._settledAt) {
+      // The late done signal of a turn already settled: nothing new was said, so the candidate's answer stays open.
+      this._settledAt = null;
+      this._event("turn_complete_late", {});
+      return;
+    }
     if (content.turnComplete) {
+      this._settledAt = null;
       this._modelSpeaking = false;
       const u = this.transcript.close("interviewer");
       if (u && this.onTranscript) this.onTranscript(u, true);
@@ -604,6 +623,16 @@ export class GeminiLive {
       this._event("turn_complete", {});
       if (u) this._nudgeIfClosingEarly(u.text, t);
     }
+  }
+
+  /* The turn is over without Google's done signal: a finished sentence, then ANSWER_SETTLE_SECONDS of quiet. */
+  _settle(t) {
+    this._modelSpeaking = false;
+    this._settledAt = t;
+    const u = this.transcript.close("interviewer");
+    if (u && this.onTranscript) this.onTranscript(u, true);
+    this._event("turn_settled", { quiet_s: Math.round((t - this._lastOutput) * 10) / 10 });
+    if (u) this._nudgeIfClosingEarly(u.text, t);
   }
 
   _append(who, piece, t) {

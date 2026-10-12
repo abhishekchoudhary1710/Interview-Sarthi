@@ -7,11 +7,12 @@ import { diagnosticEvent, measuredRequest } from './diagnostics.js';
  * kept apart from the AI's suggested answer. Pass holders only (plan approved 29 Sep 2026).
  */
 
-import { interviewerPersona, languageNote } from "./interviewer.js?v=20261005-busy";
+import { interviewerPersona, languageNote } from "./interviewer.js?v=20261012-models38";
 import { evidenceTurns } from "./interview-plan.js";
 
 export const REDRILL_SECONDS = 180;
-export const REDRILL_MODELS = ["gemini-3.6-flash", "gemini-3.1-flash-lite"];
+// 12 Oct 2026: the same writers as the report (report.js); 3.6-flash was busy or over its 20-a-day free cap.
+export const REDRILL_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 const URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}";
 const clip = (s, n) => { s = String(s ?? "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 

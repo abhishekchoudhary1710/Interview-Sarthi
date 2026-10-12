@@ -15,7 +15,8 @@ import { PLAN_CATEGORIES } from "./interview-plan.js";
 import { SKILL_GROUPS, buildProgress, inPeriod } from "./progress.js";
 import { HISTORY_EVENTS, getItems, listSummaries, saveItem } from "./history.js";
 
-export const ANALYSIS_MODELS = ["gemini-3.6-flash", "gemini-3.1-flash-lite"];
+// 12 Oct 2026: the same writers as the report (report.js); 3.6-flash was busy or over its 20-a-day free cap.
+export const ANALYSIS_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 export const PATTERN_TYPES = ["recurring_weakness", "improved", "inconsistent", "strength"];
 export const ANALYSIS = {
   MAX_INTERVIEWS: 8,          // the most recent ones; a month review takes the first two and the last six

@@ -172,11 +172,11 @@ def race_after(page, calls):
 
 with sync_playwright() as p:
     first = run(p, {'report_answers': ['hold', 503, 504, 200], 'while_writing': failing_while, 'after': failing_after})
-    assert [m for _, _, m in first] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash'] * 2, first
+    assert [m for _, _, m in first] == ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'] * 2, first
     second = run(p, {'report_answers': ['hold', 200], 'while_writing': race_while, 'after': race_after})
-    assert [m for _, _, m in second] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash'], second
+    assert [m for _, _, m in second] == ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'], second
     third = run(p, {'report_answers': ['hold', 503, 200], 'while_writing': failing_while, 'after': resume_after})
-    assert [m for _, _, m in third] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'], third
+    assert [m for _, _, m in third] == ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'], third
     fourth = run(p, {'report_answers': ['hold', 503, 200], 'while_writing': failing_while, 'after': waiting_after})
-    assert [m for _, _, m in fourth] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.1-flash-lite'], fourth
+    assert [m for _, _, m in fourth] == ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'], fourth
     print(json.dumps({'result': 'passed', 'retry_run': first, 'race_run': second, 'resume_run': third, 'wait_run': fourth}))

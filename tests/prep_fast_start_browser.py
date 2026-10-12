@@ -143,7 +143,7 @@ with sync_playwright() as p:
     # 2. A plan that fails on both models: the interview runs, and the report scores the broad areas.
     failed = run(p, plan_answer=(429, {'error': {'message': 'quota'}}))
     assert 'ASSESSMENT AREAS' in failed['report_text'] and 'PRE-INTERVIEW ROLE REQUIREMENTS' not in failed['report_text']
-    assert [m for path, stage, m in failed['calls'] if stage == 'plan'] == ['gemini-3.1-flash-lite', 'gemini-3.6-flash']
+    assert [m for path, stage, m in failed['calls'] if stage == 'plan'] == ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite']
 
     # 3. A returning pass holder: saved key, live pass, two earlier interviews for the same role.
     track = 'role_baseline|accountant|entry-level / fresher'

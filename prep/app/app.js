@@ -12,15 +12,15 @@
  */
 
 import { AudioIO } from "./audio.js?v=20261008-bluetooth";
-import { GeminiLive } from "./live.js?v=20261005-busy";
-import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261005-busy";
+import { GeminiLive } from "./live.js?v=20261012-models38";
+import { buildInterviewerInstructions, interviewerPersona } from "./interviewer.js?v=20261012-models38";
 import { readDocFile, tidy, guessName } from "./cv.js";
 import { computeMetrics } from "./metrics.js";
-import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261001-faststart";
+import { RUBRIC_VERSION, generateReport } from "./report.js?v=20261012-models38";
 import { interviewProgress } from "./assessment.js";
 import { assessmentText } from "./assessment-view.js?v=20260923-jd-plan";
 import { reportHtml, wireReport } from "./report-view.js?v=20261001-site";
-import { generateInterviewPlan } from "./plan-request.js?v=20261001-faststart";
+import { generateInterviewPlan } from "./plan-request.js?v=20261012-models38";
 import { interviewContext } from "./interview-plan.js";
 import { keyHash, entitlement, entitlementBySession, tick, rememberInvite, rememberSource, requestDemo, requestLiveTest, demoTransport, demoUsed, demoReplace, deviceInvite, session as accountSession } from "./billing.js?v=20261009-live-gift";
 import { initPasses, isIntl, noticeLiveGift, openPasses, priceOf, refreshPasses, renderInvite } from "./pass.js?v=20261009-polish";
@@ -33,8 +33,8 @@ import { HISTORY_EVENTS, flushOutbox, getInterview, knownPeriods, knownSummaries
 import { fillFrom, readProfile, saveFromPrep, saveKey } from "./mysarthi.js?v=20261010-mysarthi";
 import { carryFocus, reportChanges, summarize, trackKey } from "./progress.js";
 import { coachingBrief } from "./coaching.js?v=20261001-faststart";
-import { refreshAnalyses } from "./insights.js";
-import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261005-busy";
+import { refreshAnalyses } from "./insights.js?v=20261012-models38";
+import { REDRILL_SECONDS, buildRedrillInstructions, compareAnswers, redrillItem, redrillNotes, redrillProgress, redrillSource } from "./redrill.js?v=20261012-models38";
 
 const $ = (id) => document.getElementById(id);
 // Technical output is available only when support explicitly requests this URL.
@@ -745,7 +745,7 @@ async function startInterview() {
     catch (err) { show("s-cv"); notice("jd-notice", err.message, "bad"); return; }
   }
   beginDiagnostics({ kind: redrill ? 'redrill' : S.ent?.kind || 'none', minutes: S.minutes,
-    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261005-busy' });
+    device: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop', release: '20261012-models38' });
   phase = "preparing";
   const controller = new AbortController();
   startController = controller;

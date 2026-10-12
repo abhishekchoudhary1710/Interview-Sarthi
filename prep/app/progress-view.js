@@ -1,7 +1,7 @@
 /* Presentation only: numbers, persistence and AI remain in the progress modules. */
 import { HISTORY_EVENTS, listSummaries, getItems, getPrefs, setEnabled, deleteItem, deleteAll, exportAll, importable, importLocal, statusOf, flushOutbox, pending } from './history.js';
 import { buildProgress, REASONS, dayKey, inPeriod } from './progress.js';
-import { monthReportText, analysisId } from './insights.js';
+import { monthReportText, analysisId } from './insights.js?v=20261012-models38';
 
 const $ = id => document.getElementById(id);
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
