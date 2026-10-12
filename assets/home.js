@@ -36,7 +36,7 @@
     live: {
       name: 'Live Sarthi', eyebrow: 'LIVE SARTHI · INTERVIEW ANSWERS', title: 'You see the answers.\nYour screen share hides them.*',
       description: 'Read the question and answer suggestions alongside your call. Switch views to see the answer panel present on your screen and absent in the shared view.',
-      points: ['Answers start in about 1.5 seconds; timing varies', 'Based on your CV, with no bot joining the call', 'Supported Windows capture; check your setup first'],
+      points: ['Answers start in about 1 second; timing varies', 'Based on your CV, with no bot joining the call', 'Supported Windows capture; check your setup first'],
       url:'/live/',views:[
         {label:'Your screen',src:'assets/shot-you-see.webp',alt:'Existing Live Sarthi website demonstration with answer panel visible on your screen',caption:'Your screen: the Live answer panel is visible. Existing website demonstration.'},
         {label:'Shared screen',src:'assets/shot-they-see.webp',alt:'Existing Live Sarthi website demonstration of a shared view with no answer panel',caption:'Shared screen: the answer panel is excluded. Requires supported Windows screen capture.'}
