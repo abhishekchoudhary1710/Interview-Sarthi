@@ -29,7 +29,7 @@
       "headline": "Cognizant GenC interview questions for freshers: practice guide",
       "description": "Practise Cognizant GenC fresher interview questions, project explanations and HR answers. Includes official hiring sources and a CV-based mock interview next step.",
       "datePublished": "2026-09-03",
-      "dateModified": "2026-09-24",
+      "dateModified": "2026-10-12",
       "image": "https://interviewsarthi.com/assets/og.jpg",
       "author": {
         "@type": "Organization",
@@ -110,7 +110,7 @@
 <p class="crumb"><a href="../">Home</a> &rsaquo; <a href="./">Guides</a> &rsaquo; Cognizant GenC interview questions</p>
 <h1>Cognizant GenC interview questions for freshers: practice guide</h1>
 <p class="lead">Practise explaining your project, one programming language and your reasons for applying. Match your preparation to the Cognizant role in your invitation instead of guessing a track from somebody else’s interview.</p>
-<p class="meta">Updated 15 September 2026 &middot; 8 min read · Published by <a href="../about.html">Interview Sarthi</a>, makers of <a href="../prep/">Prep Sarthi</a> (AI mock interviews) and <a href="../live/">Live Sarthi</a> (interview help on Windows)</p>
+<p class="meta">Updated 12 October 2026 &middot; 10 min read · Published by <a href="../about.html">Interview Sarthi</a>, makers of <a href="../prep/">Prep Sarthi</a> (AI mock interviews) and <a href="../live/">Live Sarthi</a> (interview help on Windows)</p>
 
 <div class="app-strip">
   <a class="tile" href="/prep/">
@@ -151,6 +151,19 @@
 </ul>
 
 <h2>HR answers to practise for Cognizant GenC</h2><ul><li><b>Why this role?</b> Choose one specific responsibility from the current posting and connect it to something you have done or want to learn.</li><li><b>When can you join, and can you relocate?</b> Give your actual availability and constraints. Correct any old information in your application.</li><li><b>What are the offer terms?</b> Read the current pay, training, location and any agreement before accepting. Ask questions if anything is unclear.</li></ul><p>Use our <a href="accenture-cognizant-capgemini-hr-interview.html">HR practice questions and answer examples</a> to rehearse these conversations.</p>
+
+<section id="worked-answers" aria-labelledby="worked-answers-title">
+<h2 id="worked-answers-title">Three worked answers, with follow-ups</h2>
+<p>These are original practice examples, not Cognizant's actual interview questions. The project is fictional; replace it with work you can explain and use the responsibilities in your own invitation or posting.</p>
+<div class="qa"><p class="q">1. Walk me through your project. What did you own?</p><p class="a">“Our class project was a task tracker using Flask and SQLite. I built the endpoints for creating and assigning tasks. I checked for missing titles and unknown assignees, then added tests for those inputs. That let me explain both the request handling and how I verified it.”</p><p class="note"><b>Why this works:</b> project → personal contribution → validation → evidence. It avoids taking credit for the whole team's work.</p><p><b>Follow-ups:</b> Why Flask? What did your tests assert? What would happen if the database write failed?</p></div>
+<div class="qa"><p class="q">2. What is the difference between WHERE and HAVING?</p><p class="a">“WHERE filters the rows before grouping. HAVING filters the groups after aggregation. To find customers with at least three paid orders, I would select the paid rows with WHERE, group by customer, then filter the counts with HAVING.”</p><pre style="overflow-x:auto;background:var(--bg2);padding:14px;border-radius:8px;font-size:13px;line-height:1.65"><code>SELECT customer_id, COUNT(*) AS order_count
+FROM orders
+WHERE status = 'paid'
+GROUP BY customer_id
+HAVING COUNT(*) &gt;= 3;</code></pre><p class="note"><b>Follow-ups:</b> Why cannot COUNT(*) go in this query's WHERE clause? What changes if unpaid orders should also count? Technical reference: <a href="https://www.postgresql.org/docs/current/tutorial-agg.html" rel="noopener">PostgreSQL aggregate functions</a>.</p></div>
+<div class="qa"><p class="q">3. Why are you interested in this role?</p><p class="a">“The posting mentions [specific responsibility]. In [your actual project], I worked on [relevant task]. I would like to develop that skill further in this role, especially [a responsibility the posting actually describes].”</p><p class="note"><b>Make it yours:</b> replace every bracket with a fact from the posting or your experience. Do not memorise a claim about Cognizant that you have not checked.</p><p><b>Follow-ups:</b> Which responsibility interests you most? What have you already done to prepare? Which skill would you need to learn first?</p></div>
+<div class="box"><h3 style="margin:0 0 8px">Practise for your own Cognizant invitation</h3><p>Use your CV and the role description to rehearse explaining your contribution, handling follow-ups and giving concise answers.</p><a class="cta" href="../prep/cognizant-genc-mock-interview.html">Open the Cognizant practice guide →</a><p style="margin:12px 0 0;font-size:14px">Then try the free 7-minute Prep Sarthi demo. Questions can vary; this is practice, not a prediction of the employer's interview.</p></div>
+</section>
 
 <h2>Mistakes to avoid during practice</h2>
 <ul>

@@ -172,8 +172,8 @@ NOCALLS = {
     'description': 'Five reasons applications go unanswered, in the order they usually apply: stale postings, one generic CV, roles that never fit, an unparseable file, and applying only where competition is highest.',
     'h1': 'You applied to 200 jobs and heard nothing',
     'lead': 'Almost always one of five things, and they are not equally likely. Work down this list in order rather than sending another hundred.',
-    'meta': f'Reviewed {REVIEWED} · Written by the team that builds ApplySarthi',
-    'published': '2026-09-18', 'modified': TODAY,
+    'meta': 'Reviewed 12 October 2026 · Written by the team that builds ApplySarthi',
+    'published': '2026-09-18', 'modified': '2026-10-12',
     'cta_title': 'Aim the next twenty instead of sending another two hundred',
     'cta_text': f'ApplySarthi ranks {OPEN_JOBS} open jobs against your actual CV and rewrites it for the ones that fit. {POSTED_7D} of them were posted this week.',
     'body': f"""
@@ -216,6 +216,13 @@ in a header, or exported as an image, can arrive at the other end scrambled or h
 be told.</p>
 <p>The <a href="ats-resume-format-india.html">ATS formatting guide</a> covers what actually breaks. The
 short version: single column, real text, ordinary section headings, PDF exported from a text document.</p>
+
+<div class="box" id="cv-readability-check">
+<h3 style="margin:0 0 8px">Check the file before your next application</h3>
+<p>Use the free ATS resume checker to inspect readability and compare your CV with one job description. Fix the formatting issues and check which job skills you can truthfully add.</p>
+<p>No sign-up. Your CV is read inside your browser.</p>
+<a class="cta" href="../ats-resume-checker/">Check my CV free →</a>
+</div>
 
 <h2>5. Everything went to the three most crowded places</h2>
 <p>Most people apply where applying is easiest, which is where every other applicant already is. Of the
@@ -266,8 +273,8 @@ ATS = {
     'description': 'What applicant tracking systems actually fail to read, the formatting that survives every parser, the Indian CV conventions worth dropping, and the ATS myths that waste your time.',
     'h1': 'ATS resume format for Indian job applications',
     'lead': 'Applicant tracking systems are parsers, not judges. Most advice about them is about the wrong thing.',
-    'meta': f'Reviewed {REVIEWED} · Written by the team that builds ApplySarthi',
-    'published': '2026-09-18', 'modified': TODAY,
+    'meta': 'Reviewed 12 October 2026 · Written by the team that builds ApplySarthi',
+    'published': '2026-09-18', 'modified': '2026-10-12',
     'cta_title': 'One CV in, a version per job out',
     'cta_text': 'ApplySarthi rewrites your CV for each job using only what your CV already says, and renders it as a clean single-column PDF.',
     'body': f"""
@@ -346,9 +353,12 @@ roughly what the parser sees.</li>
 </ol>
 <p>That paste test catches nearly every real parsing failure, and takes less time than reading another
 article about templates.</p>
-<p>The <a href="../ats-resume-checker/">free ATS resume checker</a> runs the same test for you: drop in your
-CV and it shows the text a parser gets, flags each failure above, and lists the skills from a job description
-that your CV does not mention. It reads the file inside your browser, so nothing is uploaded.</p>
+<div class="box" id="cv-readability-check">
+<h3 style="margin:0 0 8px">Check whether your CV is readable</h3>
+<p>The free ATS resume checker shows the text it can extract, flags formatting problems and compares your CV with the skills in a job description. Use it after the five-minute check above.</p>
+<p>Your file is read inside your browser. No upload or sign-up.</p>
+<a class="cta" href="../ats-resume-checker/">Check my CV free →</a>
+</div>
 
 {sarthi_handoff(UP)}
 """,

@@ -24,3 +24,8 @@ body[data-design=journey]{--paper:#fcfaf6;--line:#e4e1d9;--blue:#11685b}.hero-jo
 @media(max-width:360px){.media-tabs button{gap:3px}.tab-label b{font-size:11px}.tab-label small{font-size:8px}}
 /* Phones: a visitor from an Instagram reel sees all three apps on the first screen (Clarity, 23-25 Sep 2026: they saw only the top 8-21% of the page). */
 .quick-pick{display:none}@media(max-width:680px){.hero .starting-offer{display:none}.hero-top{margin-bottom:16px}.quick-pick{display:grid;gap:9px;margin:0 0 26px}.quick-pick>p{font-size:9px;font-weight:700;letter-spacing:1.3px;color:var(--muted)}.quick-pick a{display:grid;gap:2px;padding:13px 40px 13px 14px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;background:white;position:relative}.quick-pick a:after{content:'\2192';position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:700;font-size:18px}.quick-pick span{font-size:11px;font-weight:650;color:var(--accent)}.quick-pick b{font-size:17px;line-height:1.3;letter-spacing:-.3px}.quick-pick small{font-size:12px;color:var(--muted)}}
+
+/* A secondary CV-check action inside the existing Apply card. */
+.app-card .cv-check-link{margin:13px 0 0;font-size:13px;line-height:1.5}
+.app-card .cv-check-link>a{color:var(--accent);font-weight:650;text-decoration:underline;text-underline-offset:3px}
+.app-card .cv-check-link>small{display:block;margin-top:3px;color:var(--muted);font-size:11px;font-weight:400}

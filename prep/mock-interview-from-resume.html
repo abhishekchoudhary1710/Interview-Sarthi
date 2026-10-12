@@ -50,6 +50,13 @@
   .cta-band h3{font-family:var(--display);font-weight:400;font-size:30px;margin:0 0 8px;color:var(--dark-ink)}
   .cta-band p{color:var(--dark-muted);margin:0 0 18px;font-size:16px}
   .cta-band .pill{background:var(--dark-ink);color:var(--dark)}
+
+  .fixture-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+  .fixture-card{border:1px solid var(--line);background:var(--bg2);border-radius:14px;padding:20px}
+  article .fixture-card h3{margin:6px 0 12px;font-size:20px}
+  article .fixture-card p,article .fixture-card li{font-size:15px}
+  article .fixture-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--prep)}
+  @media(max-width:620px){.fixture-grid{grid-template-columns:1fr}}
 </style>
 <script defer="" src="../assets/analytics.js"></script>
 <script type="application/ld+json">{
@@ -85,7 +92,7 @@
       "description": "Turn your CV and a job description into a voice mock interview. Follow the real Prep Sarthi setup, practise weak answers and use your feedback report.",
       "image": "https://interviewsarthi.com/assets/og-prep.png",
       "datePublished": "2026-09-24",
-      "dateModified": "2026-09-24",
+      "dateModified": "2026-10-12",
       "inLanguage": "en-IN",
       "author": {
         "@type": "Organization",
@@ -113,10 +120,20 @@
 <nav class="links"><a class="opt" href="../">Interview Sarthi</a><a class="opt" href="../apply/">Find jobs</a><a href="./#pricing">Pricing</a><a class="pill small" href="app/" style="color:var(--btn-ink)">Start free</a></nav>
 </header>
 </div>
-<article><p class="crumb"><a href="/">Home</a> › <a href="/prep/">Prep Sarthi</a> › How to practise an AI mock interview from your resume</p><p class="meta">By <a href="/about.html">InterviewSarthi</a> · Updated 24 September 2026</p><h1>How to practise an AI mock interview from your resume</h1>
+<article><p class="crumb"><a href="/">Home</a> › <a href="/prep/">Prep Sarthi</a> › How to practise an AI mock interview from your resume</p><p class="meta">By <a href="/about.html">InterviewSarthi</a> · Updated 12 October 2026</p><h1>How to practise an AI mock interview from your resume</h1>
 <p class="lede">A question list helps you read about interviews. A voice mock helps you find out whether you can explain your own work aloud. In Prep Sarthi, add your CV and the role you want, speak your answers, then use the report to decide what to practise next.</p>
 <p>This walkthrough describes the current Prep app. The screenshots are existing product examples, not a promise of your score or a prediction of a job offer.</p>
-<nav aria-label="On this page"><a href="#setup">Set up</a> · <a href="#practice">Practise</a> · <a href="#feedback">Read your feedback</a> · <a href="#example">Work on a weak answer</a> · <a href="#cost">Price and requirements</a></nav>
+<nav aria-label="On this page"><a href="#practice-fixture">Sample CV + role</a> · <a href="#setup">Set up</a> · <a href="#practice">Practise</a> · <a href="#feedback">Read your feedback</a> · <a href="#example">Work on a weak answer</a> · <a href="#cost">Price and requirements</a></nav>
+<section class="practice-fixture" id="practice-fixture" aria-labelledby="fixture-title">
+<h2 id="fixture-title">A CV and job description to practise with</h2>
+<p class="note"><b>Fictional teaching example.</b> Riya, her project and the job below are made up for this walkthrough. The answer and feedback examples are written for the guide; they are not a customer transcript or measured app result.</p>
+<div class="fixture-grid">
+<div class="fixture-card"><p class="fixture-label">Sample CV excerpt</p><h3>Riya Sharma · final-year student</h3><p>B.Tech Computer Science. Skills: Python, Flask and SQL.</p><ul><li>Built create-and-assign task endpoints for a class task-tracker project.</li><li>Used SQLite to store users and tasks.</li><li>Added validation and tests for missing task titles and unknown assignees.</li></ul></div>
+<div class="fixture-card"><p class="fixture-label">Sample job description</p><h3>Junior Python developer</h3><p>Build REST endpoints, write SQL queries and add tests for invalid input. Explain a project decision and how you debugged a problem.</p><p>This is a fictional role, not an advertised vacancy or an employer's hiring requirement.</p></div>
+</div>
+<p>Paste the CV excerpt and job description into their separate fields. Choose your language, then use the questions below as a practice checklist. An actual mock can ask different questions.</p>
+</section>
+
 <h2 id="setup">1. Add your CV and the job you want</h2>
 <p>Open <a href="app/">Prep Sarthi</a> on your phone or computer. Paste your CV into the CV box, or choose <b>Add file</b> for a supported PDF or text file. Use the version you plan to send to the employer; leave out information you do not want the AI provider to process.</p>
 <p>Add the job description if you have one. If you found the role in <a href="/apply/">Apply Sarthi</a>, use that role’s job description and your own CV. This is a manual step: there is no need to assume the apps have already transferred your documents.</p>
@@ -132,11 +149,21 @@
 <p>Review the feedback for the answers you struggled with, along with suggestions for stronger answers. Use comments on clarity, pace, pauses and filler words as practice cues. Check any AI-generated example against your own experience before using it.</p>
 <figure><img alt="Published Prep Sarthi report example with an answer score, feedback and a stronger answer" height="453" loading="lazy" src="/assets/prep-report-existing.png" width="1036"/><figcaption>Existing published report example. A low or high AI score is feedback for practice, not a verified hiring decision.</figcaption></figure>
 <ul><li>Choose one answer that lacked a clear example.</li><li>Write down what you personally did and which details you can explain.</li><li>Practise that answer aloud again, then try an unfamiliar follow-up.</li><li>Judge improvement by the explanation you can now give, alongside the report.</li></ul>
-<h2 id="example">Example: make a vague project answer specific</h2>
-<p><b>Illustrative teaching example:</b> the exchange below was written for this guide. It is not a customer transcript or measured app result.</p>
-<blockquote><p><b>Question:</b> Tell me about a project where you solved a difficult problem.</p><p><b>Weak answer:</b> “I worked on a booking app and improved the backend. It was a team project.”</p><p><b>Useful follow-up:</b> “Which part did you own, and how did you check that your change worked?”</p></blockquote>
-<p>The missing information is your contribution and evidence. A clearer structure is: “On [project], I owned [specific component]. We faced [problem]. I changed [action] and checked it using [test or observation]. The result was [outcome I can support].” Replace the brackets with facts from your own work. Do not invent a percentage, customer or team size to make the answer sound stronger.</p>
-<p>If you cannot explain the technical decision yet, that is the next thing to study. Rewording alone will not fix a knowledge gap. For more examples, see <a href="/guides/self-introduction-interview-hinglish.html">self-introductions in English and Hinglish</a> and <a href="/guides/strengths-and-weaknesses-interview.html">strengths and weaknesses answers</a>.</p>
+<section id="example" aria-labelledby="example-title">
+<h2 id="example-title">From a vague answer to a specific one</h2>
+<p>Use the fictional CV above. The question, feedback and stronger answer here are illustrative teaching material.</p>
+<h3>Question: what did you build yourself?</h3>
+<blockquote><p><b>First answer:</b> “We made a task app with Python and SQLite. I worked on the backend and helped improve it.”</p></blockquote>
+<div class="note"><b>Illustrative feedback:</b><ul><li>Name the endpoints you owned.</li><li>Describe one concrete problem, not “improved it”.</li><li>Explain how you checked your change.</li></ul></div>
+<h3>A stronger answer, using only this CV</h3>
+<blockquote><p>“In our class task tracker, I built the Flask endpoints for creating and assigning tasks. I added checks for empty task titles and assignee IDs that did not exist in our SQLite users table. I wrote tests for both invalid inputs and checked that the endpoint rejected them with a clear error. That was the part I owned.”</p></blockquote>
+<p>This version identifies the contribution, the problem and the check. It does not add a speed claim, user count or business result that the fictional CV never established.</p>
+<h3>Practise three follow-ups</h3>
+<ol><li>Why validate the request on the server as well as in the form?</li><li>What should the endpoint return for an unknown assignee?</li><li>How would you test a valid task and an invalid task differently?</li></ol>
+<h3>Try the answer again</h3>
+<p>Say it aloud without reading. Keep the project, your contribution and the test clear, then explain one follow-up in your own words. In your next mock, use the report to check which part still needs work. A clearer explanation is the goal; a higher AI score alone does not establish mastery.</p>
+<p>Use your own project facts when you practise for an employer. For more examples, see <a href="/guides/self-introduction-interview-hinglish.html">self-introductions in English and Hinglish</a> and <a href="/guides/strengths-and-weaknesses-interview.html">strengths and weaknesses answers</a>.</p>
+</section>
 <h2 id="cost">What you need and what it costs</h2>
 <ul><li>A phone or computer browser, a microphone and an internet connection.</li><li>Your CV; a job description or target role helps focus the practice.</li><li>A free 7-minute demo to start. After that, an optional one-time pass is ₹99 for 30 days of unlimited mock interviews. Paid access needs Google sign-in; the pass does not renew automatically.</li></ul>
 <p>Review the <a href="/privacy.html">Prep privacy details</a> before uploading personal information. For plan comparisons, see <a href="ai-mock-interview-price-india.html">AI mock interview prices in India</a>.</p>
