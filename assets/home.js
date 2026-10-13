@@ -21,7 +21,7 @@
       description: 'Browse jobs collected from different portals and company career pages. Upload your CV to see which fit your experience, then use Chrome autofill to apply faster.',
       points: ['Filter by website, location and remote work', 'Tailor your CV and cover letter for a role', 'Track applications; review before submitting'],
       url: '/apply/', views: [
-        {label:'Jobs from multiple sites',src:'assets/apply-app-current.png',alt:'Current public Apply Sarthi job list with job-site and location filters',caption:'Current public Apply interface. Job listings and counts are a captured snapshot.'}
+        {label:'Jobs from multiple sites',src:'/assets/apply-app-current.png',alt:'Current public Apply Sarthi job list with job-site and location filters',caption:'Current public Apply interface. Job listings and counts are a captured snapshot.'}
       ]
     },
     prep: {
@@ -29,8 +29,8 @@
       description: 'Get feedback on the answers you struggled with, and see a stronger way to answer. Your report also reviews your pace, pauses and filler words.',
       points: ['Questions based on your CV and target role', 'Follow-ups when your answer needs more detail', 'Practise on your phone or computer'],
       url: '/prep/', views: [
-        {label:'Feedback report',src:'assets/prep-report-existing.png',alt:'Existing published Prep Sarthi report with scores, feedback and a stronger answer',caption:'Report published on the existing Prep Sarthi website. Example feedback, not a promised result.'},
-        {label:'Interview setup',src:'assets/prep-app-current.png',alt:'Current Prep Sarthi setup with CV, job description, language and role fields',caption:'Current Prep app setup. Add your CV and target role before a voice mock interview.'}
+        {label:'Feedback report',src:'/assets/prep-report-existing.png',alt:'Existing published Prep Sarthi report with scores, feedback and a stronger answer',caption:'Report published on the existing Prep Sarthi website. Example feedback, not a promised result.'},
+        {label:'Interview setup',src:'/assets/prep-app-current.png',alt:'Current Prep Sarthi setup with CV, job description, language and role fields',caption:'Current Prep app setup. Add your CV and target role before a voice mock interview.'}
       ]
     },
     live: {
@@ -38,12 +38,12 @@
       description: 'Read the question and answer suggestions alongside your call. Switch views to see the answer panel present on your screen and absent in the shared view.',
       points: ['Answers start in about 1 second; timing varies', 'Based on your CV, with no bot joining the call', 'Supported Windows capture; check your setup first'],
       url:'/live/',views:[
-        {label:'Your screen',src:'assets/shot-you-see.webp',alt:'Existing Live Sarthi website demonstration with answer panel visible on your screen',caption:'Your screen: the Live answer panel is visible. Existing website demonstration.'},
-        {label:'Shared screen',src:'assets/shot-they-see.webp',alt:'Existing Live Sarthi website demonstration of a shared view with no answer panel',caption:'Shared screen: the answer panel is excluded. Requires supported Windows screen capture.'}
+        {label:'Your screen',src:'/assets/shot-you-see.webp',alt:'Existing Live Sarthi website demonstration with answer panel visible on your screen',caption:'Your screen: the Live answer panel is visible. Existing website demonstration.'},
+        {label:'Shared screen',src:'/assets/shot-they-see.webp',alt:'Existing Live Sarthi website demonstration of a shared view with no answer panel',caption:'Shared screen: the answer panel is excluded. Requires supported Windows screen capture.'}
       ]
     }
   };
-  let active = 'prep';
+  let active = 'live';
   let activeView = 0;
   const tabs = [...document.querySelectorAll('[data-media-tab]')];
   const panel = document.getElementById('media-panel');
@@ -98,7 +98,7 @@
     document.getElementById('dialog-title').textContent = 'Live Sarthi · Product video';
     const video = document.createElement('video');
     video.controls = true; video.playsInline = true; video.muted = true; video.preload = 'metadata';
-    video.poster = 'assets/promo-poster.jpg'; video.src = 'assets/promo-24s.mp4';
+    video.poster = '/assets/promo-poster.jpg'; video.src = '/assets/promo-24s.mp4';
     video.setAttribute('aria-label', 'Existing illustrated Live Sarthi promotional video');
     const caption = document.createElement('p'); caption.textContent = 'Existing illustrated promotional video from InterviewSarthi. Use the player controls to turn sound on or pause.';
     dialogBody.replaceChildren(video,caption); dialog.showModal(); video.play().catch(() => {});
@@ -128,5 +128,5 @@
   menu.querySelectorAll('a').forEach(link => link.addEventListener('click',closeMenu));
   document.addEventListener('click', event => { if (!event.target.closest('.site-nav')) closeMenu(); });
 
-  paint(); showProduct('prep');
+  paint(); showProduct('live');
 })();
