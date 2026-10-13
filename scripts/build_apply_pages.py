@@ -131,7 +131,7 @@ def render(page):
 <body>
 <div class="wrap">
 <header class="top">
-  <a class="logo" href="{prefix or '/'}"><img src="{prefix}assets/mark.svg" width="26" height="26" alt=""><span class="wm">Interview <i>Sarthi</i></span></a>
+  <a class="logo" href="{prefix or '/'}"><img src="{prefix}assets/mark.svg" width="26" height="26" alt="InterviewSarthi"><span class="wm">Interview <i>Sarthi</i></span></a>
   <nav><a href="{prefix}apply/">ApplySarthi</a><a href="{prefix}apply/guides/">Applying guides</a><a href="{prefix}prep/">AI mock interviews</a><a href="{prefix}#plans">All app prices</a><a href="{prefix}help.html">Help</a></nav>
 </header>
 
