@@ -183,7 +183,7 @@
 <div aria-label="What the interview screen looks like" class="call">
 <div class="top"><span class="live on">Live</span><span id="demo-clock">07:42</span></div>
 <div class="wheelwrap" id="demo-wheel"></div>
-<p class="caption" id="demo-caption"><span class="hint" id="demo-hint">Interviewer</span><span id="demo-line">You wrote that you cut latency from four seconds to under two. What exactly changed?</span></p>
+<p class="caption" id="demo-caption"><span class="hint" id="demo-hint">Interviewer</span><span id="demo-line">You wrote that you cut page load time from four seconds to under two. What exactly changed?</span></p>
 <div class="you"><div class="bars" id="demo-bars"><i></i><i></i><i></i><i></i><i></i></div><small>You're on</small><span class="pill small danger" style="margin-left:auto">End</span></div>
 </div>
 </div>
@@ -212,13 +212,13 @@
 </div>
 <div class="card">
 <span class="label">Question 2 · 3 / 10</span>
-<h3 style="font-size:26px;line-height:1.2;margin:8px 0 14px">What specifically about Gemini Live made the difference?</h3>
+<h3 style="font-size:26px;line-height:1.2;margin:8px 0 14px">What specifically made the page faster?</h3>
 <div class="meter"><i style="width:30%"></i></div>
-<p class="said">You said: talked about display affinity flags, Cloudflare Workers and offline grace instead.</p>
-<div class="better"><span class="label">Stronger answer</span>Our old pipeline chained speech-to-text and a text model, so every answer paid for two round trips. Gemini Live streams audio in and out in one hop. That took us from about four seconds to under two.</div>
+<p class="said">You said: talked about the React rewrite, the CDN contract and the release plan instead.</p>
+<div class="better"><span class="label">Stronger answer</span>Two things. Three scripts were blocking the first paint, so I deferred them, and I compressed the hero image from 1.8 MB to 200 KB. That took load time from about four seconds to under two.</div>
 </div>
 </div>
-<p class="muted" style="margin-top:18px;font-size:14.5px">A real report from a test run. The pause, pace and filler numbers are measured from your microphone, not guessed.</p>
+<p class="muted" style="margin-top:18px;font-size:14.5px">An example report. The pause, pace and filler numbers are measured from your microphone, not guessed.</p>
 </div></section>
 <section class="band"><div class="wrap">
 <span class="label">What it will not do</span>
@@ -336,10 +336,10 @@
   const bars = [...document.getElementById("demo-bars").children];
   const hint = document.getElementById("demo-hint"), line = document.getElementById("demo-line"), cap = document.getElementById("demo-caption"), clock = document.getElementById("demo-clock");
   const script = [
-    { state: "speaking", ms: 5200, hint: "Interviewer", line: "You wrote that you cut latency from four seconds to under two. What exactly changed?" },
+    { state: "speaking", ms: 5200, hint: "Interviewer", line: "You wrote that you cut page load time from four seconds to under two. What exactly changed?" },
     { state: "listening", ms: 4200, hint: "Listening", dim: true },
     { state: "thinking", ms: 1500, hint: "Thinking", dim: true },
-    { state: "speaking", ms: 5200, hint: "Interviewer", line: "Okay, but you didn't answer about the latency drop. What was the previous setup?" },
+    { state: "speaking", ms: 5200, hint: "Interviewer", line: "Okay, but you didn't answer about the load time. What was slow before?" },
     { state: "listening", ms: 4200, hint: "Listening", dim: true },
     { state: "thinking", ms: 1500, hint: "Thinking", dim: true },
   ];
