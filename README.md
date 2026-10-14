@@ -20,7 +20,7 @@ The public static website, product information, interview guides, website analyt
 - 30 minutes free per computer, with all features and no card.
 - One-time passes: ₹99 / 2 days on 1 device, ₹299 / 30 days on 2 devices ($9.99 and $29.99 outside India). No automatic renewal. Google API quotas and billing are separate.
 
-See [SITE_FACTS.md](SITE_FACTS.md) for evidence, device limits and maintenance rules. Use assistance only where permitted by the employer, interviewer and assessment provider.
+Use assistance only where permitted by the employer, interviewer and assessment provider.
 
 ## Run locally
 
@@ -34,14 +34,22 @@ Open `http://localhost:8000`. Website analytics are configured in `assets/analyt
 
 ## Validate changes
 
-Python 3.10+ and Node.js 18+:
+The tests, build scripts and research notes are not published in this repository (since 14 October 2026); they
+stay in the maintainers' working copy, and the commands below run there. Before every push, run all the checks
+that used to run on GitHub:
+
+```sh
+scripts/check_site.sh
+```
+
+It runs, in order (Python 3.10+ and Node.js 18+):
 
 ```sh
 python scripts/build_apply_pages.py --check
-python scripts/seo_audit.py
 python scripts/generate_sitemap.py --check
+python scripts/seo_audit.py
 python -m unittest discover -s tests -p 'test_*.py'
-node --test tests/analytics.test.cjs tests/home-routing.test.cjs tests/mock_engine.test.mjs tests/interview_plan.test.mjs tests/ats_engine.test.mjs
+node --test tests/*.test.cjs tests/*.test.mjs   # the ten suites the check script lists
 ```
 
 Optional browser checks require Python Playwright and Microsoft Edge:
@@ -80,7 +88,7 @@ python scripts/build_apply_pages.py      # rewrite the HTML, which is committed 
 ```
 
 `scripts/apply_pages/_shared.py` is the fact register for that content: every number an ApplySarthi page
-states must exist there with a note on where it was read from. See [APPLYSARTHI_SEO.md](APPLYSARTHI_SEO.md).
+states must exist there with a note on where it was read from.
 
 The product homepage `apply/index.html` is maintained directly, with `assets/apply-home.css` and
 `assets/apply-home.js`. Its social share image is `assets/og-apply-home.jpg`, rendered at 1200×630
@@ -88,23 +96,7 @@ from `assets/og-apply-home.source.html`. Guide share images are separate. Run
 `python tests/apply_browser_smoke.py` with Python Playwright and Chromium for responsive and
 interaction checks; `BROWSER_EXECUTABLE` optionally selects a locally installed Chromium binary.
 External analytics and font requests are blocked during this test. Screenshots go to
-`.seo-preview/apply-redesign/`. See [the redesign verification](research/apply-home-redesign-2026-09-25.md).
-
-## Research and reach
-
-- [Current full audit and release plan](SEO_AUDIT_AND_GROWTH_PLAN.md)
-- [24 September research](research/seo-growth-research-2026-09-24.md)
-- [Public Apply job-site audit](research/seo-apply-public-audit-2026-09-24.md)
-- [Page-by-page intent map](research/seo-page-map-2026-09-24.csv)
-
-- [Research findings](research/SEO_GEO_RESEARCH_2026-09-15.md)
-- [Benchmark methodology](research/README.md)
-- [Monthly query tracking](TRACKING_QUERIES.md)
-- [30 unbranded ChatGPT discovery prompts](research/chatgpt-discovery-prompts-2026-10-02.csv)
-- [ChatGPT recommendation observations template](research/chatgpt-discovery-observations.csv)
-- [Prepared external listing corrections and account checks](research/external-listing-corrections-2026-10-02.txt)
-- [Owner actions and 90-day roadmap](OWNER_ACTIONS_SEO_GEO.md)
-- [Implementation report](SEO_GEO_IMPLEMENTATION_REPORT.md)
+`.seo-preview/apply-redesign/`.
 
 ## Contact
 
